@@ -1,0 +1,6 @@
+lib
+node_modules
+npm-debug.log
+test/*.js
+test/*.js.map
+.ntvs_analysis.dat
