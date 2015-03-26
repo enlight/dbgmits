@@ -4,3 +4,7 @@ npm-debug.log
 test/*.js
 test/*.js.map
 .ntvs_analysis.dat
+docs/
+src/*.js.map
+obj/
+src/*.js

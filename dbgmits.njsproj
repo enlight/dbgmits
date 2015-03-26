@@ -26,13 +26,23 @@
     <Content Include="conf\tsd-lib.json" />
     <Content Include="conf\tsd-test.json" />
     <Content Include="conf\tslint.json" />
+    <TypeScriptCompile Include="src\dbgmits.ts" />
+    <TypeScriptCompile Include="test\basic.ts">
+      <SubType>Code</SubType>
+      <TestFramework>Mocha</TestFramework>
+    </TypeScriptCompile>
+    <TypeScriptCompile Include="typings\lib\node\node.d.ts" />
     <TypeScriptCompile Include="typings\test\tsd.d.ts" />
     <TypeScriptCompile Include="typings\test\chai\chai.d.ts" />
     <TypeScriptCompile Include="typings\test\mocha\mocha.d.ts" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="conf" />
+    <Folder Include="src\" />
+    <Folder Include="test\" />
     <Folder Include="typings" />
+    <Folder Include="typings\lib\" />
+    <Folder Include="typings\lib\node\" />
     <Folder Include="typings\test" />
     <Folder Include="typings\test\chai" />
     <Folder Include="typings\test\mocha" />
