@@ -7,6 +7,7 @@ import child_process = require('child_process');
 import readline = require('readline');
 import os = require('os');
 import path = require('path');
+import parser = require('./mi_output_parser');
 
 // aliases
 import spawn = child_process.spawn;
@@ -39,6 +40,7 @@ export class DebugSession {
 
   private parseDebbugerOutput(line: string) {
     // todo: run parser and call relevant callbacks
+    var result = parser.parse(line);
   }
 
   /**
