@@ -26,8 +26,15 @@
     <Content Include="conf\tsd-lib.json" />
     <Content Include="conf\tsd-test.json" />
     <Content Include="conf\tslint.json" />
+    <Content Include="src\mi_output_grammar.pegjs" />
     <TypeScriptCompile Include="src\dbgmits.ts" />
+    <TypeScriptCompile Include="src\mi_output.ts" />
+    <TypeScriptCompile Include="src\mi_output_parser.d.ts" />
     <TypeScriptCompile Include="test\basic.ts">
+      <SubType>Code</SubType>
+      <TestFramework>Mocha</TestFramework>
+    </TypeScriptCompile>
+    <TypeScriptCompile Include="test\mi_output_parser_tests.ts">
       <SubType>Code</SubType>
       <TestFramework>Mocha</TestFramework>
     </TypeScriptCompile>

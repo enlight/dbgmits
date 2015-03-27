@@ -75,7 +75,6 @@ module.exports = function(grunt) {
          dest: 'lib',
          options: {
            basePath: 'src',
-           declaration: true,
            module: 'commonjs',
            sourceMap: true,
            target: 'es5'
@@ -99,6 +98,12 @@ module.exports = function(grunt) {
         files: 'test/**/*.ts',
         tasks: ['test']
       }
+    },
+    'peg': {
+      mi_output_parser: {
+        src: "src/mi_output_grammar.pegjs",
+        dest: "src/mi_output_parser.js"
+      }
     }
   });
 
@@ -109,16 +114,17 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-tslint');
   grunt.loadNpmTasks('grunt-typedoc');
   grunt.loadNpmTasks('grunt-typescript');
+  grunt.loadNpmTasks('grunt-peg');
 
   grunt.registerTask('docs', ['typedoc']);
 
   grunt.registerTask('lint', ['jshint', 'tslint']);
 
-  grunt.registerTask('build', ['typescript']);
+  grunt.registerTask('build', ['peg', 'typescript']);
 
   grunt.registerTask('run-tests', ['mochaTest']);
 
-  grunt.registerTask('test', ['tslint', 'typescript', 'run-tests']);
+  grunt.registerTask('test', ['tslint', 'build', 'run-tests']);
 
   grunt.registerTask('default', ['lint', 'build', 'run-tests']);
 };

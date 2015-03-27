@@ -10,8 +10,7 @@
     "type": "git",
     "url": "https://github.com/enlight/dbgmits.git"
   },
-  "keywords": [
-  ],
+  "keywords": [],
   "author": "Vadim Macagon",
   "license": "MIT",
   "devDependencies": {
@@ -20,6 +19,7 @@
     "grunt-contrib-jshint": "^0.11.0",
     "grunt-contrib-watch": "^0.6.1",
     "grunt-mocha-test": "^0.12.7",
+    "grunt-peg": "^1.5.0",
     "grunt-tsd": "^0.2.0-beta.1",
     "grunt-tslint": "^2.0.0",
     "grunt-typedoc": "^0.2.1",
