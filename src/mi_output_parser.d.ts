@@ -4,9 +4,16 @@
 // Type definitions for the generated MI output parser.
 // NOTE: This is an external module in TypeScript parlance.
 
+import mioutput = require('./mi_output');
+
 declare module MIOutputParser {
 
-  export function parse(input: string): any;
+  export interface ParseOutput {
+    contentType: mioutput.ParseOutputType;
+    content: any;
+  }
+
+  export function parse(input: string): ParseOutput;
 
   export class SyntaxError {
     line: number;

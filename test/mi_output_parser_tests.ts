@@ -7,11 +7,29 @@ import mioutput = require('../src/mi_output');
 
 // aliases
 import expect = chai.expect;
+import ParseOutputType = mioutput.ParseOutputType;
 
-describe("Machine Interface Output Parser", () => {
-  it("Should parse double-quoted text from console output stream", () => {
+describe("MI Output Parser", () => {
+
+  it("should parse double-quoted text from console output stream",() => {
     var testStr = 'console output stream text';
     var result = parser.parse('~"' + testStr + '"');
-    expect(result).to.be.an.instanceof(mioutput.StreamRecord);
+    expect(result.contentType).to.equal(ParseOutputType.ConsoleStream);
+    expect(result.content).to.equal(testStr);
   });
+
+  it("should parse double-quoted text from target output stream",() => {
+    var testStr = 'target output stream text';
+    var result = parser.parse('@"' + testStr + '"');
+    expect(result.contentType).to.equal(ParseOutputType.TargetStream);
+    expect(result.content).to.equal(testStr);
+  });
+
+  it("should parse double-quoted text from debugger output stream",() => {
+    var testStr = 'debugger output stream text';
+    var result = parser.parse('&"' + testStr + '"');
+    expect(result.contentType).to.equal(ParseOutputType.DebuggerStream);
+    expect(result.content).to.equal(testStr);
+  });
+
 });

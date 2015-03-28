@@ -1,4 +1,8 @@
-﻿start
+﻿{
+var mioutput = require('./mi_output');
+}
+
+start
   = out_of_band_record
   / result_record
 
@@ -73,17 +77,26 @@ stream_record
 
 console_stream_output
   = '~' stream_text: c_string {
-    return stream_text;
+    return { 
+      contentType: mioutput.POT_ConsoleStream, 
+      content: stream_text
+    }
   }
 
 target_stream_output
   = '@' stream_text: c_string {
-    return stream_text;
+    return { 
+      contentType: mioutput.POT_TargetStream, 
+      content: stream_text
+    }
   }
 
 log_stream_output
   = '&' stream_text: c_string {
-    return stream_text;
+    return { 
+      contentType: mioutput.POT_DebuggerStream, 
+      content: stream_text
+    }
   }
 
 c_string "double-quoted-string"
