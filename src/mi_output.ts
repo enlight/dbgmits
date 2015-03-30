@@ -9,6 +9,26 @@ module MIOutput {
    * Identifiers for the various types of objects produced by the MI Output parser.
    */
   export enum ParseOutputType {
+    /**
+     * Indicates the previously requested synchronous operation was successful.
+     */
+    Done,
+    /**
+     * Equivalent to Done.
+     */
+    Running,
+    /**
+     * Indicates the debugger has connected to a remote target.
+     */
+    Connected,
+    /**
+     * Indicates the previously requested operation failed.
+     */
+    Error,
+    /**
+     * Indicates the debugger has terminated.
+     */
+    Exit,
     /** 
      * Textual response to a CLI command.
      */
@@ -22,12 +42,6 @@ module MIOutput {
      */
     DebuggerStream
   }
-
-  // also export the members of ParseOutputType separately so that they can be easily used 
-  // from plain old JavaScript written by humans
-  export var POT_ConsoleStream = ParseOutputType.ConsoleStream;
-  export var POT_TargetStream = ParseOutputType.TargetStream;
-  export var POT_DebuggerStream = ParseOutputType.DebuggerStream;
 
 } // module MIOutput
 

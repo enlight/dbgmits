@@ -1,13 +1,20 @@
-﻿{
+﻿{ // Start of code that is injected into the generated PEG parser.
+
 var mioutput = require('./mi_output');
-}
+  
+} // End of code that is injected into the generated PEG parser.
 
 start
   = out_of_band_record
   / result_record
 
 result_record
-  = token? '^' result_class (',' result)*
+  = token? '^' resultType:result_class results:comma_delimited_results? {
+    return {
+      contentType: resultType,
+      content: results
+	}
+  }
 
 out_of_band_record
   = async_record 
@@ -31,17 +38,28 @@ async_output
   = async_class (',' result)*
 
 result_class
-  = 'done'
-  / 'running'
-  / 'connected'
-  / 'error'
-  / 'exit'
+  = 'done' { return mioutput.ParseOutputType.Done; }
+  / 'running' { return mioutput.ParseOutputType.Running; }
+  / 'connected' { return mioutput.ParseOutputType.Connected; }
+  / 'error' { return mioutput.ParseOutputType.Error; }
+  / 'exit' { return mioutput.ParseOutputType.Exit; }
 
 async_class
   = 'stopped'
 
+comma_delimited_results
+  = results:(',' r:result { return r; })+ {
+    var dict = {};
+    for (var i = 0; i < results.length; i++) {
+      dict[results[i][0]] = results[i][1];
+    }
+    return dict;
+  }
+
 result
-  = variable '=' value
+  = n:variable '=' v:value {
+    return [n, v];
+  }
 
 // todo: this needs some refinement
 variable "variable-identifier"
@@ -76,31 +94,31 @@ stream_record
   / log_stream_output
 
 console_stream_output
-  = '~' stream_text: c_string {
+  = '~' streamText:c_string {
     return { 
-      contentType: mioutput.POT_ConsoleStream, 
-      content: stream_text
+      contentType: mioutput.ParseOutputType.ConsoleStream, 
+      content: streamText
     }
   }
 
 target_stream_output
-  = '@' stream_text: c_string {
+  = '@' streamText:c_string {
     return { 
-      contentType: mioutput.POT_TargetStream, 
-      content: stream_text
+      contentType: mioutput.ParseOutputType.TargetStream, 
+      content: streamText
     }
   }
 
 log_stream_output
-  = '&' stream_text: c_string {
+  = '&' streamText:c_string {
     return { 
-      contentType: mioutput.POT_DebuggerStream, 
-      content: stream_text
+      contentType: mioutput.ParseOutputType.DebuggerStream, 
+      content: streamText
     }
   }
 
 c_string "double-quoted-string"
-  = '"' chars: c_string_char* '"' {
+  = '"' chars:c_string_char* '"' {
     return chars.join('');
   }
 
@@ -111,5 +129,5 @@ c_string_char
 
 token
   = digits:[0-9]+ {
-    return parseInt(digits.join(''), 10);
+    return digits.join('');
   }
