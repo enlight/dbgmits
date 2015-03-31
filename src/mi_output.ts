@@ -6,9 +6,9 @@
 module MIOutput {
 
   /**
-   * Identifiers for the various types of objects produced by the MI Output parser.
+   * Identifiers for the various types of output records sent by the debugger MI.
    */
-  export enum ParseOutputType {
+  export enum RecordType {
     /**
      * Indicates the previously requested synchronous operation was successful.
      */
@@ -29,6 +29,18 @@ module MIOutput {
      * Indicates the debugger has terminated.
      */
     Exit,
+    /**
+     * Indicates an asynchronous state change on the target (e.g. stopped, started, disappeared).
+     */
+    AsyncExec,
+    /**
+     * On-going status information about the progress of a slow operation.
+     */
+    AsyncStatus,
+    /**
+     * Information that the client should handle (e.g. new breakpoint information).
+     */
+    AsyncNotify,
     /** 
      * Textual response to a CLI command.
      */

@@ -8,12 +8,13 @@ import mioutput = require('./mi_output');
 
 declare module MIOutputParser {
 
-  export interface ParseOutput {
-    contentType: mioutput.ParseOutputType;
-    content: any;
+  export interface Record {
+    token: string;
+    recordType: mioutput.RecordType;
+    data: any;
   }
 
-  export function parse(input: string): ParseOutput;
+  export function parse(input: string): Record;
 
   export class SyntaxError {
     line: number;

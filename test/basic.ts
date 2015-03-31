@@ -12,17 +12,40 @@ import expect = chai.expect;
 import DebugSession = dbgmits.DebugSession;
 
 describe("Debug Session", () => {
-  var debugSession : DebugSession;
+  describe("Basics", () => {
+    var debugSession: DebugSession;
 
-  before(() => {
-    debugSession = dbgmits.startDebugSession();
+    before(() => {
+      debugSession = dbgmits.startDebugSession();
+    });
+
+    it("should start", () => {
+      expect(debugSession).to.exist;
+    });
+
+    it("should set executable to debug", (done) => {
+      debugSession.setExecutableFile('C:/Projects/hello-world/hello-world', done);
+    });
+
+    after((done) => {
+      debugSession.end(done);
+    });
   });
 
-  it("Should start", () => {
-    expect(debugSession).to.exist;
-  });
+  describe("Remote Debugging Setup", () => {
+    var debugSession: DebugSession;
 
-  it("Should end", (done) => {
-    debugSession.end(done);
+    before(() => {
+      debugSession = dbgmits.startDebugSession();
+      debugSession.setExecutableFile('C:/Projects/hello-world/hello-world');
+    });
+
+    it("should connect to remote target", (done) => {
+      debugSession.connectToRemoteTarget('192.168.56.101', 8099, done);
+    });
+
+    after((done) => {
+      debugSession.end(done);
+    });
   });
 });

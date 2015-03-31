@@ -1,6 +1,21 @@
 ﻿{ // Start of code that is injected into the generated PEG parser.
 
 var mioutput = require('./mi_output');
+
+function getAsyncRecordType(char) {
+  switch (char) {
+    case '*':
+      return mioutput.RecordType.AsyncExec;
+
+    case '+':
+      return mioutput.RecordType.AsyncStatus;
+
+    case '=':
+      return mioutput.RecordType.AsyncNotify;
+
+    // todo: throw an error if no match found!
+  }
+}
   
 } // End of code that is injected into the generated PEG parser.
 
@@ -9,11 +24,12 @@ start
   / result_record
 
 result_record
-  = token? '^' resultType:result_class results:comma_delimited_results? {
+  = t:token? '^' resultType:result_class results:comma_delimited_results? {
     return {
-      contentType: resultType,
-      content: results
-	}
+      token: t,
+      recordType: resultType,
+      data: results
+    }
   }
 
 out_of_band_record
@@ -21,31 +37,23 @@ out_of_band_record
   / stream_record
 
 async_record
-  = exec_async_output
-  / status_async_output
-  / notify_async_output
-
-exec_async_output
-  = token? '*' async_output
-
-status_async_output
-  = token? '+' async_output
-
-notify_async_output
-  = token? '=' async_output
-
-async_output
-  = async_class (',' result)*
+  = t:token? at:[*+=] ac:async_class results:comma_delimited_results? {
+    return {
+      token: t,
+      recordType: getAsyncRecordType(at),
+      data: [ac, results]
+    }
+  }
 
 result_class
-  = 'done' { return mioutput.ParseOutputType.Done; }
-  / 'running' { return mioutput.ParseOutputType.Running; }
-  / 'connected' { return mioutput.ParseOutputType.Connected; }
-  / 'error' { return mioutput.ParseOutputType.Error; }
-  / 'exit' { return mioutput.ParseOutputType.Exit; }
+  = 'done' { return mioutput.RecordType.Done; }
+  / 'running' { return mioutput.RecordType.Running; }
+  / 'connected' { return mioutput.RecordType.Connected; }
+  / 'error' { return mioutput.RecordType.Error; }
+  / 'exit' { return mioutput.RecordType.Exit; }
 
 async_class
-  = 'stopped'
+  = variable
 
 comma_delimited_results
   = results:(',' r:result { return r; })+ {
@@ -72,7 +80,7 @@ variable_start
 
 variable_part
   = variable_start
-  / [-]
+  / [-_]
 
 value
   = c_string
@@ -96,24 +104,24 @@ stream_record
 console_stream_output
   = '~' streamText:c_string {
     return { 
-      contentType: mioutput.ParseOutputType.ConsoleStream, 
-      content: streamText
+      recordType: mioutput.RecordType.ConsoleStream, 
+      data: streamText
     }
   }
 
 target_stream_output
   = '@' streamText:c_string {
     return { 
-      contentType: mioutput.ParseOutputType.TargetStream, 
-      content: streamText
+      recordType: mioutput.RecordType.TargetStream, 
+      data: streamText
     }
   }
 
 log_stream_output
   = '&' streamText:c_string {
     return { 
-      contentType: mioutput.ParseOutputType.DebuggerStream, 
-      content: streamText
+      recordType: mioutput.RecordType.DebuggerStream, 
+      data: streamText
     }
   }
 
