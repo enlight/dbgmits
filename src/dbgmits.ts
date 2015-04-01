@@ -7,6 +7,7 @@ import child_process = require('child_process');
 import readline = require('readline');
 import os = require('os');
 import path = require('path');
+import events = require('events');
 import parser = require('./mi_output_parser');
 import mioutput = require('./mi_output');
 
@@ -64,6 +65,38 @@ export class CommandFailedError implements Error {
   }
 }
 
+export interface ThreadGroupAddedNotify {
+  id: string;
+}
+
+export interface ThreadGroupRemovedNotify {
+  id: string;
+}
+
+export interface ThreadGroupStartedNotify {
+  id: string;
+  pid: string;
+}
+
+export interface ThreadGroupExitedNotify {
+  id: string;
+  exitCode: string;
+}
+
+export interface ThreadCreatedNotify {
+  id: string;
+  groupId: string;
+}
+
+export interface ThreadExitedNotify {
+  id: string;
+  groupId: string;
+}
+
+export interface ThreadSelectedNotify {
+  id: string;
+}
+
 /**
  * A debug session provides two-way communication with a debugger process via the GDB/LLDB 
  * machine interface.
@@ -71,8 +104,78 @@ export class CommandFailedError implements Error {
  * Currently commands are queued and executed one at a time in the order they are issued, 
  * a command will not be executed until all the previous commands have been acknowledged by the
  * debugger.
+ *
+ * Out of band notifications from the debugger are emitted via events, the names of these events
+ * are provided by the EVENT_XXX static constants.
  */
-export class DebugSession {
+export class DebugSession extends events.EventEmitter {
+  /**
+   * @event Emitted when a thread group is added by the debugger, it's possible the thread group
+   *        hasn't yet been associated with a running program.
+   * 
+   * Listener function should have the signature:
+   * ~~~
+   * (notification: [[ThreadGroupAddedNotify]]) => void
+   * ~~~
+   */
+  static EVENT_THREAD_GROUP_ADDED: string = 'thdgrpa';
+  /**
+   * @event Emitted when a thread group is removed by the debugger.
+   *
+   * Listener function should have the signature:
+   * ~~~
+   * (notification: [[ThreadGroupRemovedNotify]]) => void
+   * ~~~
+   */
+  static EVENT_THREAD_GROUP_REMOVED: string = 'thdgrpr';
+  /**
+   * @event Emitted when a thread group is associated with a running program, 
+   *        either because the program was started or the debugger was attached to it.
+   *
+   * Listener function should have the signature:
+   * ~~~
+   * (notification: [[ThreadGroupStartedNotify]]) => void
+   * ~~~
+   */
+  static EVENT_THREAD_GROUP_STARTED: string = 'thdgrps';
+  /**
+   * @event Emitted when a thread group ceases to be associated with a running program,
+   *        either because the program terminated or the debugger was dettached from it.
+   *
+   * Listener function should have the signature: 
+   * ~~~
+   * (notification: [[ThreadGroupExitedNotify]]) => void
+   * ~~~
+   */
+  static EVENT_THREAD_GROUP_EXITED: string = 'thdgrpe';
+  /**
+   * @event Emitted when a thread is created.
+   *
+   * Listener function should have the signature:
+   * ~~~
+   * (notification: [[ThreadCreatedNotify]]) => void
+   * ~~~
+   */
+  static EVENT_THREAD_CREATED: string = 'thdc';
+  /**
+   * @event Emitted when a thread exits.
+   *
+   * Listener function should have the signature:
+   * ~~~
+   * (notification: [[ThreadExitedNotify]]) => void
+   * ~~~
+   */
+  static EVENT_THREAD_EXITED: string = 'thde';
+  /**
+   * @event Emitted when the debugger changes the current thread selection.
+   *
+   * Listener function should have the signature:
+   * ~~~
+   * (notification: [[ThreadSelectedNotify]]) => void
+   * ~~~
+   */
+  static EVENT_THREAD_SELECTED: string = 'thds';
+  
   // the debugger process that commands will be sent to (either gdb or lldb-mi)
   private debuggerProcess: ChildProcess;
   // reads input from the debugger's stdout one line at a time
@@ -90,6 +193,7 @@ export class DebugSession {
    * @param debuggerProcess The debugger process to associate with the new debug session.
    */
   constructor(debuggerProcess: ChildProcess) {
+    super();
     this.debuggerProcess = debuggerProcess;
     this.lineReader = readline.createInterface({
       input: debuggerProcess.stdout,
@@ -98,6 +202,39 @@ export class DebugSession {
     this.lineReader.on('line', this.parseDebbugerOutput.bind(this));
     this.nextCmdId = 1;
     this.cmdQueue = [];
+  }
+
+  private emitAsyncNotification(name: string, data: any) {
+    // TODO: check data is compatible with the corresponding XXXNotify class
+    switch (name) {
+      case 'thread-group-added':
+        this.emit(DebugSession.EVENT_THREAD_GROUP_ADDED, data);
+        break;
+
+      case 'thread-group-removed':
+        this.emit(DebugSession.EVENT_THREAD_GROUP_REMOVED, data);
+        break;
+
+      case 'thread-group-started':
+        this.emit(DebugSession.EVENT_THREAD_GROUP_STARTED, data);
+        break;
+
+      case 'thread-group-exited':
+        this.emit(DebugSession.EVENT_THREAD_GROUP_EXITED, data);
+        break;
+
+      case 'thread-created':
+        this.emit(DebugSession.EVENT_THREAD_CREATED, data);
+        break;
+
+      case 'thread-removed':
+        this.emit(DebugSession.EVENT_THREAD_REMOVED, data);
+        break;
+
+      case 'thread-selected':
+        this.emit(DebugSession.EVENT_THREAD_SELECTED, data);
+        break;
+    };
   }
 
   /**
@@ -139,6 +276,10 @@ export class DebugSession {
             cmd.done(null, result.data);
           }
         }
+        break;
+
+      case RecordType.AsyncNotify:
+        this.emitAsyncNotification(result.data[0], result.data[1]);
         break;
     }
 
