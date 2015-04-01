@@ -14,7 +14,7 @@ import mioutput = require('./mi_output');
 import spawn = child_process.spawn;
 type ChildProcess = child_process.ChildProcess;
 type ReadLine = readline.ReadLine;
-type CallbackWithOptErr = (err?: Error) => void;
+type ErrDataCallback = (err: Error, data: any) => void;
 import RecordType = mioutput.RecordType;
 
 class DebugCommand {
@@ -26,17 +26,41 @@ class DebugCommand {
   /** The MI command string that will be sent to debugger (minus the token and dash prefix). */
   text: string;
   /** Optional callback to invoke once a response is received for the command. */
-  done: CallbackWithOptErr;
+  done: ErrDataCallback;
 
   /**
    * @param cmd MI command string (minus the token and dash prefix).
    * @param done Callback to invoke once a response is received for the command.
    * @param token Token that can be used to match up the command with a response.
    */
-  constructor(cmd: string, done?: CallbackWithOptErr, token?: string) {
+  constructor(cmd: string, done?: ErrDataCallback, token?: string) {
     this.token = token;
     this.text = cmd;
     this.done = done;
+  }
+}
+
+/**
+ * Used to indicate failure of a MI command sent to the debugger.
+ */
+export class CommandFailedError implements Error {
+  /** The name of this error class. */
+  name: string;
+  /** The error message sent back by the debugger. */
+  message: string;
+  /** Optional error code sent by the debugger. */
+  code: string;
+  /** The command text that was sent to debugger (minus token and dash prefix). */
+  command: string;
+  /** Optional token for the failed command (if the command had one). */
+  token: string;
+
+  constructor(message: string, command: string, code?: string, token?: string) {
+    this.name = "CommandFailedError";
+    this.message = message;
+    this.code = code;
+    this.command = command;
+    this.token = token;
   }
 }
 
@@ -108,9 +132,11 @@ export class DebugSession {
         // todo: check that the token in the response matches the one sent with the command
         if (cmd.done) {
           if (result.recordType === RecordType.Error) {
-            cmd.done(new Error(result.data.msg));
+            cmd.done(
+              new CommandFailedError(result.data.msg, cmd.text, result.data.code, cmd.token), null
+            );
           } else {
-            cmd.done();
+            cmd.done(null, result.data);
           }
         }
         break;
@@ -144,7 +170,7 @@ export class DebugSession {
    * immediately, otherwise it will be dispatched after all the previously queued commands are
    * processed.
    */
-  private enqueueCommand(command: string, done?: CallbackWithOptErr, token?: string): void {
+  private enqueueCommand(command: string, done?: ErrDataCallback, token?: string): void {
     this.cmdQueue.push(new DebugCommand(command, done, token));
 
     if (this.cmdQueue.length === 1) {
@@ -163,7 +189,7 @@ export class DebugSession {
    * @param done Callback to invoke once the command is processed by the debugger.
    * @param token Token (digits only) that can be used to match up the command with a response.
    */
-  setExecutableFile(file: string, done?: CallbackWithOptErr, token?: string): void {
+  setExecutableFile(file: string, done?: ErrDataCallback, token?: string): void {
     // NOTE: While the GDB/MI spec. contains multiple -file-XXX commands that allow the
     // executable and symbol files to be specified separately the LLDB MI driver
     // currently (30-Mar-2015) only supports this one command.
@@ -178,7 +204,7 @@ export class DebugSession {
    * @param done Callback to invoke once the command is processed by the debugger.
    * @param token Token (digits only) that can be used to match up the command with a response.
    */
-  connectToRemoteTarget(host: string, port: number, done?: CallbackWithOptErr, token?: string): void {
+  connectToRemoteTarget(host: string, port: number, done?: ErrDataCallback, token?: string): void {
     this.enqueueCommand(`target-select remote ${host}:${port}`, done, token);
   }
 
@@ -187,13 +213,13 @@ export class DebugSession {
    *
    * @param done Callback to invoke after the debug session is cleaned up.
    */
-  end(done?: () => void): void {
+  end(done?: ErrDataCallback): void {
     if (done) {
-      this.debuggerProcess.once('exit', (code: number, signal: string) => { done(); });
+      this.debuggerProcess.once('exit',
+        (code: number, signal: string) => { done(null, { code: code, signal: signal }); }
+      );
     }
-    this.enqueueCommand('gdb-exit', () => {
-      this.lineReader.close();
-    });
+    this.enqueueCommand('gdb-exit', () => { this.lineReader.close(); });
   }
 };
 
