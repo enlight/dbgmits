@@ -227,8 +227,8 @@ export class DebugSession extends events.EventEmitter {
         this.emit(DebugSession.EVENT_THREAD_CREATED, data);
         break;
 
-      case 'thread-removed':
-        this.emit(DebugSession.EVENT_THREAD_REMOVED, data);
+      case 'thread-exited':
+        this.emit(DebugSession.EVENT_THREAD_EXITED, data);
         break;
 
       case 'thread-selected':
