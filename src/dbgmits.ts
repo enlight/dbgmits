@@ -8,6 +8,7 @@ import readline = require('readline');
 import os = require('os');
 import path = require('path');
 import events = require('events');
+import stream = require('stream');
 import parser = require('./mi_output_parser');
 import mioutput = require('./mi_output');
 
@@ -175,9 +176,9 @@ export class DebugSession extends events.EventEmitter {
    * ~~~
    */
   static EVENT_THREAD_SELECTED: string = 'thds';
-  
-  // the debugger process that commands will be sent to (either gdb or lldb-mi)
-  private debuggerProcess: ChildProcess;
+
+  // the stream to which debugger commands will be written
+  private outStream: stream.Writable;
   // reads input from the debugger's stdout one line at a time
   private lineReader: ReadLine;
   // used to generate to auto-generate tokens for commands
@@ -186,26 +187,29 @@ export class DebugSession extends events.EventEmitter {
   private nextCmdId: number;
   // commands to be processed (one at a time)
   private cmdQueue: DebugCommand[];
+  // used to to ensure session cleanup is only done once
+  private cleanupWasCalled: boolean;
 
   /**
    * In most cases [[startDebugSession]] should be used to construct new instances.
    *
-   * @param debuggerProcess The debugger process to associate with the new debug session.
+   * @param inStream Debugger responses and notifications will be read from this stream.
+   * @param outStream Debugger commands will be written to this stream.
    */
-  constructor(debuggerProcess: ChildProcess) {
+  constructor(inStream: stream.Readable, outStream: stream.Writable) {
     super();
-    this.debuggerProcess = debuggerProcess;
+    this.outStream = outStream;
     this.lineReader = readline.createInterface({
-      input: debuggerProcess.stdout,
+      input: inStream,
       output: null
     });
     this.lineReader.on('line', this.parseDebbugerOutput.bind(this));
     this.nextCmdId = 1;
     this.cmdQueue = [];
+    this.cleanupWasCalled = false;
   }
 
   private emitAsyncNotification(name: string, data: any) {
-    // TODO: check data is compatible with the corresponding XXXNotify class
     switch (name) {
       case 'thread-group-added':
         this.emit(DebugSession.EVENT_THREAD_GROUP_ADDED, data);
@@ -220,15 +224,21 @@ export class DebugSession extends events.EventEmitter {
         break;
 
       case 'thread-group-exited':
-        this.emit(DebugSession.EVENT_THREAD_GROUP_EXITED, data);
+        this.emit(DebugSession.EVENT_THREAD_GROUP_EXITED,
+          { id: data.id, exitCode: data['exit-code'] }
+        );
         break;
 
       case 'thread-created':
-        this.emit(DebugSession.EVENT_THREAD_CREATED, data);
+        this.emit(DebugSession.EVENT_THREAD_CREATED,
+          { id: data.id, groupId: data['group-id'] }
+        );
         break;
 
       case 'thread-exited':
-        this.emit(DebugSession.EVENT_THREAD_EXITED, data);
+        this.emit(DebugSession.EVENT_THREAD_EXITED,
+          { id: data.id, groupId: data['group-id'] }
+        );
         break;
 
       case 'thread-selected':
@@ -299,7 +309,7 @@ export class DebugSession extends events.EventEmitter {
     } else {
       cmdStr = '-' + command.text;
     }
-    this.debuggerProcess.stdin.write(cmdStr + '\n');
+    this.outStream.write(cmdStr + '\n');
     // FIXME: remove this before release, it's here temporarily for debugging
     console.log(cmdStr);
   }
@@ -350,17 +360,26 @@ export class DebugSession extends events.EventEmitter {
   }
 
   /**
-   * Ends the debugging session and terminates the debugger process.
+   * Ends the debugging session.
    *
    * @param done Callback to invoke after the debug session is cleaned up.
+   * @param notifyDebugger If **false** the session is cleaned up immediately without waiting for 
+   *                       the debugger to respond (useful in cases where the debugger terminates
+   *                       unexpectedly). If **true** the debugger is asked to exit, and once the
+   *                       request is acknowldeged the session is cleaned up.
    */
-  end(done?: ErrDataCallback): void {
-    if (done) {
-      this.debuggerProcess.once('exit',
-        (code: number, signal: string) => { done(null, { code: code, signal: signal }); }
-      );
-    }
-    this.enqueueCommand('gdb-exit', () => { this.lineReader.close(); });
+  end(done?: ErrDataCallback, notifyDebugger: boolean = true): void {
+    var cleanup = () => {
+      this.cleanupWasCalled = true;
+      this.lineReader.close();
+      if (done) {
+        done(null, null);
+      }
+    };
+
+    if (!this.cleanupWasCalled) {
+      notifyDebugger ? this.enqueueCommand('gdb-exit', () => { cleanup(); }) : cleanup();
+    };
   }
 };
 
@@ -402,8 +421,17 @@ function setProcessEnvironment(): void {
  * @returns A new debug session.
  */
 export function startDebugSession(): DebugSession {
+  var debugSession: DebugSession = null;
   setProcessEnvironment();
   // lldb-mi.exe should be on the PATH
   var debuggerProcess = spawn('lldb-mi', ['--interpreter']);
-  return new DebugSession(debuggerProcess);
+  if (debuggerProcess) {
+    debugSession = new DebugSession(debuggerProcess.stdout, debuggerProcess.stdin);
+    if (debugSession) {
+      debuggerProcess.once('exit',
+        (code: number, signal: string) => { debugSession.end(null, false); }
+      );
+    }
+  }
+  return debugSession;
 };
