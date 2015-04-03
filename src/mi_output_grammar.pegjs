@@ -92,9 +92,12 @@ tuple
   / '{' result (',' result)* '}'
 
 list
-  = '[]'
+  = '[]' { return {}; }
   / '[' value (',' value)* ']'
-  / '[' result (',' result)* ']'
+  / '[' first:result rest:comma_delimited_results? ']' {
+    rest[first[0]] = first[1];
+    return rest;
+  }
 
 stream_record
   = console_stream_output

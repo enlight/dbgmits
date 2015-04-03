@@ -98,6 +98,27 @@ export interface ThreadSelectedNotify {
   id: string;
 }
 
+interface LibNotify {
+  id: string;
+  targetName: string; // file being debugged on the remote system
+  hostName: string; // copy of the file being debugged on the host
+  threadGroup: string;
+  /**
+   * Optional load address.
+   * This field is not part of the GDB MI spec. and is only set by LLDB MI driver.
+   */
+  loadAddress: string;
+  /** 
+   * Optional path to a file containing additional debug information.
+   * This field is not part of the GDB MI spec. and is only set by LLDB MI driver.
+   * The LLDB MI driver gets the value for this field from SBModule::GetSymbolFileSpec().
+   */
+  symbolPath: string;
+}
+
+export interface LibLoadedNotify extends LibNotify { }
+export interface LibUnloadedNotify extends LibNotify { }
+
 /**
  * A debug session provides two-way communication with a debugger process via the GDB/LLDB 
  * machine interface.
@@ -176,6 +197,24 @@ export class DebugSession extends events.EventEmitter {
    * ~~~
    */
   static EVENT_THREAD_SELECTED: string = 'thds';
+  /**
+   * @event Emitted when a new library is loaded by the program being debugged.
+   *
+   * Listener function should have the signature:
+   * ~~~
+   * (notification: [[LibLoadedNotify]]) => void
+   * ~~~
+   */
+  static EVENT_LIB_LOADED: string = 'libload';
+  /**
+   * @event Emitted when a library is unloaded by the program being debugged.
+   *
+   * Listener function should have the signature:
+   * ~~~
+   * (notification: [[LibUnloadedNotify]]) => void
+   * ~~~
+   */
+  static EVENT_LIB_UNLOADED: string = 'libunload';
 
   // the stream to which debugger commands will be written
   private outStream: stream.Writable;
@@ -210,6 +249,8 @@ export class DebugSession extends events.EventEmitter {
   }
 
   private emitAsyncNotification(name: string, data: any) {
+    var shlibInfo: any;
+
     switch (name) {
       case 'thread-group-added':
         this.emit(DebugSession.EVENT_THREAD_GROUP_ADDED, data);
@@ -243,6 +284,54 @@ export class DebugSession extends events.EventEmitter {
 
       case 'thread-selected':
         this.emit(DebugSession.EVENT_THREAD_SELECTED, data);
+        break;
+
+      case 'library-loaded':
+        this.emit(DebugSession.EVENT_LIB_LOADED, {
+          id: data.id,
+          targetName: data['target-name'],
+          hostName: data['host-name'],
+          threadGroup: data['thread-group']
+        });
+        break;
+
+      case 'library-unloaded':
+        this.emit(DebugSession.EVENT_LIB_UNLOADED, {
+          id: data.id,
+          targetName: data['target-name'],
+          hostName: data['host-name'],
+          threadGroup: data['thread-group']
+        });
+        break;
+
+      // shlibs-added is a non-standard notifications sent by LLDB MI driver,
+      // it correspond to the standard library-loaded notification from the GDB MI spec. 
+      // but contain somewhat different data
+      case 'shlibs-added':
+        shlibInfo = data['shlib-info'];
+        this.emit(DebugSession.EVENT_LIB_LOADED, {
+          id: shlibInfo.num,
+          targetName: shlibInfo.path,
+          hostName: shlibInfo.name,
+          threadGroup: null,
+          loadAddress: shlibInfo.loaded_addr,
+          symbolPath: shlibInfo['dsym-objpath']
+        });
+        break;
+
+      // shlibs-removed is a non-standard notifications sent by LLDB MI driver,
+      // it correspond to the standard library-unloaded notification from the GDB MI spec.
+      // but contain somewhat different data
+      case 'shlibs-removed':
+        shlibInfo = data['shlib-info'];
+        this.emit(DebugSession.EVENT_LIB_UNLOADED, {
+          id: shlibInfo.num,
+          targetName: shlibInfo.path,
+          hostName: shlibInfo.name,
+          threadGroup: null,
+          loadAddress: shlibInfo.loaded_addr,
+          symbolPath: shlibInfo['dsym-objpath']
+        });
         break;
     };
   }
