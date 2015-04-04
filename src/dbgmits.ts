@@ -132,87 +132,96 @@ export interface LibUnloadedNotify extends LibNotify { }
  */
 export class DebugSession extends events.EventEmitter {
   /**
-   * @event Emitted when a thread group is added by the debugger, it's possible the thread group
-   *        hasn't yet been associated with a running program.
+   * Emitted when a thread group is added by the debugger, it's possible the thread group
+   * hasn't yet been associated with a running program.
    * 
    * Listener function should have the signature:
    * ~~~
    * (notification: [[ThreadGroupAddedNotify]]) => void
    * ~~~
+   * @event
    */
   static EVENT_THREAD_GROUP_ADDED: string = 'thdgrpa';
   /**
-   * @event Emitted when a thread group is removed by the debugger.
+   * Emitted when a thread group is removed by the debugger.
    *
    * Listener function should have the signature:
    * ~~~
    * (notification: [[ThreadGroupRemovedNotify]]) => void
    * ~~~
+   * @event
    */
   static EVENT_THREAD_GROUP_REMOVED: string = 'thdgrpr';
   /**
-   * @event Emitted when a thread group is associated with a running program, 
-   *        either because the program was started or the debugger was attached to it.
+   * Emitted when a thread group is associated with a running program, 
+   * either because the program was started or the debugger was attached to it.
    *
    * Listener function should have the signature:
    * ~~~
    * (notification: [[ThreadGroupStartedNotify]]) => void
    * ~~~
+   * @event
    */
   static EVENT_THREAD_GROUP_STARTED: string = 'thdgrps';
   /**
-   * @event Emitted when a thread group ceases to be associated with a running program,
-   *        either because the program terminated or the debugger was dettached from it.
+   * Emitted when a thread group ceases to be associated with a running program,
+   * either because the program terminated or the debugger was dettached from it.
    *
    * Listener function should have the signature: 
    * ~~~
    * (notification: [[ThreadGroupExitedNotify]]) => void
    * ~~~
+   * @event
    */
   static EVENT_THREAD_GROUP_EXITED: string = 'thdgrpe';
   /**
-   * @event Emitted when a thread is created.
+   * Emitted when a thread is created.
    *
    * Listener function should have the signature:
    * ~~~
    * (notification: [[ThreadCreatedNotify]]) => void
    * ~~~
+   * @event
    */
   static EVENT_THREAD_CREATED: string = 'thdc';
   /**
-   * @event Emitted when a thread exits.
+   * Emitted when a thread exits.
    *
    * Listener function should have the signature:
    * ~~~
    * (notification: [[ThreadExitedNotify]]) => void
    * ~~~
+   * @event
    */
   static EVENT_THREAD_EXITED: string = 'thde';
   /**
-   * @event Emitted when the debugger changes the current thread selection.
+   * Emitted when the debugger changes the current thread selection.
    *
    * Listener function should have the signature:
    * ~~~
    * (notification: [[ThreadSelectedNotify]]) => void
    * ~~~
+   * @event
    */
   static EVENT_THREAD_SELECTED: string = 'thds';
   /**
-   * @event Emitted when a new library is loaded by the program being debugged.
+   * Emitted when a new library is loaded by the program being debugged.
    *
    * Listener function should have the signature:
    * ~~~
    * (notification: [[LibLoadedNotify]]) => void
    * ~~~
+   * @event
    */
   static EVENT_LIB_LOADED: string = 'libload';
   /**
-   * @event Emitted when a library is unloaded by the program being debugged.
+   * Emitted when a library is unloaded by the program being debugged.
    *
    * Listener function should have the signature:
    * ~~~
    * (notification: [[LibUnloadedNotify]]) => void
    * ~~~
+   * @event
    */
   static EVENT_LIB_UNLOADED: string = 'libunload';
 
