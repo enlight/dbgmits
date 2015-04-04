@@ -59,15 +59,16 @@ module.exports = function(grunt) {
       }
     },
     'typedoc': {
-        build: {
-            options: {
-                module: 'commonjs',
-                target: 'es5',
-                out: 'docs/',
-                name: '<%= pkg.name %>'
-            },
-            src: 'src/**/*.ts'
-        }
+      build: {
+        options: {
+          mode: 'file',
+          module: 'commonjs',
+          target: 'es5',
+          out: 'docs/',
+          name: '<%= pkg.name %>'
+        },
+        src: 'src/**/*.ts'
+      }
     },
     'typescript': {
        lib: {
