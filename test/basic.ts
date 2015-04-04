@@ -52,17 +52,17 @@ describe("Debug Session", () => {
       expect(debugSession).to.exist;
     });
 
-    it("should set executable to debug", (done) => {
-      debugSession.setExecutableFile('C:/Projects/hello-world/hello-world', done);
+    it("should set executable to debug", (done: MochaDone) => {
+      debugSession.setExecutableFile('C:/Projects/hello-world/hello-world', null, done);
     });
 
-    after((done) => {
+    after((done: MochaDone) => {
       debugSession.end(done);
     });
   });
 
   describe("Events", () => {
-    it("emits EVENT_THREAD_GROUP_ADDED", (done) => {
+    it("emits EVENT_THREAD_GROUP_ADDED", (done: MochaDone) => {
       var id: string = 'i1';
       emitEventForDebuggerOutput(
         `=thread-group-added,id="${id}"\n`,
@@ -74,7 +74,7 @@ describe("Debug Session", () => {
       );
     });
 
-    it("emits EVENT_THREAD_GROUP_REMOVED", (done) => {
+    it("emits EVENT_THREAD_GROUP_REMOVED", (done: MochaDone) => {
       var id: string = 'i1';
       emitEventForDebuggerOutput(
         `=thread-group-removed,id="${id}"\n`,
@@ -86,7 +86,7 @@ describe("Debug Session", () => {
       );
     });
 
-    it("emits EVENT_THREAD_GROUP_STARTED", (done) => {
+    it("emits EVENT_THREAD_GROUP_STARTED", (done: MochaDone) => {
       var id: string = 'i1';
       var pid: string = '6550';
       emitEventForDebuggerOutput(
@@ -100,7 +100,7 @@ describe("Debug Session", () => {
       );
     });
 
-    it("emits EVENT_THREAD_GROUP_EXITED", (done) => {
+    it("emits EVENT_THREAD_GROUP_EXITED", (done: MochaDone) => {
       var id: string = 'i1';
       var exitCode: string = '3';
       emitEventForDebuggerOutput(
@@ -114,7 +114,7 @@ describe("Debug Session", () => {
       );
     });
 
-    it("emits EVENT_THREAD_CREATED", (done) => {
+    it("emits EVENT_THREAD_CREATED", (done: MochaDone) => {
       var id: string = '1';
       var groupId: string = 'i1';
       emitEventForDebuggerOutput(
@@ -128,7 +128,7 @@ describe("Debug Session", () => {
       );
     });
 
-    it("emits EVENT_THREAD_EXITED", (done) => {
+    it("emits EVENT_THREAD_EXITED", (done: MochaDone) => {
       var id: string = '1';
       var groupId: string = 'i1';
       emitEventForDebuggerOutput(
@@ -142,7 +142,7 @@ describe("Debug Session", () => {
       );
     });
 
-    it("emits EVENT_THREAD_SELECTED", (done) => {
+    it("emits EVENT_THREAD_SELECTED", (done: MochaDone) => {
       var id: string = '1';
       emitEventForDebuggerOutput(
         `=thread-selected,id="${id}"\n`,
@@ -154,7 +154,7 @@ describe("Debug Session", () => {
       );
     });
 
-    it("emits EVENT_LIB_LOADED", (done) => {
+    it("emits EVENT_LIB_LOADED", (done: MochaDone) => {
       var id: string = '1';
       var targetName: string = 'somelib';
       var hostName: string = 'somelib';
@@ -172,7 +172,7 @@ describe("Debug Session", () => {
       );
     });
 
-    it("emits EVENT_LIB_UNLOADED", (done) => {
+    it("emits EVENT_LIB_UNLOADED", (done: MochaDone) => {
       var id: string = '1';
       var targetName: string = 'somelib';
       var hostName: string = 'somelib';
@@ -190,13 +190,14 @@ describe("Debug Session", () => {
       );
     });
 
-    it("emits EVENT_LIB_LOADED (LLDB variant)", (done) => {
+    it("emits EVENT_LIB_LOADED (LLDB variant)", (done: MochaDone) => {
       var num: string = '1';
       var name: string = 'somelib';
       var path: string = 'C:/Projects/MyProject/somelib';
       var loadAddr: string = '-';
       emitEventForDebuggerOutput(
-        `=shlibs-added,shlib-info=[num="${num}",name="${name}",dyld-addr="${loadAddr}",reason="dyld",path="${path}",loaded_addr="${loadAddr}"]\n`,
+        `=shlibs-added,shlib-info=[num="${num}",name="${name}",dyld-addr="${loadAddr}",` +
+        `reason="dyld",path="${path}",loaded_addr="${loadAddr}"]\n`,
         DebugSession.EVENT_LIB_LOADED,
         (data: any) => {
           expect(data).to.have.property('id', num);
@@ -208,13 +209,14 @@ describe("Debug Session", () => {
       );
     });
 
-    it("emits EVENT_LIB_UNLOADED (LLDB variant)", (done) => {
+    it("emits EVENT_LIB_UNLOADED (LLDB variant)", (done: MochaDone) => {
       var num: string = '1';
       var name: string = 'somelib';
       var path: string = 'C:/Projects/MyProject/somelib';
       var loadAddr: string = '-';
       emitEventForDebuggerOutput(
-        `=shlibs-removed,shlib-info=[num="${num}",name="${name}",dyld-addr="${loadAddr}",reason="dyld",path="${path}",loaded_addr="${loadAddr}"]\n`,
+        `=shlibs-removed,shlib-info=[num="${num}",name="${name}",dyld-addr="${loadAddr}",` +
+        `reason="dyld",path="${path}",loaded_addr="${loadAddr}"]\n`,
         DebugSession.EVENT_LIB_UNLOADED,
         (data: any) => {
           expect(data).to.have.property('id', num);
@@ -235,11 +237,11 @@ describe("Debug Session", () => {
       debugSession.setExecutableFile('C:/Projects/hello-world/hello-world');
     });
 
-    it("should connect to remote target", (done) => {
-      debugSession.connectToRemoteTarget('192.168.56.101', 8099, done);
+    it("should connect to remote target", (done: MochaDone) => {
+      debugSession.connectToRemoteTarget('192.168.56.101', 8099, null, done);
     });
 
-    after((done) => {
+    after((done: MochaDone) => {
       debugSession.end(done);
     });
   });

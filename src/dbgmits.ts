@@ -32,10 +32,10 @@ class DebugCommand {
 
   /**
    * @param cmd MI command string (minus the token and dash prefix).
-   * @param done Callback to invoke once a response is received for the command.
    * @param token Token that can be used to match up the command with a response.
+   * @param done Callback to invoke once a response is received for the command.
    */
-  constructor(cmd: string, done?: ErrDataCallback, token?: string) {
+  constructor(cmd: string, token?: string, done?: ErrDataCallback) {
     this.token = token;
     this.text = cmd;
     this.done = done;
@@ -419,8 +419,8 @@ export class DebugSession extends events.EventEmitter {
    * immediately, otherwise it will be dispatched after all the previously queued commands are
    * processed.
    */
-  private enqueueCommand(command: string, done?: ErrDataCallback, token?: string): void {
-    this.cmdQueue.push(new DebugCommand(command, done, token));
+  private enqueueCommand(command: string, token?: string, done?: ErrDataCallback): void {
+    this.cmdQueue.push(new DebugCommand(command, token, done));
 
     if (this.cmdQueue.length === 1) {
       this.sendCommandToDebugger(this.cmdQueue[0]);
@@ -438,11 +438,11 @@ export class DebugSession extends events.EventEmitter {
    * @param done Callback to invoke once the command is processed by the debugger.
    * @param token Token (digits only) that can be used to match up the command with a response.
    */
-  setExecutableFile(file: string, done?: ErrDataCallback, token?: string): void {
+  setExecutableFile(file: string, token?: string, done?: ErrDataCallback): void {
     // NOTE: While the GDB/MI spec. contains multiple -file-XXX commands that allow the
     // executable and symbol files to be specified separately the LLDB MI driver
     // currently (30-Mar-2015) only supports this one command.
-    this.enqueueCommand(`file-exec-and-symbols ${file}`, done, token);
+    this.enqueueCommand(`file-exec-and-symbols ${file}`, token, done);
   }
 
   /**
@@ -453,8 +453,8 @@ export class DebugSession extends events.EventEmitter {
    * @param done Callback to invoke once the command is processed by the debugger.
    * @param token Token (digits only) that can be used to match up the command with a response.
    */
-  connectToRemoteTarget(host: string, port: number, done?: ErrDataCallback, token?: string): void {
-    this.enqueueCommand(`target-select remote ${host}:${port}`, done, token);
+  connectToRemoteTarget(host: string, port: number, token?: string, done?: ErrDataCallback): void {
+    this.enqueueCommand(`target-select remote ${host}:${port}`, token, done);
   }
 
   /**
@@ -476,7 +476,7 @@ export class DebugSession extends events.EventEmitter {
     };
 
     if (!this.cleanupWasCalled) {
-      notifyDebugger ? this.enqueueCommand('gdb-exit', () => { cleanup(); }) : cleanup();
+      notifyDebugger ? this.enqueueCommand('gdb-exit', null, () => { cleanup(); }) : cleanup();
     };
   }
 };
