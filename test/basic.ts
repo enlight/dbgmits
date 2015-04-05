@@ -35,7 +35,7 @@ function emitEventForDebuggerOutput(text: string, event: string, callback: (data
   var inStream = createTextStream(text);
   var debugSession = new DebugSession(inStream, null);
   debugSession.once(event, (data: any) => {
-    debugSession.end(null, false);
+    debugSession.end(false, null);
     callback(data);
   });
 }
@@ -57,7 +57,7 @@ describe("Debug Session", () => {
     });
 
     after((done: MochaDone) => {
-      debugSession.end(done);
+      debugSession.end(true, done);
     });
   });
 
@@ -232,7 +232,7 @@ describe("Debug Session", () => {
   describe("Remote Debugging Setup", () => {
     var debugSession: DebugSession;
 
-    before(() => {
+    before((done: MochaDone) => {
       debugSession = dbgmits.startDebugSession();
       debugSession.setExecutableFile('C:/Projects/hello-world/hello-world');
     });
@@ -242,7 +242,7 @@ describe("Debug Session", () => {
     });
 
     after((done: MochaDone) => {
-      debugSession.end(done);
+      debugSession.end(true, done);
     });
   });
 });

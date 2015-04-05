@@ -42,6 +42,72 @@ class DebugCommand {
   }
 }
 
+export interface BreakpointInfo {
+  id: string;
+  breakpointType: string;
+  catchpointType?: string;
+  isTemp?: boolean;
+  isEnabled?: boolean;
+  address?: string;
+  func?: string;
+  filename?: string;
+  fullname?: string;
+  line?: number;
+  at?: string;
+  pending?: string;
+  evaluatedBy?: string;
+  threadId?: number;
+  condition?: string;
+  ignoreCount?: number;
+  enableCount?: number;
+  mask?: string;
+  passCount?: number;
+  originalLocation?: string;
+  hitCount?: number;
+  isInstalled?: boolean;
+  what?: string;
+}
+
+export type BreakpointCallback = (err: Error, data: BreakpointInfo, token?: string) => void;
+
+class BreakpointCommand extends DebugCommand {
+  constructor(cmd: string, token?: string, done?: BreakpointCallback) {
+    super(cmd, token);
+    this.done = (err: Error, data: any) => {
+      if (err) {
+        done(err, null);
+      } else {
+        var info: BreakpointInfo = {
+          id: data.bkpt['number'],
+          breakpointType: data.bkpt['type'],
+          catchpointType: data.bkpt['catch-type'],
+          isTemp: (data.bkpt.disp !== undefined) ? (data.bkpt.disp === 'del') : undefined,
+          isEnabled: (data.bkpt.enabled !== undefined) ? (data.bkpt.enabled === 'y') : undefined,
+          address: data.bkpt.addr,
+          func: data.bkpt.func,
+          filename: data.bkpt.file || data.bkpt.filename, // LLDB MI uses non standard 'file'
+          fullname: data.bkpt.fullname,
+          line: data.bkpt.line,
+          at: data.bkpt.at,
+          pending: data.bkpt.pending,
+          evaluatedBy: data.bkpt['evaluated-by'],
+          threadId: data.bkpt.thread,
+          condition: data.bkpt.cond,
+          ignoreCount: data.bkpt.ignore,
+          enableCount: data.bkpt.enable,
+          mask: data.bkpt.mask,
+          passCount: data.bkpt.pass,
+          originalLocation: data.bkpt['original-location'],
+          hitCount: data.bkpt.times,
+          isInstalled: (data.bkpt.installed !== undefined) ? (data.bkpt.installed === 'y') : undefined,
+          what: data.bkpt.what
+        };
+        done(err, info, token);
+      }
+    };
+  }
+}
+
 /**
  * Used to indicate failure of a MI command sent to the debugger.
  */
@@ -419,8 +485,8 @@ export class DebugSession extends events.EventEmitter {
    * immediately, otherwise it will be dispatched after all the previously queued commands are
    * processed.
    */
-  private enqueueCommand(command: string, token?: string, done?: ErrDataCallback): void {
-    this.cmdQueue.push(new DebugCommand(command, token, done));
+  private enqueueCommand(command: DebugCommand): void {
+    this.cmdQueue.push(command);
 
     if (this.cmdQueue.length === 1) {
       this.sendCommandToDebugger(this.cmdQueue[0]);
@@ -435,14 +501,14 @@ export class DebugSession extends events.EventEmitter {
    *
    * @param file This would normally be a full path to the host's copy of the executable to be 
    *             debugged.
-   * @param done Callback to invoke once the command is processed by the debugger.
    * @param token Token (digits only) that can be used to match up the command with a response.
+   * @param done Callback to invoke once the command is processed by the debugger.
    */
   setExecutableFile(file: string, token?: string, done?: ErrDataCallback): void {
     // NOTE: While the GDB/MI spec. contains multiple -file-XXX commands that allow the
     // executable and symbol files to be specified separately the LLDB MI driver
     // currently (30-Mar-2015) only supports this one command.
-    this.enqueueCommand(`file-exec-and-symbols ${file}`, token, done);
+    this.enqueueCommand(new DebugCommand(`file-exec-and-symbols ${file}`, token, done));
   }
 
   /**
@@ -450,36 +516,174 @@ export class DebugSession extends events.EventEmitter {
    *
    * @param host
    * @param port
-   * @param done Callback to invoke once the command is processed by the debugger.
    * @param token Token (digits only) that can be used to match up the command with a response.
+   * @param done Callback to invoke once the command is processed by the debugger.
    */
   connectToRemoteTarget(host: string, port: number, token?: string, done?: ErrDataCallback): void {
-    this.enqueueCommand(`target-select remote ${host}:${port}`, token, done);
+    this.enqueueCommand(new DebugCommand(`target-select remote ${host}:${port}`, token, done));
   }
 
   /**
    * Ends the debugging session.
    *
-   * @param done Callback to invoke after the debug session is cleaned up.
    * @param notifyDebugger If **false** the session is cleaned up immediately without waiting for 
    *                       the debugger to respond (useful in cases where the debugger terminates
    *                       unexpectedly). If **true** the debugger is asked to exit, and once the
    *                       request is acknowldeged the session is cleaned up.
+   * @param done Callback to invoke after the debug session is cleaned up.
    */
-  end(done?: ErrDataCallback, notifyDebugger: boolean = true): void {
-    var cleanup = () => {
+  end(notifyDebugger: boolean = true, done?: ErrDataCallback): void {
+    var cleanup = (err: Error, data: any) => {
       this.cleanupWasCalled = true;
       this.lineReader.close();
       if (done) {
-        done(null, null);
+        done(err, data);
       }
     };
 
     if (!this.cleanupWasCalled) {
-      notifyDebugger ? this.enqueueCommand('gdb-exit', null, () => { cleanup(); }) : cleanup();
+      notifyDebugger ? this.enqueueCommand(new DebugCommand('gdb-exit', null, cleanup))
+        : cleanup(null, null);
     };
   }
-};
+
+  //
+  // Breakpoint Commands
+  //
+
+  /**
+   * Adds a new breakpoint.
+   *
+   * @param location The location at which a breakpoint should be added, can be specified in the
+   *                 following formats:
+   *                 - function_name
+   *                 - filename:line_number
+   *                 - filename:function_name
+   *                 - address
+   * @param options.isTemp Set to **true** to create a temporary breakpoint which will be
+   *                       automatically removed after being hit.
+   * @param options.isHardware Set to **true** to create a hardware breakpoint 
+   *                           (presently not supported by LLDB MI).
+   * @param options.isPending Set to **true** if the breakpoint should still be created even if
+   *                          the location cannot be parsed (e.g. it refers to uknown files or 
+   *                          functions).
+   * @param options.isDisabled Set to **true** to create a breakpoint that is initially disabled,
+   *                           otherwise the breakpoint will be enabled by default.
+   * @param options.isTracepoint Set to **true** to create a tracepoint
+   *                             (presently not supported by LLDB MI).
+   * @param options.condition The debugger will only stop the program execution when this
+   *                          breakpoint is hit if the condition evaluates to **true**.
+   * @param options.ignoreCount The number of times the breakpoint should be hit before it takes 
+   *                            effect, zero (the default) means the breakpoint will stop the 
+   *                            program every time it's hit.
+   * @param options.threadId Restricts the new breakpoint to the given thread.
+   * @token Token (digits only) that can be used to match up the command with a response.
+   * @done Callback to invoke once the command is processed by the debugger.
+   */
+  addBreakpoint(
+    location: string,
+    options?: {
+      isTemp?: boolean;
+      isHardware?: boolean;
+      isPending?: boolean;
+      isDisabled?: boolean;
+      isTracepoint?: boolean;
+      condition?: string;
+      ignoreCount?: number;
+      threadId?: number;
+    },
+    token?: string, done?: BreakpointCallback
+  ) : void {
+    var cmd: string = 'break-insert';
+    if (options) {
+      if (options.isTemp) {
+        cmd = cmd + ' -t';
+      }
+      if (options.isHardware) {
+        cmd = cmd + ' -h';
+      }
+      if (options.isPending) {
+        cmd = cmd + ' -f';
+      }
+      if (options.isDisabled) {
+        cmd = cmd + ' -d';
+      }
+      if (options.isTracepoint) {
+        cmd = cmd + ' -a';
+      }
+      if (options.condition) {
+        cmd = cmd + ' -c ' + options.condition;
+      }
+      if (options.ignoreCount) {
+        cmd = cmd + ' -i ' + options.ignoreCount;
+      }
+      if (options.threadId) {
+        cmd = cmd + ' -p ' + options.threadId;
+      }
+    }
+    
+    this.enqueueCommand(new BreakpointCommand(cmd + ' ' + location, token, done));
+  }
+
+  /**
+   * Removes a breakpoint.
+   */
+  removeBreakpoint(breakId: number, token?: string, done?: ErrDataCallback) : void {
+    this.enqueueCommand(new DebugCommand('break-delete ' + breakId, token, done));
+  }
+
+  /**
+   * Removes multiple breakpoints.
+   */
+  removeBreakpoints(breakIds: number[], token?: string, done?: ErrDataCallback) : void {
+    // FIXME: LLDB MI driver only supports removing one breakpoint at a time,
+    //        so multiple breakpoints need to be removed one by one.
+    this.enqueueCommand(new DebugCommand('break-delete ' + breakIds.join(' '), token, done));
+  }
+
+  /**
+   * Enables a breakpoint.
+   */
+  enableBreakpoint(breakId: number, token?: string, done?: ErrDataCallback) : void {
+    this.enqueueCommand(new DebugCommand('break-enable ' + breakId, token, done));
+  }
+
+  /**
+   * Disables a breakpoint.
+   */
+  disableBreakpoint(breakId: number, token?: string, done?: ErrDataCallback) : void {
+    this.enqueueCommand(new DebugCommand('break-disable ' + breakId, token, done));
+  }
+
+  /**
+   * Tells the debugger to ignore a breakpoint the next `ignoreCount` times it's hit.
+   *
+   * @param breakId Identifier of the breakpoint for which the ignore count should be set.
+   * @param ignoreCount The number of times the breakpoint should be hit before it takes effect,
+   *                    zero means the breakpoint will stop the program every time it's hit.
+   */
+  ignoreBreakpoint(
+    breakId: number, ignoreCount: number, token?: string, done?: BreakpointCallback): void {
+    this.enqueueCommand(
+      new BreakpointCommand(`break-after ${breakId} ${ignoreCount}`, token, done)
+    );
+  }
+
+  /**
+   * Sets the condition under which a breakpoint should take effect when hit.
+   *
+   * @param breakId Identifier of the breakpoint for which the condition should be set.
+   * @param condition Expression to evaluate when the breakpoint is hit, if it evaluates to 
+   *                  **true** the breakpoint will stop the program, otherwise the breakpoint 
+   *                  will have no effect.
+   */
+  setBreakpointCondition(
+    breakId: number, condition: string, token?: string, done?: ErrDataCallback): void {
+    this.enqueueCommand(
+      new DebugCommand(`break-condition ${breakId} ${condition}`, token, done)
+    );
+  }
+}
 
 function setProcessEnvironment(): void {
   // HACK for LLDB on Windows (where users have to build their own Python)
@@ -527,7 +731,7 @@ export function startDebugSession(): DebugSession {
     debugSession = new DebugSession(debuggerProcess.stdout, debuggerProcess.stdin);
     if (debugSession) {
       debuggerProcess.once('exit',
-        (code: number, signal: string) => { debugSession.end(null, false); }
+        (code: number, signal: string) => { debugSession.end(false, null); }
       );
     }
   }

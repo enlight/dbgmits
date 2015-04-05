@@ -88,8 +88,11 @@ value
   / list
 
 tuple
-  = '{}'
-  / '{' result (',' result)* '}'
+  = '{}' { return {}; }
+  / '{' first:result rest:comma_delimited_results? '}' {
+    rest[first[0]] = first[1];
+    return rest;
+  }
 
 list
   = '[]' { return {}; }
