@@ -1,4 +1,3 @@
-lib
 node_modules
 npm-debug.log
 test/*.js
@@ -8,3 +7,4 @@ docs/
 src/*.js.map
 obj/
 src/*.js
+lib/**

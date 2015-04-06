@@ -38,7 +38,10 @@
       <SubType>Code</SubType>
       <TestFramework>Mocha</TestFramework>
     </TypeScriptCompile>
+    <TypeScriptCompile Include="typings\lib\es6-promise\es6-promise.d.ts" />
     <TypeScriptCompile Include="typings\lib\node\node.d.ts" />
+    <TypeScriptCompile Include="typings\lib\tsd.d.ts" />
+    <TypeScriptCompile Include="typings\test\chai-as-promised\chai-as-promised.d.ts" />
     <TypeScriptCompile Include="typings\test\tsd.d.ts" />
     <TypeScriptCompile Include="typings\test\chai\chai.d.ts" />
     <TypeScriptCompile Include="typings\test\mocha\mocha.d.ts" />
@@ -49,9 +52,11 @@
     <Folder Include="test\" />
     <Folder Include="typings" />
     <Folder Include="typings\lib\" />
+    <Folder Include="typings\lib\es6-promise\" />
     <Folder Include="typings\lib\node\" />
     <Folder Include="typings\test" />
     <Folder Include="typings\test\chai" />
+    <Folder Include="typings\test\chai-as-promised\" />
     <Folder Include="typings\test\mocha" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.Common.targets" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />

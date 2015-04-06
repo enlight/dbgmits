@@ -6,7 +6,10 @@
   "bundle": "../typings/lib/tsd.d.ts",
   "installed": {
     "node/node.d.ts": {
-      "commit": "0c2ee8583c9a27873d7c40cc79fdcb79b5868150"
+      "commit": "65ea56c919fd95dcd0ca3c59c9aa5eaa99c86885"
+    },
+    "es6-promise/es6-promise.d.ts": {
+      "commit": "65ea56c919fd95dcd0ca3c59c9aa5eaa99c86885"
     }
   }
 }
