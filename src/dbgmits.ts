@@ -1,7 +1,7 @@
 ﻿// Copyright (c) 2015 Vadim Macagon
 // MIT License, see LICENSE file for full terms.
 
-/// <reference path="../typings/lib/node/node.d.ts" />
+/// <reference path="../typings/lib/tsd.d.ts" />
 
 import child_process = require('child_process');
 import readline = require('readline');
@@ -502,13 +502,18 @@ export class DebugSession extends events.EventEmitter {
    * @param file This would normally be a full path to the host's copy of the executable to be 
    *             debugged.
    * @param token Token (digits only) that can be used to match up the command with a response.
-   * @param done Callback to invoke once the command is processed by the debugger.
    */
-  setExecutableFile(file: string, token?: string, done?: ErrDataCallback): void {
-    // NOTE: While the GDB/MI spec. contains multiple -file-XXX commands that allow the
-    // executable and symbol files to be specified separately the LLDB MI driver
-    // currently (30-Mar-2015) only supports this one command.
-    this.enqueueCommand(new DebugCommand(`file-exec-and-symbols ${file}`, token, done));
+  setExecutableFile(file: string, token?: string): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      // NOTE: While the GDB/MI spec. contains multiple -file-XXX commands that allow the
+      // executable and symbol files to be specified separately the LLDB MI driver
+      // currently (30-Mar-2015) only supports this one command.
+      this.enqueueCommand(
+        new DebugCommand(`file-exec-and-symbols ${file}`, token,
+          (err, data) => { err ? reject(err) : resolve(); }
+        )
+      );
+    });
   }
 
   /**
@@ -517,10 +522,15 @@ export class DebugSession extends events.EventEmitter {
    * @param host
    * @param port
    * @param token Token (digits only) that can be used to match up the command with a response.
-   * @param done Callback to invoke once the command is processed by the debugger.
    */
-  connectToRemoteTarget(host: string, port: number, token?: string, done?: ErrDataCallback): void {
-    this.enqueueCommand(new DebugCommand(`target-select remote ${host}:${port}`, token, done));
+  connectToRemoteTarget(host: string, port: number, token?: string): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      this.enqueueCommand(
+        new DebugCommand(`target-select remote ${host}:${port}`, token,
+          (err, data) => { err ? reject(err) : resolve(); }
+        )
+      );
+    });
   }
 
   /**
@@ -530,21 +540,20 @@ export class DebugSession extends events.EventEmitter {
    *                       the debugger to respond (useful in cases where the debugger terminates
    *                       unexpectedly). If **true** the debugger is asked to exit, and once the
    *                       request is acknowldeged the session is cleaned up.
-   * @param done Callback to invoke after the debug session is cleaned up.
    */
-  end(notifyDebugger: boolean = true, done?: ErrDataCallback): void {
-    var cleanup = (err: Error, data: any) => {
-      this.cleanupWasCalled = true;
-      this.lineReader.close();
-      if (done) {
-        done(err, data);
-      }
-    };
+  end(notifyDebugger: boolean = true): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      var cleanup = (err: Error, data: any) => {
+        this.cleanupWasCalled = true;
+        this.lineReader.close();
+        err ? reject(err) : resolve();
+      };
 
-    if (!this.cleanupWasCalled) {
-      notifyDebugger ? this.enqueueCommand(new DebugCommand('gdb-exit', null, cleanup))
-        : cleanup(null, null);
-    };
+      if (!this.cleanupWasCalled) {
+        notifyDebugger ? this.enqueueCommand(new DebugCommand('gdb-exit', null, cleanup))
+          : cleanup(null, null);
+      };
+    });
   }
 
   //
@@ -578,7 +587,6 @@ export class DebugSession extends events.EventEmitter {
    *                            program every time it's hit.
    * @param options.threadId Restricts the new breakpoint to the given thread.
    * @token Token (digits only) that can be used to match up the command with a response.
-   * @done Callback to invoke once the command is processed by the debugger.
    */
   addBreakpoint(
     location: string,
@@ -592,8 +600,8 @@ export class DebugSession extends events.EventEmitter {
       ignoreCount?: number;
       threadId?: number;
     },
-    token?: string, done?: BreakpointCallback
-  ) : void {
+    token?: string
+  ): Promise<BreakpointInfo> {
     var cmd: string = 'break-insert';
     if (options) {
       if (options.isTemp) {
@@ -622,37 +630,67 @@ export class DebugSession extends events.EventEmitter {
       }
     }
     
-    this.enqueueCommand(new BreakpointCommand(cmd + ' ' + location, token, done));
+    return new Promise<BreakpointInfo>((resolve, reject) => {
+      this.enqueueCommand(
+        new BreakpointCommand(cmd + ' ' + location, token,
+          (err, data) => { err ? reject(err) : resolve(data); }
+        )
+      );
+    });
   }
 
   /**
    * Removes a breakpoint.
    */
-  removeBreakpoint(breakId: number, token?: string, done?: ErrDataCallback) : void {
-    this.enqueueCommand(new DebugCommand('break-delete ' + breakId, token, done));
+  removeBreakpoint(breakId: number, token?: string): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      this.enqueueCommand(
+        new DebugCommand('break-delete ' + breakId, token,
+          (err, data) => { err ? reject(err) : resolve(); }
+        )
+      );
+    });
   }
 
   /**
    * Removes multiple breakpoints.
    */
-  removeBreakpoints(breakIds: number[], token?: string, done?: ErrDataCallback) : void {
-    // FIXME: LLDB MI driver only supports removing one breakpoint at a time,
-    //        so multiple breakpoints need to be removed one by one.
-    this.enqueueCommand(new DebugCommand('break-delete ' + breakIds.join(' '), token, done));
+  removeBreakpoints(breakIds: number[], token?: string): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      // FIXME: LLDB MI driver only supports removing one breakpoint at a time,
+      //        so multiple breakpoints need to be removed one by one.
+      this.enqueueCommand(
+        new DebugCommand('break-delete ' + breakIds.join(' '), token,
+          (err, data) => { err ? reject(err) : resolve(); }
+        )
+      );
+    });
   }
 
   /**
    * Enables a breakpoint.
    */
-  enableBreakpoint(breakId: number, token?: string, done?: ErrDataCallback) : void {
-    this.enqueueCommand(new DebugCommand('break-enable ' + breakId, token, done));
+  enableBreakpoint(breakId: number, token?: string): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      this.enqueueCommand(
+        new DebugCommand('break-enable ' + breakId, token,
+          (err, data) => { err ? reject(err) : resolve(); }
+        )
+      );
+    });
   }
 
   /**
    * Disables a breakpoint.
    */
-  disableBreakpoint(breakId: number, token?: string, done?: ErrDataCallback) : void {
-    this.enqueueCommand(new DebugCommand('break-disable ' + breakId, token, done));
+  disableBreakpoint(breakId: number, token?: string): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      this.enqueueCommand(
+        new DebugCommand('break-disable ' + breakId, token,
+          (err, data) => { err ? reject(err) : resolve(); }
+        )
+      );
+    });
   }
 
   /**
@@ -663,10 +701,14 @@ export class DebugSession extends events.EventEmitter {
    *                    zero means the breakpoint will stop the program every time it's hit.
    */
   ignoreBreakpoint(
-    breakId: number, ignoreCount: number, token?: string, done?: BreakpointCallback): void {
-    this.enqueueCommand(
-      new BreakpointCommand(`break-after ${breakId} ${ignoreCount}`, token, done)
-    );
+    breakId: number, ignoreCount: number, token?: string): Promise<BreakpointInfo> {
+    return new Promise<BreakpointInfo>((resolve, reject) => {
+      this.enqueueCommand(
+        new BreakpointCommand(`break-after ${breakId} ${ignoreCount}`, token,
+          (err, data) => { err ? reject(err) : resolve(data); }
+        )
+      );
+    });
   }
 
   /**
@@ -678,10 +720,14 @@ export class DebugSession extends events.EventEmitter {
    *                  will have no effect.
    */
   setBreakpointCondition(
-    breakId: number, condition: string, token?: string, done?: ErrDataCallback): void {
-    this.enqueueCommand(
-      new DebugCommand(`break-condition ${breakId} ${condition}`, token, done)
-    );
+    breakId: number, condition: string, token?: string): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      this.enqueueCommand(
+        new DebugCommand(`break-condition ${breakId} ${condition}`, token,
+          (err, data) => { err ? reject(err) : resolve(); }
+        )
+      );
+    });
   }
 }
 
@@ -731,7 +777,7 @@ export function startDebugSession(): DebugSession {
     debugSession = new DebugSession(debuggerProcess.stdout, debuggerProcess.stdin);
     if (debugSession) {
       debuggerProcess.once('exit',
-        (code: number, signal: string) => { debugSession.end(false, null); }
+        (code: number, signal: string) => { debugSession.end(false); }
       );
     }
   }

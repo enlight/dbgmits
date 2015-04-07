@@ -4,12 +4,19 @@
 /// <reference path="../typings/test/tsd.d.ts" />
 
 import chai = require('chai');
+import chaiAsPromised = require('chai-as-promised');
 import stream = require('stream');
 import dbgmits = require('../src/dbgmits');
+
+chai.use(chaiAsPromised);
 
 // aliases
 import expect = chai.expect;
 import DebugSession = dbgmits.DebugSession;
+
+var hostExecutable: string = 'C:/Projects/hello-world/hello-world';
+var remoteHost: string = '192.168.56.101';
+var remotePort: number = 8099;
 
 /**
  * Creates a readable stream containing nothing but the text passed in.
@@ -34,7 +41,7 @@ function emitEventForDebuggerOutput(text: string, event: string, callback: (data
   var inStream = createTextStream(text);
   var debugSession = new DebugSession(inStream, null);
   debugSession.once(event, (data: any) => {
-    debugSession.end(false, null);
+    debugSession.end(false);
     callback(data);
   });
 }
@@ -51,12 +58,12 @@ describe("Debug Session", () => {
       expect(debugSession).to.exist;
     });
 
-    it("should set executable to debug", (done: MochaDone) => {
-      debugSession.setExecutableFile('C:/Projects/hello-world/hello-world', null, done);
+    it("should set executable to debug", () => {
+      return debugSession.setExecutableFile(hostExecutable);
     });
 
-    after((done: MochaDone) => {
-      debugSession.end(true, done);
+    after(() => {
+      return debugSession.end();
     });
   });
 
@@ -227,21 +234,64 @@ describe("Debug Session", () => {
       );
     });
   });
-
+/*
   describe("Remote Debugging Setup", () => {
     var debugSession: DebugSession;
 
-    before((done: MochaDone) => {
+    before(() => {
       debugSession = dbgmits.startDebugSession();
-      debugSession.setExecutableFile('C:/Projects/hello-world/hello-world');
+      return debugSession.setExecutableFile(hostExecutable);
     });
 
-    it("should connect to remote target", (done: MochaDone) => {
-      debugSession.connectToRemoteTarget('192.168.56.101', 8099, null, done);
+    it("should connect to remote target", () => {
+      return debugSession.connectToRemoteTarget(remoteHost, remotePort);
     });
 
-    after((done: MochaDone) => {
-      debugSession.end(true, done);
+    after(() => {
+      return debugSession.end();
+    });
+  });
+*/
+
+  describe("Breakpoints", () => {
+    var debugSession: DebugSession;
+
+    before(() => {
+      debugSession = dbgmits.startDebugSession();
+      return debugSession.setExecutableFile(hostExecutable)
+      .then(() => { debugSession.connectToRemoteTarget(remoteHost, remotePort); });
+    });
+
+    it("should add and remove a breakpoint", () => {
+      var id: string;
+      var funcName: string = 'main';
+      return debugSession.addBreakpoint(funcName)
+      .then((data: dbgmits.BreakpointInfo) => {
+        expect(data).to.have.property('id');
+        expect(data).to.have.property('breakpointType', 'breakpoint');
+        expect(data).to.have.property('isEnabled', true);
+        expect(data).to.have.property('func', funcName);
+
+        return parseInt(data.id, 10);
+      })
+      .then((breakpointId: number) => {
+        return debugSession.removeBreakpoint(breakpointId);
+      });
+    });
+
+    it("should enable and disable a breakpoint", () => {
+      var funcName: string = 'main';
+      return debugSession.addBreakpoint(funcName, { isDisabled: true })
+      .then((data: dbgmits.BreakpointInfo) => { return parseInt(data.id, 10); })
+      .then((breakpointId: number) => {
+        return debugSession.enableBreakpoint(breakpointId)
+        .then(() => { debugSession.disableBreakpoint(breakpointId); })
+        .then(() => { debugSession.removeBreakpoint(breakpointId); });
+      });
+    });
+
+    after(() => {
+      return debugSession.end();
     });
   });
 });
