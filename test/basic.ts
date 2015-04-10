@@ -233,6 +233,42 @@ describe("Debug Session", () => {
         }
       );
     });
+
+    it("emits EVENT_DBG_CONSOLE_OUTPUT", (done: MochaDone) => {
+      var testStr: string = 'This is a line of text.';
+      emitEventForDebuggerOutput(
+        '~"' + testStr + '"\n',
+        DebugSession.EVENT_DBG_CONSOLE_OUTPUT,
+        (data: string) => {
+          expect(data).to.equal(testStr);
+          done();
+        }
+      );
+    });
+
+    it("emits EVENT_TARGET_OUTPUT", (done: MochaDone) => {
+      var testStr: string = 'This is some target output.';
+      emitEventForDebuggerOutput(
+        '@"' + testStr + '"\n',
+        DebugSession.EVENT_TARGET_OUTPUT,
+        (data: string) => {
+          expect(data).to.equal(testStr);
+          done();
+        }
+      );
+    });
+
+    it("emits EVENT_DBG_LOG_OUTPUT", (done: MochaDone) => {
+      var testStr: string = 'This is some debugger log output.';
+      emitEventForDebuggerOutput(
+        '&"' + testStr + '"\n',
+        DebugSession.EVENT_DBG_LOG_OUTPUT,
+        (data: string) => {
+          expect(data).to.equal(testStr);
+          done();
+        }
+      );
+    });
   });
 /*
   describe("Remote Debugging Setup", () => {

@@ -84,21 +84,21 @@ describe("MI Output Parser", () => {
     it("parses double-quoted text from console output stream", () => {
       var testStr = 'console output stream text';
       var result = parser.parse('~"' + testStr + '"');
-      expect(result.recordType).to.equal(RecordType.ConsoleStream);
+      expect(result.recordType).to.equal(RecordType.DebuggerConsoleOutput);
       expect(result.data).to.equal(testStr);
     });
 
     it("parses double-quoted text from target output stream", () => {
       var testStr = 'target output stream text';
       var result = parser.parse('@"' + testStr + '"');
-      expect(result.recordType).to.equal(RecordType.TargetStream);
+      expect(result.recordType).to.equal(RecordType.TargetOutput);
       expect(result.data).to.equal(testStr);
     });
 
     it("parses double-quoted text from debugger output stream", () => {
       var testStr = 'debugger output stream text';
       var result = parser.parse('&"' + testStr + '"');
-      expect(result.recordType).to.equal(RecordType.DebuggerStream);
+      expect(result.recordType).to.equal(RecordType.DebuggerLogOutput);
       expect(result.data).to.equal(testStr);
     });
   });

@@ -44,15 +44,15 @@ module MIOutput {
     /** 
      * Textual response to a CLI command.
      */
-    ConsoleStream,
+    DebuggerConsoleOutput,
     /** 
      * Textual output from a running target.
      */
-    TargetStream,
+    TargetOutput,
     /**
      * Textual output from the debugger's internals.
      */
-    DebuggerStream
+    DebuggerLogOutput
   }
 
 } // module MIOutput

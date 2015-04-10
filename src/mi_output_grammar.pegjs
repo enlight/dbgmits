@@ -110,7 +110,7 @@ stream_record
 console_stream_output
   = '~' streamText:c_string {
     return { 
-      recordType: mioutput.RecordType.ConsoleStream, 
+      recordType: mioutput.RecordType.DebuggerConsoleOutput, 
       data: streamText
     }
   }
@@ -118,7 +118,7 @@ console_stream_output
 target_stream_output
   = '@' streamText:c_string {
     return { 
-      recordType: mioutput.RecordType.TargetStream, 
+      recordType: mioutput.RecordType.TargetOutput, 
       data: streamText
     }
   }
@@ -126,7 +126,7 @@ target_stream_output
 log_stream_output
   = '&' streamText:c_string {
     return { 
-      recordType: mioutput.RecordType.DebuggerStream, 
+      recordType: mioutput.RecordType.DebuggerLogOutput, 
       data: streamText
     }
   }

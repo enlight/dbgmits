@@ -291,6 +291,40 @@ export class DebugSession extends events.EventEmitter {
    */
   static EVENT_LIB_UNLOADED: string = 'libunload';
 
+  /**
+   * Emitted when some console output from the debugger becomes available, 
+   * usually in response to a CLI command.
+   *
+   * Listener function should have the signature:
+   * ~~~
+   * (output: string) => void
+   * ~~~
+   * @event
+   */
+  static EVENT_DBG_CONSOLE_OUTPUT: string = 'conout';
+
+  /**
+   * Emitted when some console output from the target becomes available.
+   *
+   * Listener function should have the signature:
+   * ~~~
+   * (output: string) => void
+   * ~~~
+   * @event
+   */
+  static EVENT_TARGET_OUTPUT: string = 'targetout';
+
+  /**
+   * Emitted when log output from the debugger becomes available.
+   *
+   * Listener function should have the signature:
+   * ~~~
+   * (output: string) => void
+   * ~~~
+   * @event
+   */
+  static EVENT_DBG_LOG_OUTPUT: string = 'dbgout';
+
   // the stream to which debugger commands will be written
   private outStream: stream.Writable;
   // reads input from the debugger's stdout one line at a time
@@ -454,6 +488,18 @@ export class DebugSession extends events.EventEmitter {
 
       case RecordType.AsyncNotify:
         this.emitAsyncNotification(result.data[0], result.data[1]);
+        break;
+
+      case RecordType.DebuggerConsoleOutput:
+        this.emit(DebugSession.EVENT_DBG_CONSOLE_OUTPUT, result.data);
+        break;
+
+      case RecordType.TargetOutput:
+        this.emit(DebugSession.EVENT_TARGET_OUTPUT, result.data);
+        break;
+
+      case RecordType.DebuggerLogOutput:
+        this.emit(DebugSession.EVENT_DBG_LOG_OUTPUT, result.data);
         break;
     }
 

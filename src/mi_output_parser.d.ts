@@ -9,7 +9,7 @@ import mioutput = require('./mi_output');
 declare module MIOutputParser {
 
   export interface Record {
-    token: string;
+    token?: string;
     recordType: mioutput.RecordType;
     data: any;
   }
