@@ -185,6 +185,50 @@ interface LibNotify {
 export interface LibLoadedNotify extends LibNotify { }
 export interface LibUnloadedNotify extends LibNotify { }
 
+export enum TargetStopReason {
+  /** A breakpoint was hit. */
+  BreakpointHit,
+  /** A step instruction finished. */
+  EndSteppingRange,
+  /** The target finished executing and terminated normally. */
+  ExitedNormally,
+  /** The target was signalled. */
+  SignalReceived,
+  /** The target encountered an exception (this is LLDB specific). */
+  ExceptionReceived,
+  /** Catch-all for any of the other numerous reasons. */
+  Unrecognized
+}
+
+export interface TargetStoppedNotify {
+  reason: TargetStopReason;
+  /** Identifier of the thread that caused the target to stop. */
+  threadId: number;
+  /** 
+   * Identifiers of the threads that were stopped, 
+   * if all threads were stopped this array will be empty. 
+   */
+  stoppedThreads: number[];
+  /** Processor core on which the stop event occured. */
+  processorCore?: string;
+}
+
+export interface BreakpointHitNotify extends TargetStoppedNotify {
+  breakpointId: number;
+  // FIXME: this should be a concrete class or at least an interface
+  frame: any;
+}
+
+export interface SignalReceivedNotify extends TargetStoppedNotify {
+  signalCode?: string;
+  signalName?: string;
+  signalMeaning?: string;
+}
+
+export interface ExceptionReceivedNotify extends TargetStoppedNotify {
+  exception: string;
+}
+
 /**
  * A debug session provides two-way communication with a debugger process via the GDB/LLDB 
  * machine interface.
@@ -325,6 +369,67 @@ export class DebugSession extends events.EventEmitter {
    */
   static EVENT_DBG_LOG_OUTPUT: string = 'dbgout';
 
+  /**
+   * Emitted when the target starts running.
+   *
+   * The `threadId` passed to the listener indicates which specific thread is now running,
+   * a value of **"all"** indicates all threads are running. According to the GDB/MI spec.
+   * no interaction with a running thread is possible after this notification is produced until
+   * it is stopped again.
+   *
+   * Listener function should have the signature:
+   * ~~~
+   * (threadId: string) => void
+   * ~~~
+   * @event
+   */
+  static EVENT_TARGET_RUNNING: string = 'targetrun';
+
+  /**
+   * Emitted when the target stops running.
+   *
+   * Listener function should have the signature:
+   * ~~~
+   * (notification: [[TargetStoppedNotify]]) => void
+   * ~~~
+   * @event
+   */
+  static EVENT_TARGET_STOPPED: string = 'targetstop';
+
+  /**
+   * Emitted when the target stops running because a breakpoint was hit.
+   *
+   * Listener function should have the signature:
+   * ~~~
+   * (notification: [[BreakpointHitNotify]]) => void
+   * ~~~
+   * @event
+   */
+  static EVENT_BREAKPOINT_HIT: string = 'brkpthit';
+
+  /**
+   * Emitted when the target stops running because it received a signal.
+   *
+   * Listener function should have the signature:
+   * ~~~
+   * (notification: [[SignalReceivedNotify]]) => void
+   * ~~~
+   * @event
+   */
+  static EVENT_SIGNAL_RECEIVED: string = 'signal';
+
+  /**
+   * Emitted when the target stops running due to an exception.
+   *
+   * Listener function should have the signature:
+   * ~~~
+   * (notification: [[ExceptionReceivedNotify]]) => void
+   * ~~~
+   * @event
+   */
+  static EVENT_EXCEPTION_RECEIVED: string = 'exception';
+
+
   // the stream to which debugger commands will be written
   private outStream: stream.Writable;
   // reads input from the debugger's stdout one line at a time
@@ -355,6 +460,67 @@ export class DebugSession extends events.EventEmitter {
     this.nextCmdId = 1;
     this.cmdQueue = [];
     this.cleanupWasCalled = false;
+  }
+
+  private emitExecNotification(name: string, data: any) {
+    switch (name) {
+      case 'running':
+        this.emit(DebugSession.EVENT_TARGET_RUNNING, data['thread-id']);
+        break;
+
+      case 'stopped':
+        var standardNotify: TargetStoppedNotify = {
+          reason: parseTargetStopReason(data.reason),
+          threadId: parseInt(data['thread-id'], 10),
+          stoppedThreads: parseStoppedThreadsList(data['stopped-threads']),
+          processCore: data.core
+        };
+        this.emit(DebugSession.EVENT_TARGET_STOPPED, standardNotify);
+
+        // emit a more specialized event for notifications that contain additional info
+        switch (standardNotify.reason) {
+          case TargetStopReason.BreakpointHit:
+            var breakpointNotify: BreakpointHitNotify = {
+              reason: standardNotify.reason,
+              threadId: standardNotify.threadId,
+              stoppedThreads: standardNotify.stoppedThreads,
+              processorCore: standardNotify.processorCore,
+              breakpointId: parseInt(data.bkptno, 10),
+              frame: data.frame
+            };
+            this.emit(DebugSession.EVENT_BREAKPOINT_HIT, breakpointNotify);
+            break;
+
+          case TargetStopReason.SignalReceived:
+            var signalNotify: SignalReceivedNotify = {
+              reason: standardNotify.reason,
+              threadId: standardNotify.threadId,
+              stoppedThreads: standardNotify.stoppedThreads,
+              processorCore: standardNotify.processorCore,
+              signalCode: data.signal,
+              signalName: data['signal-name'],
+              signalMeaning: data['signal-meaning']
+            };
+            this.emit(DebugSession.EVENT_SIGNAL_RECEIVED, signalNotify);
+            break;
+
+          case TargetStopReason.ExceptionReceived:
+            var exceptionNotify: ExceptionReceivedNotify = {
+              reason: standardNotify.reason,
+              threadId: standardNotify.threadId,
+              stoppedThreads: standardNotify.stoppedThreads,
+              processorCore: standardNotify.processorCore,
+              exception: data.exception
+            };
+            this.emit(DebugSession.EVENT_EXCEPTION_RECEIVED, exceptionNotify);
+            break;
+        }
+        break;
+
+      default:
+        // TODO: log and keep on going
+        break;
+    }
   }
 
   private emitAsyncNotification(name: string, data: any) {
@@ -442,6 +608,10 @@ export class DebugSession extends events.EventEmitter {
           symbolPath: shlibInfo['dsym-objpath']
         });
         break;
+
+      default:
+        // TODO: log and keep on going
+        break;
     };
   }
 
@@ -484,6 +654,10 @@ export class DebugSession extends events.EventEmitter {
             cmd.done(null, result.data);
           }
         }
+        break;
+
+      case RecordType.AsyncExec:
+        this.emitExecNotification(result.data[0], result.data[1]);
         break;
 
       case RecordType.AsyncNotify:
@@ -829,3 +1003,36 @@ export function startDebugSession(): DebugSession {
   }
   return debugSession;
 };
+
+// There are more reasons listed in the GDB/MI spec., the ones here are just the subset that's 
+// actually used by LLDB MI at this time (11-Apr-2015).
+var targetStopReasonMap = {
+  'breakpoint-hit': TargetStopReason.BreakpointHit,
+  'end-stepping-range': TargetStopReason.EndSteppingRange,
+  'exited-normally': TargetStopReason.ExitedNormally,
+  'signal-received': TargetStopReason.SignalReceived,
+  'exception-received': TargetStopReason.ExceptionReceived
+};
+
+function parseTargetStopReason(reason: string): TargetStopReason {
+  if (reason in targetStopReasonMap) {
+    return targetStopReasonMap[reason];
+  }
+  // TODO: log and keep on running
+  return TargetStopReason.Unrecognized;
+}
+
+/** 
+ * Parses a list of stopped threads from a GDB/MI 'stopped' async notification.
+ * @return An array of thread identifiers, an empty array is used to indicate that all threads
+ *         were stopped.
+ */
+function parseStoppedThreadsList(stoppedThreads: string): number[] {
+  if (stoppedThreads === 'all') {
+    return [];
+  } else {
+    // FIXME: GDB/MI spec. fails to specify what the format of the list is, need to experiment
+    //        to figure out what is actually produced by the debugger.
+    return [parseInt(stoppedThreads, 10)];
+  }
+}

@@ -269,6 +269,79 @@ describe("Debug Session", () => {
         }
       );
     });
+
+    it("emits EVENT_TARGET_RUNNING", (done: MochaDone) => {
+      var threadId: string = 'all';
+      emitEventForDebuggerOutput(
+        '*running,thread-id="${threadId}"', DebugSession.EVENT_TARGET_RUNNING,
+        (threadId: string) => {
+          expect(threadId).to.equal(threadId);
+          done();
+        }
+      );
+    });
+
+    it("emits EVENT_TARGET_STOPPED", (done: MochaDone) => {
+      emitEventForDebuggerOutput(
+        '*stopped,reason="exited-normally"\n', DebugSession.EVENT_TARGET_STOPPED,
+        (notification: dbgmits.TargetStoppedNotify) => {
+          expect(notification.reason).to.equal(dbgmits.TargetStopReason.ExitedNormally);
+          done();
+        }
+      );
+    });
+
+    it("emits EVENT_BREAKPOINT_HIT", (done: MochaDone) => {
+      var bkptId: number = 15;
+      var threadId: number = 1;
+      emitEventForDebuggerOutput(
+        `*stopped,reason="breakpoint-hit",bkptno="${bkptId}",frame={},thread-id="${threadId}",` +
+        `stopped-threads="all"\n`,
+        DebugSession.EVENT_BREAKPOINT_HIT,
+        (notification: dbgmits.BreakpointHitNotify) => {
+          expect(notification.reason).to.equal(dbgmits.TargetStopReason.BreakpointHit);
+          expect(notification.threadId).to.equal(threadId);
+          expect(notification.stoppedThreads.length).to.equal(0);
+          expect(notification.breakpointId).to.equal(bkptId);
+          done();
+        }
+      );
+    });
+
+    it("emits EVENT_SIGNAL_RECEIVED", (done: MochaDone) => {
+      var signalName: string = 'SIGSEGV';
+      var signalMeaning: string = 'Segmentation Fault';
+      var threadId: number = 1;
+      emitEventForDebuggerOutput(
+        `*stopped,reason="signal-received",signal-name="${signalName}",` +
+        `signal-meaning="${signalMeaning}",thread-id="${threadId}",frame={}\n`,
+        DebugSession.EVENT_SIGNAL_RECEIVED,
+        (notification: dbgmits.SignalReceivedNotify) => {
+          expect(notification.reason).to.equal(dbgmits.TargetStopReason.SignalReceived);
+          expect(notification.threadId).to.equal(threadId);
+          expect(notification.signalName).to.equal(signalName);
+          expect(notification.signalMeaning).to.equal(signalMeaning);
+          done();
+        }
+      );
+    });
+
+    it("emits EVENT_EXCEPTION_RECEIVED", (done: MochaDone) => {
+      var msg: string = 'This is an exception description.';
+      var threadId: number = 1;
+      emitEventForDebuggerOutput(
+        `*stopped,reason="exception-received",exception="${msg}",thread-id="${threadId}",` +
+        `stopped-threads="all"\n`,
+        DebugSession.EVENT_EXCEPTION_RECEIVED,
+        (notification: dbgmits.ExceptionReceivedNotify) => {
+          expect(notification.reason).to.equal(dbgmits.TargetStopReason.ExceptionReceived);
+          expect(notification.threadId).to.equal(threadId);
+          expect(notification.stoppedThreads.length).to.equal(0);
+          expect(notification.exception).to.equal(msg);
+          done();
+        }
+      );
+    });
   });
 /*
   describe("Remote Debugging Setup", () => {
