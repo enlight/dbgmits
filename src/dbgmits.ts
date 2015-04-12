@@ -462,6 +462,29 @@ export class DebugSession extends events.EventEmitter {
     this.cleanupWasCalled = false;
   }
 
+  /**
+ * Ends the debugging session.
+ *
+ * @param notifyDebugger If **false** the session is cleaned up immediately without waiting for 
+ *                       the debugger to respond (useful in cases where the debugger terminates
+ *                       unexpectedly). If **true** the debugger is asked to exit, and once the
+ *                       request is acknowldeged the session is cleaned up.
+ */
+  end(notifyDebugger: boolean = true): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      var cleanup = (err: Error, data: any) => {
+        this.cleanupWasCalled = true;
+        this.lineReader.close();
+        err ? reject(err) : resolve();
+      };
+
+      if (!this.cleanupWasCalled) {
+        notifyDebugger ? this.enqueueCommand(new DebugCommand('gdb-exit', null, cleanup))
+          : cleanup(null, null);
+      };
+    });
+  }
+
   private emitExecNotification(name: string, data: any) {
     switch (name) {
       case 'running':
@@ -750,29 +773,6 @@ export class DebugSession extends events.EventEmitter {
           (err, data) => { err ? reject(err) : resolve(); }
         )
       );
-    });
-  }
-
-  /**
-   * Ends the debugging session.
-   *
-   * @param notifyDebugger If **false** the session is cleaned up immediately without waiting for 
-   *                       the debugger to respond (useful in cases where the debugger terminates
-   *                       unexpectedly). If **true** the debugger is asked to exit, and once the
-   *                       request is acknowldeged the session is cleaned up.
-   */
-  end(notifyDebugger: boolean = true): Promise<void> {
-    return new Promise<void>((resolve, reject) => {
-      var cleanup = (err: Error, data: any) => {
-        this.cleanupWasCalled = true;
-        this.lineReader.close();
-        err ? reject(err) : resolve();
-      };
-
-      if (!this.cleanupWasCalled) {
-        notifyDebugger ? this.enqueueCommand(new DebugCommand('gdb-exit', null, cleanup))
-          : cleanup(null, null);
-      };
     });
   }
 
