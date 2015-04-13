@@ -949,6 +949,191 @@ export class DebugSession extends events.EventEmitter {
       );
     });
   }
+
+  //
+  // Program Execution Commands
+  //
+
+  /**
+   * Sets the commandline arguments to be passed to the target process next time it is started
+   * using [[startTarget]].
+   */
+  setTargetArguments(args: string, token?: string): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      this.enqueueCommand(
+        new DebugCommand('exec-arguments ' + args, token, 
+          (err, data) => { err ? reject(err) : resolve(); }
+        )
+      );
+    });
+  }
+
+  /**
+   * Executes the target from the beginning until it exits, execution may stop prematurely due
+   * to a number of reasons, for example a breakpoint being hit.
+   * [[EVENT_TARGET_STOPPED]] will be emitted when execution stops.
+   *
+   * @param options.threadGroup *(GDB specific)* If **"all"** then all inferiors will be started. 
+   *                            Otherwise it should be the identifier of the thread group to start.
+   * @param options.stopAtStart *(GDB specific)* If **true** then execution will stop at the start 
+   *                            of the main function.
+   */
+  startTarget(
+    options?: { threadGroup?: string; stopAtStart?: boolean}, token?: string): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      var fullCmd: string = 'exec-run';
+      if (options) {
+        if (options.threadGroup) {
+          fullCmd = fullCmd + ' --thread-group ' + options.threadGroup;
+        } 
+        if (options.stopAtStart) {
+          fullCmd = fullCmd + ' --start';
+        }
+      }
+      this.enqueueCommand(
+        new DebugCommand(fullCmd, token, (err, data) => { err ? reject(err) : resolve(); })
+      );
+    });
+  }
+
+  /**
+   * Kills the target process.
+   */
+  abortTarget(token?: string): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      this.enqueueCommand(
+        new DebugCommand('exec-abort', token, (err, data) => { err ? reject(err) : resolve(); })
+      );
+    });
+  }
+
+  /**
+   * Executes the target from the beginning until it exits, execution may stop at any time due
+   * to a number of reasons, for example a breakpoint being hit.
+   * [[EVENT_TARGET_STOPPED]] will be emitted when execution stops.
+   *
+   * @param options.threadGroup *(GDB specific)* If **"all"** then all inferiors will be resumed. 
+   *                            Otherwise it should be the identifier of the thread group to resume.
+   * @param options.reverse *(GDB specific)* If **true** the target is executed in reverse.
+   */
+  resumeTarget(
+    options?: { threadGroup: string; reverse: boolean }, token?: string): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      var fullCmd: string = 'exec-continue';
+      if (options) {
+        if (options.threadGroup) {
+          fullCmd = fullCmd + ' --thread-group ' + options.threadGroup;
+        }
+        if (options.reverse) {
+          fullCmd = fullCmd + ' --reverse';
+        }
+      }
+      this.enqueueCommand(
+        new DebugCommand(fullCmd, token, (err, data) => { err ? reject(err) : resolve(); })
+      );
+    });
+  }
+
+  /**
+   * Pauses execution of the target.
+   * [[EVENT_TARGET_STOPPED]] will be emitted when execution stops.
+   *
+   * @param threadGroup *(GDB specific)* If **"all"** then all inferiors will be paused. 
+   *                    Otherwise it should be the identifier of the thread group to pause.
+   */
+  pauseTarget(threadGroup?: string, token?: string): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      var fullCmd: string = 'exec-interrupt';
+      if (threadGroup) {
+        fullCmd = fullCmd + ' --thread-group ' + threadGroup;
+      }
+      this.enqueueCommand(
+        new DebugCommand(fullCmd, token, (err, data) => { err ? reject(err) : resolve(); })
+      );
+    });
+  }
+
+  /**
+   * Resumes execution of the target until the beginning of the next source line is reached.
+   * If a function is called while the target is running then execution stops on the first 
+   * source line of the called function. 
+   * [[EVENT_TARGET_STOPPED]] will be emitted when execution stops.
+   *
+   * @param options.threadId *(LLDB specific)* Identifier of the thread to execute the command on. 
+   * @param options.reverse *(GDB specific)* If **true** the target is executed in reverse.
+   */
+  stepIntoLine(options?: { threadId?: number; reverse?: boolean }, token?: string): Promise<void> {
+    return this.enqueueExecCommand('exec-step', options, token);
+  }
+
+  /**
+   * Resumes execution of the target until the beginning of the next source line is reached.
+   * [[EVENT_TARGET_STOPPED]] will be emitted when execution stops.
+   *
+   * @param options.threadId *(LLDB specific)* Identifier of the thread to execute the command on. 
+   * @param options.reverse *(GDB specific)* If **true** the target is executed in reverse until 
+   *                        the beginning of the previous source line is reached.
+   */
+  stepOverLine(options?: { threadId?: number; reverse?: boolean }, token?: string): Promise<void> {
+    return this.enqueueExecCommand('exec-next', options, token);
+  }
+
+  /**
+   * Executes one instruction, if the instruction is a function call then execution stops at the
+   * beginning of the function.
+   * [[EVENT_TARGET_STOPPED]] will be emitted when execution stops.
+   *
+   * @param options.threadId *(LLDB specific)* Identifier of the thread to execute the command on.
+   * @param options.reverse *(GDB specific)* If **true** the target is executed in reverse until 
+   *                        the previous instruction is reached.
+   */
+  stepIntoInstruction(
+    options?: { threadId?: number; reverse?: boolean }, token?: string): Promise<void> {
+    return this.enqueueExecCommand('exec-step-instruction', options, token);
+  }
+
+  /**
+   * Executes one instruction, if the instruction is a function call then execution continues 
+   * until the function returns.
+   * [[EVENT_TARGET_STOPPED]] will be emitted when execution stops.
+   *
+   * @param options.threadId *(LLDB specific)* Identifier of the thread to execute the command on. 
+   * @param options.reverse *(GDB specific)* If **true** the target is executed in reverse until 
+   *                        the previous instruction is reached.
+   */
+  stepOverInstruction(
+    options?: { threadId?: number; reverse?: boolean }, token?: string): Promise<void> {
+    return this.enqueueExecCommand('exec-next-instruction', options, token);
+  }
+
+  /**
+   * Resumes execution of the target until the current function returns.
+   * [[EVENT_TARGET_STOPPED]] will be emitted when execution stops.
+   *
+   * @param options.threadId *(LLDB specific)* Identifier of the thread to execute the command on.
+   * @param options.reverse *(GDB specific)* If **true** the target is executed in reverse.
+   */
+  stepOut(options?: { threadId?: number; reverse?: boolean }, token?: string): Promise<void> {
+    return this.enqueueExecCommand('exec-finish', options, token);
+  }
+
+  private enqueueExecCommand(
+    cmd: string, options: { threadId?: number; reverse?: boolean }, token?: string): Promise<void> {
+    var fullCmd: string = cmd;
+    if (options) {
+      if (options.threadId) {
+        fullCmd = fullCmd + ' --thread' + options.threadId;
+      }
+      if (options.reverse) {
+        fullCmd = fullCmd + ' --reverse';
+      }
+    }
+    return new Promise<void>((resolve, reject) => {
+      this.enqueueCommand(
+        new DebugCommand(fullCmd, token, (err, data) => { err ? reject(err) : resolve(); })
+      );
+    });
+  }
 }
 
 function setProcessEnvironment(): void {
