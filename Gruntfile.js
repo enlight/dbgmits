@@ -105,6 +105,20 @@ module.exports = function(grunt) {
         src: "src/mi_output_grammar.pegjs",
         dest: "src/mi_output_parser.js"
       }
+    },
+    'gyp': {
+      rebuild: {
+        command: 'rebuild', // clean, configure, build
+        options: {
+          debug: true
+        }
+      },
+      build: {
+        command: 'build',
+        options: {
+          debug: true
+        }
+      }
     }
   });
 
@@ -116,12 +130,15 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-typedoc');
   grunt.loadNpmTasks('grunt-typescript');
   grunt.loadNpmTasks('grunt-peg');
+  grunt.loadNpmTasks('grunt-node-gyp');
 
   grunt.registerTask('docs', ['typedoc']);
 
   grunt.registerTask('lint', ['jshint', 'tslint']);
-
+  
   grunt.registerTask('build', ['peg', 'typescript']);
+  
+  grunt.registerTask('configure-tests', ['gyp:rebuild']);
 
   grunt.registerTask('run-tests', ['mochaTest']);
 
