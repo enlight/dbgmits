@@ -645,7 +645,7 @@ export class DebugSession extends events.EventEmitter {
     // '(gdb)' is used to indicate the end of a set of output lines from the debugger,
     // but since we process each line individually as it comes in this particular marker
     // is of no use
-    if (line === '(gdb)') {
+    if ((line === '(gdb)') || (line === '')) {
       return;
     }
     // todo: call relevant callbacks for asynchronous notifications
@@ -653,7 +653,7 @@ export class DebugSession extends events.EventEmitter {
     try {
       var result = parser.parse(line);
     } catch (err) {
-      console.log('Attempted to parse: ' + line);
+      console.log('Attempted to parse: ->' + line + '<-');
       throw err;
     }
 
