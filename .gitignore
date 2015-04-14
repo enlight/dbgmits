@@ -9,3 +9,4 @@ obj/
 src/*.js
 lib/**
 build/**
+lldb-mi-log.txt

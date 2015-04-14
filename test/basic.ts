@@ -14,6 +14,9 @@ chai.use(chaiAsPromised);
 import expect = chai.expect;
 import DebugSession = dbgmits.DebugSession;
 
+// the directory in which Gruntfile.js resides is also Mocha's working directory,
+// so any relative paths will be relative to that directory
+var localTargetExe: string = './build/Debug/test_target';
 var hostExecutable: string = 'C:/Projects/hello-world/hello-world';
 var remoteHost: string = '192.168.56.101';
 var remotePort: number = 8099;
@@ -38,8 +41,7 @@ function createTextStream(text: string): stream.Readable {
  * @param callback Callback to invoke if the expected event was emitted.
  */
 function emitEventForDebuggerOutput(text: string, event: string, callback: (data: any) => void): void {
-  var inStream = createTextStream(text);
-  var debugSession = new DebugSession(inStream, null);
+  var debugSession = new DebugSession(createTextStream(text), null);
   debugSession.once(event, (data: any) => {
     debugSession.end(false);
     callback(data);
@@ -59,7 +61,7 @@ describe("Debug Session", () => {
     });
 
     it("should set executable to debug", () => {
-      return debugSession.setExecutableFile(hostExecutable);
+      return debugSession.setExecutableFile(localTargetExe);
     });
 
     after(() => {
@@ -365,42 +367,42 @@ describe("Debug Session", () => {
   describe("Breakpoints", () => {
     var debugSession: DebugSession;
 
-    before(() => {
+    beforeEach(() => {
       debugSession = dbgmits.startDebugSession();
-      return debugSession.setExecutableFile(hostExecutable)
-      .then(() => { debugSession.connectToRemoteTarget(remoteHost, remotePort); });
+      return debugSession.setExecutableFile(localTargetExe);
     });
 
-    it("should add and remove a breakpoint", () => {
-      var id: string;
+    afterEach(() => {
+      return debugSession.end();
+    });
+
+    it("adds a breakpoint by function name", () => {
       var funcName: string = 'main';
       return debugSession.addBreakpoint(funcName)
-      .then((data: dbgmits.BreakpointInfo) => {
-        expect(data).to.have.property('id');
-        expect(data).to.have.property('breakpointType', 'breakpoint');
-        expect(data).to.have.property('isEnabled', true);
-        expect(data).to.have.property('func', funcName);
-
-        return parseInt(data.id, 10);
-      })
-      .then((breakpointId: number) => {
-        return debugSession.removeBreakpoint(breakpointId);
+      .then((info: dbgmits.BreakpointInfo) => {
+        expect(info).to.have.property('id');
+        expect(info).to.have.property('breakpointType', 'breakpoint');
+        expect(info).to.have.property('isEnabled', true);
+        expect(info).to.have.property('func', funcName);
       });
     });
 
-    it("should enable and disable a breakpoint", () => {
-      var funcName: string = 'main';
-      return debugSession.addBreakpoint(funcName, { isDisabled: true })
+    it("removes a breakpoint", () => {
+      return debugSession.addBreakpoint('main')
+      .then((info: dbgmits.BreakpointInfo) => { return parseInt(info.id, 10); })
+      .then((breakpointId: number) => { return debugSession.removeBreakpoint(breakpointId); });
+    });
+
+    it("enables a breakpoint", () => {
+      return debugSession.addBreakpoint('main', { isDisabled: true })
+      .then((info: dbgmits.BreakpointInfo) => { return parseInt(info.id, 10); })
+      .then((breakpointId: number) => { return debugSession.enableBreakpoint(breakpointId); });
+    });
+
+    it("disables a breakpoint", () => {
+      return debugSession.addBreakpoint('main', { isDisabled: false })
       .then((data: dbgmits.BreakpointInfo) => { return parseInt(data.id, 10); })
-      .then((breakpointId: number) => {
-        return debugSession.enableBreakpoint(breakpointId)
-        .then(() => { debugSession.disableBreakpoint(breakpointId); })
-        .then(() => { debugSession.removeBreakpoint(breakpointId); });
-      });
-    });
-
-    after(() => {
-      return debugSession.end();
+      .then((breakpointId: number) => { debugSession.disableBreakpoint(breakpointId); });
     });
   });
 });
