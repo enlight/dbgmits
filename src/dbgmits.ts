@@ -42,6 +42,25 @@ class DebugCommand {
   }
 }
 
+/** Frame-specific information returned by stack related MI commands. */
+export interface StackFrameInfo {
+  /** Level of the stack frame, zero for the innermost frame. */
+  level: number;
+  /** Name of the function corresponding to the frame. */
+  func?: string;
+  /** Code address of the frame. */
+  address: string;
+  /** Name of the source file corresponding to the frame's code address. */
+  filename?: string;
+  /** Full path of the source file corresponding to the frame's code address. */
+  fullname?: string;
+  /** Source line corresponding to the frame's code address. */
+  line?: number;
+  /** Name of the binary file that corresponds to the frame's code address. */
+  from?: string;
+}
+
+/** Breakpoint-specific information returned by various MI commands. */
 export interface BreakpointInfo {
   id: string;
   breakpointType: string;
@@ -1134,6 +1153,36 @@ export class DebugSession extends events.EventEmitter {
       );
     });
   }
+
+  //
+  // Stack Inspection Commands
+  //
+
+  /**
+   * Retrieves information about the currently selected stack frame.
+   */
+  getCurrentFrameInfo(token?: string): Promise<StackFrameInfo> {
+    return new Promise<StackFrameInfo>((resolve, reject) => {
+      this.enqueueCommand(
+        new DebugCommand('stack-info-frame', token,
+          (err, data) => { err ? reject(err) : resolve(extractStackFrameInfo(data)); }
+        )
+      );
+    });
+  }
+}
+
+/** Creates a StackFrameInfo object from the output of the MI Output parser. */
+function extractStackFrameInfo(data: any): StackFrameInfo {
+  return {
+    level: parseInt(data.level),
+    func: data.func,
+    address: data.addr,
+    filename: data.file,
+    fullname: data.fullname,
+    line: data.line ? parseInt(data.line, 10) : undefined,
+    from: data.from
+  };
 }
 
 function setProcessEnvironment(): void {
