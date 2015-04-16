@@ -42,6 +42,22 @@ class DebugCommand {
   }
 }
 
+/** Frame-specific information returned by breakpoint and stepping MI commands. */
+export interface FrameInfo {
+  /** Name of the function corresponding to the frame. */
+  func?: string;
+  /** Arguments of the function corresponding to the frame. */
+  args?: any;
+  /** Code address of the frame. */
+  address: string;
+  /** Name of the source file corresponding to the frame's code address. */
+  filename?: string;
+  /** Full path of the source file corresponding to the frame's code address. */
+  fullname?: string;
+  /** Source line corresponding to the frame's code address. */
+  line?: number;
+}
+
 /** Frame-specific information returned by stack related MI commands. */
 export interface StackFrameInfo {
   /** Level of the stack frame, zero for the innermost frame. */
@@ -89,6 +105,9 @@ export interface BreakpointInfo {
 
 export type BreakpointCallback = (err: Error, data: BreakpointInfo, token?: string) => void;
 
+/**
+ * Transforms the response into an object that implements the [[BreakpointInfo]] interface.
+ */
 class BreakpointCommand extends DebugCommand {
   constructor(cmd: string, token?: string, done?: BreakpointCallback) {
     super(cmd, token);
@@ -234,8 +253,11 @@ export interface TargetStoppedNotify {
 
 export interface BreakpointHitNotify extends TargetStoppedNotify {
   breakpointId: number;
-  // FIXME: this should be a concrete class or at least an interface
-  frame: any;
+  frame: FrameInfo;
+}
+
+export interface StepFinishedNotify extends TargetStoppedNotify {
+  frame: FrameInfo;
 }
 
 export interface SignalReceivedNotify extends TargetStoppedNotify {
@@ -427,6 +449,17 @@ export class DebugSession extends events.EventEmitter {
   static EVENT_BREAKPOINT_HIT: string = 'brkpthit';
 
   /**
+   * Emitted when the target stops due to a stepping operation finishing.
+   *
+   * Listener function should have the signature:
+   * ~~~
+   * (notification: [[StepFinishedNotify]]) => void
+   * ~~~
+   * @event
+   */
+  static EVENT_STEP_FINISHED: string = 'endstep';
+
+  /**
    * Emitted when the target stops running because it received a signal.
    *
    * Listener function should have the signature:
@@ -528,9 +561,20 @@ export class DebugSession extends events.EventEmitter {
               stoppedThreads: standardNotify.stoppedThreads,
               processorCore: standardNotify.processorCore,
               breakpointId: parseInt(data.bkptno, 10),
-              frame: data.frame
+              frame: extractFrameInfo(data.frame)
             };
             this.emit(DebugSession.EVENT_BREAKPOINT_HIT, breakpointNotify);
+            break;
+
+          case TargetStopReason.EndSteppingRange:
+            var stepNotify: StepFinishedNotify = {
+              reason: standardNotify.reason,
+              threadId: standardNotify.threadId,
+              stoppedThreads: standardNotify.stoppedThreads,
+              processorCore: standardNotify.processorCore,
+              frame: extractFrameInfo(data.frame)
+            };
+            this.emit(DebugSession.EVENT_STEP_FINISHED, stepNotify);
             break;
 
           case TargetStopReason.SignalReceived:
@@ -1138,16 +1182,16 @@ export class DebugSession extends events.EventEmitter {
 
   private enqueueExecCommand(
     cmd: string, options: { threadId?: number; reverse?: boolean }, token?: string): Promise<void> {
-    var fullCmd: string = cmd;
-    if (options) {
-      if (options.threadId) {
-        fullCmd = fullCmd + ' --thread' + options.threadId;
-      }
-      if (options.reverse) {
-        fullCmd = fullCmd + ' --reverse';
-      }
-    }
     return new Promise<void>((resolve, reject) => {
+      var fullCmd: string = cmd;
+      if (options) {
+        if (options.threadId) {
+          fullCmd = fullCmd + ' --thread' + options.threadId;
+        }
+        if (options.reverse) {
+          fullCmd = fullCmd + ' --reverse';
+        }
+      }
       this.enqueueCommand(
         new DebugCommand(fullCmd, token, (err, data) => { err ? reject(err) : resolve(); })
       );
@@ -1165,11 +1209,23 @@ export class DebugSession extends events.EventEmitter {
     return new Promise<StackFrameInfo>((resolve, reject) => {
       this.enqueueCommand(
         new DebugCommand('stack-info-frame', token,
-          (err, data) => { err ? reject(err) : resolve(extractStackFrameInfo(data)); }
+          (err, data) => { err ? reject(err) : resolve(extractStackFrameInfo(data.frame)); }
         )
       );
     });
   }
+}
+
+/** Creates a FrameInfo object from the output of the MI Output parser. */
+function extractFrameInfo(data: any): FrameInfo {
+  return {
+    func: data.func,
+    args: data.args,
+    address: data.addr,
+    filename: data.file,
+    fullname: data.fullname,
+    line: data.line ? parseInt(data.line, 10) : undefined,
+  };
 }
 
 /** Creates a StackFrameInfo object from the output of the MI Output parser. */

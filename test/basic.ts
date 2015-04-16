@@ -389,6 +389,19 @@ describe("Debug Session", () => {
       });
     });
 
+    it("adds a breakpoint by filename and line number", () => {
+      var filename: string = 'test_target.cpp';
+      var line: string = '17';
+      return debugSession.addBreakpoint(`${filename}:${line}`)
+        .then((info: dbgmits.BreakpointInfo) => {
+          expect(info).to.have.property('id');
+          expect(info).to.have.property('breakpointType', 'breakpoint');
+          expect(info).to.have.property('isEnabled', true);
+          expect(info).to.have.property('filename', filename);
+          expect(info).to.have.property('line', line);
+      });
+    });
+
     it("removes a breakpoint", () => {
       return debugSession.addBreakpoint('main')
       .then((info: dbgmits.BreakpointInfo) => { return parseInt(info.id, 10); })
@@ -405,6 +418,225 @@ describe("Debug Session", () => {
       return debugSession.addBreakpoint('main', { isDisabled: false })
       .then((data: dbgmits.BreakpointInfo) => { return parseInt(data.id, 10); })
       .then((breakpointId: number) => { debugSession.disableBreakpoint(breakpointId); });
+    });
+  });
+
+  describe("Program Execution", () => {
+    var debugSession: DebugSession;
+
+    beforeEach(() => {
+      debugSession = dbgmits.startDebugSession();
+      return debugSession.setExecutableFile(localTargetExe);
+    });
+
+    afterEach(() => {
+      return debugSession.end();
+    });
+
+    it("starts the target process", () => {
+      return debugSession.startTarget();
+    });
+
+    it("steps into a source line", () => {
+      // when the step is done check we're in printNextInt()
+      var onStepFinishedCheckFrame = new Promise<void>((resolve, reject) => {
+        debugSession.once(DebugSession.EVENT_STEP_FINISHED, 
+          (notification: dbgmits.StepFinishedNotify) => {
+            debugSession.getCurrentFrameInfo()
+            .then((info: dbgmits.StackFrameInfo) => {
+              expect(info.func.indexOf('printNextInt')).to.equal(0);
+            })
+            .then(resolve, reject);
+          }
+        );
+      });
+      // a breakpoint will be set to get to the desired starting point in the target process
+      var onBreakpointStepIntoLine = new Promise<void>((resolve, reject) => {
+        debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT, 
+          (notify: dbgmits.BreakpointHitNotify) => {
+            // step into the printNextInt() call in main()
+            resolve(debugSession.stepIntoLine());
+          }
+        );
+      });
+      // break on the line in main() that calls printNextInt()
+      return debugSession.addBreakpoint('test_target.cpp:19')
+      .then(() => {
+          return Promise.all([
+            onBreakpointStepIntoLine,
+            onStepFinishedCheckFrame,
+            debugSession.startTarget()
+          ]);
+      });
+    });
+
+    it("steps into an instruction", () => {
+      // when the step is done check we're in printNextInt()
+      var onStepFinishedCheckFrame = new Promise<void>((resolve, reject) => {
+        debugSession.once(DebugSession.EVENT_STEP_FINISHED, 
+          (notification: dbgmits.StepFinishedNotify) => {
+            debugSession.getCurrentFrameInfo()
+            .then((info: dbgmits.StackFrameInfo) => {
+              expect(info.func.indexOf('printNextInt')).to.equal(0);
+            })
+            .then(resolve, reject);
+          }
+        );
+      });
+      // a breakpoint will be set to get to the desired starting point in the target process
+      var onBreakpointStepIntoInstruction = new Promise<void>((resolve, reject) => {
+        debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT, 
+          (notify: dbgmits.BreakpointHitNotify) => {
+            // step into the printNextInt() call in main()
+            resolve(debugSession.stepIntoInstruction());
+          }
+        );
+      });
+      // break on the line in main() that calls printNextInt()
+      return debugSession.addBreakpoint('test_target.cpp:19')
+      .then(() => {
+        return Promise.all([
+          onBreakpointStepIntoInstruction,
+          onStepFinishedCheckFrame,
+          debugSession.startTarget()
+        ]);
+      });
+    });
+
+    it("steps over a source line", () => {
+      // when the step is done check we're still in main() and haven't stepped into printNextInt()
+      var onStepFinishedCheckFrame = new Promise<void>((resolve, reject) => {
+        debugSession.once(DebugSession.EVENT_STEP_FINISHED, 
+          (notification: dbgmits.StepFinishedNotify) => {
+            debugSession.getCurrentFrameInfo()
+            .then((info: dbgmits.StackFrameInfo) => {
+              expect(info).to.have.property('func', 'main');
+            })
+            .then(resolve, reject);
+          }
+        );
+      });
+      // a breakpoint will be set to get to the desired starting point in the target process
+      var onBreakpointStepOverLine = new Promise<void>((resolve, reject) => {
+        debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
+          (breakNotify: dbgmits.BreakpointHitNotify) => {
+            // step over the printNextInt() call in main()
+            resolve(debugSession.stepOverLine());
+          }
+        );
+      });
+      // break on the line in main() that calls printNextInt()
+      return debugSession.addBreakpoint('test_target.cpp:19')
+      .then(() => {
+        return Promise.all([
+          onBreakpointStepOverLine,
+          onStepFinishedCheckFrame,
+          debugSession.startTarget()
+        ]);
+      });
+    });
+
+    it("steps over an instruction", () => {
+      // when the step is done check we're still in main() and haven't stepped into printNextInt()
+      var onStepFinishedCheckFrame = new Promise<void>((resolve, reject) => {
+        debugSession.once(DebugSession.EVENT_STEP_FINISHED, 
+          (notification: dbgmits.StepFinishedNotify) => {
+            debugSession.getCurrentFrameInfo()
+            .then((info: dbgmits.StackFrameInfo) => {
+              expect(info).to.have.property('func', 'main');
+            })
+            .then(resolve, reject);
+          }
+        );
+      });
+      // a breakpoint will be set to get to the desired starting point in the target process
+      var onBreakpointStepOverInstruction = new Promise<void>((resolve, reject) => {
+        debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
+          (breakNotify: dbgmits.BreakpointHitNotify) => {
+            // step over the printNextInt() call in main()
+            resolve(debugSession.stepOverInstruction());
+          }
+        );
+      });
+      // break on the line in main() that calls printNextInt()
+      return debugSession.addBreakpoint('test_target.cpp:19')
+      .then(() => {
+        return Promise.all([
+          onBreakpointStepOverInstruction,
+          onStepFinishedCheckFrame,
+          debugSession.startTarget()
+        ]);
+      });
+    });
+
+    it("steps out of a function", () => {
+      // when the step is done check we're back in main() and not still in printNextInt()
+      var onStepFinishedCheckFrame = new Promise<void>((resolve, reject) => {
+        debugSession.once(DebugSession.EVENT_STEP_FINISHED, 
+          (notification: dbgmits.StepFinishedNotify) => {
+            debugSession.getCurrentFrameInfo()
+            .then((info: dbgmits.StackFrameInfo) => {
+              expect(info).to.have.property('func', 'main');
+            })
+            .then(resolve, reject);
+          }
+        );
+      });
+      // a breakpoint will be set to get to the desired starting point in the target process
+      var onBreakpointStepOut = new Promise<void>((resolve, reject) => {
+        debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
+          (breakNotify: dbgmits.BreakpointHitNotify) => {
+            // step out of printNextInt() back into main()
+            resolve(debugSession.stepOut());
+          }
+        );
+      });
+      // break at the start of printNextInt()
+      return debugSession.addBreakpoint('printNextInt')
+      .then(() => {
+        return Promise.all([
+          onBreakpointStepOut,
+          onStepFinishedCheckFrame,
+          debugSession.startTarget()
+        ]);
+      });
+    });
+  });
+
+  describe("Stack Inspection", () => {
+    var debugSession: DebugSession;
+
+    beforeEach(() => {
+      debugSession = dbgmits.startDebugSession();
+      return debugSession.setExecutableFile(localTargetExe);
+    });
+
+    afterEach(() => {
+      return debugSession.end();
+    });
+
+    it("retrieves info for the current stack frame", () => {
+      // verify we can retrieve the frame for printNextInt()
+      var onBreakpointGetFrameInfo = new Promise<void>((resolve, reject) => {
+        debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
+          (breakNotify: dbgmits.BreakpointHitNotify) => {
+            debugSession.getCurrentFrameInfo()
+            .then((info: dbgmits.StackFrameInfo) => {
+              expect(info).to.have.property('func');
+              expect(info.func.indexOf('printNextInt')).to.equal(0);
+            })
+            .then(resolve, reject);
+          }
+        );
+      });
+      // break at start of printNextInt()
+      return debugSession.addBreakpoint('printNextInt')
+      .then(() => {
+        return Promise.all([
+          onBreakpointGetFrameInfo,
+          debugSession.startTarget()
+        ])
+      });
     });
   });
 });
