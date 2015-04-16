@@ -3,6 +3,8 @@
 
 /// <reference path="../typings/test/tsd.d.ts" />
 
+require('source-map-support').install();
+
 import chai = require('chai');
 import parser = require('../src/mi_output_parser');
 import mioutput = require('../src/mi_output');

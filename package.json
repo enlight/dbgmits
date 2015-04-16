@@ -27,6 +27,7 @@
     "grunt-typedoc": "^0.2.2",
     "grunt-typescript": "^0.6.1",
     "mocha": "^2.2.1",
+    "source-map-support": "^0.2.10",
     "tslint": "^2.1.1",
     "typedoc": "^0.3.2",
     "typescript": "^1.4.1"

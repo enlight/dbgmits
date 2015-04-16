@@ -3,6 +3,8 @@
 
 /// <reference path="../typings/test/tsd.d.ts" />
 
+require('source-map-support').install();
+
 import chai = require('chai');
 import chaiAsPromised = require('chai-as-promised');
 import stream = require('stream');
