@@ -437,6 +437,45 @@ describe("Debug Session", () => {
       return debugSession.startTarget();
     });
 
+    it("aborts the target process", () => {
+      var verifyTargetExited = () => {
+        return new Promise<void>((resolve, reject) => {
+          debugSession.once(DebugSession.EVENT_TARGET_STOPPED,
+            (stopNotify: dbgmits.TargetStoppedNotify) => {
+              // This event listener function gets invoked outside of the promise, 
+              // which means the promise doesn't trap any exception thrown here, 
+              // so we have to trap any exceptions manually and then hand them over 
+              // to the promise (if we don't an exception here will kill the test runner
+              // instead of just failing this test).
+              try {
+                expect(stopNotify.reason).to.equal(dbgmits.TargetStopReason.ExitedNormally);
+                resolve();
+              } catch (err) {
+                reject(err);
+              }
+            }
+          );
+        });
+      };
+      // a breakpoint will be set to get to the desired starting point in the target process
+      var onBreakpointAbortTarget = new Promise<void>((resolve, reject) => {
+        debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
+          (breakNotify: dbgmits.BreakpointHitNotify) => {
+            Promise.all([verifyTargetExited(), debugSession.abortTarget()])
+            .then(() => { resolve() }, reject);
+          }
+        );
+      });
+      // break at the start of main()
+      return debugSession.addBreakpoint('main')
+      .then(() => {
+        return Promise.all([
+          onBreakpointAbortTarget,
+          debugSession.startTarget()
+        ]);
+      });
+    });
+
     it("steps into a source line", () => {
       // when the step is done check we're in printNextInt()
       var onStepFinishedCheckFrame = new Promise<void>((resolve, reject) => {
