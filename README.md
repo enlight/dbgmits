@@ -47,9 +47,6 @@ Now you're ready to build the target executable, to do so run:
 grunt configure-tests
 ```
 
-Note that for the above command to work successfully your system must have Python 2.7 and a C/C++ 
-compiler tool-chain as detailed in the [node-gyp README](https://github.com/TooTallNate/node-gyp#installation).
-
 Finally, to run the tests:
 ```
 grunt run-tests
