@@ -439,6 +439,8 @@ describe("Debug Session", () => {
 
     it("aborts the target process", () => {
       var verifyTargetExited = () => {
+        // Promises get executed when they're created, wrapping the promise creation in
+        // a function makes it possible to delay execution u
         return new Promise<void>((resolve, reject) => {
           debugSession.once(DebugSession.EVENT_TARGET_STOPPED,
             (stopNotify: dbgmits.TargetStoppedNotify) => {
@@ -673,6 +675,31 @@ describe("Debug Session", () => {
       .then(() => {
         return Promise.all([
           onBreakpointGetFrameInfo,
+          debugSession.startTarget()
+        ])
+      });
+    });
+
+    it("retrieves the current stack depth", () => {
+      var onBreakpointCheckStackDepth = new Promise<void>((resolve, reject) => {
+        debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
+          (breakNotify: dbgmits.BreakpointHitNotify) => {
+            // the stack should be 3 levels deep: main()->printNextInt()->getNextInt()
+            // FIXME: Well, it is when using GDB, but it's actually 5 on LLDB due to it counting
+            // libc frames... so need to revise this test.
+            debugSession.getStackDepth()
+            .then((stackDepth: number) => {
+              expect(stackDepth).to.equal(3);
+            })
+            .then(resolve, reject);
+          }
+        );
+      });
+      // break at start of getNextInt()
+      return debugSession.addBreakpoint('getNextInt')
+        .then(() => {
+        return Promise.all([
+          onBreakpointCheckStackDepth,
           debugSession.startTarget()
         ])
       });

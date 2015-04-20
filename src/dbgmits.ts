@@ -711,7 +711,7 @@ export class DebugSession extends events.EventEmitter {
     if ((line === '(gdb)') || (line === '')) {
       return;
     }
-    // todo: call relevant callbacks for asynchronous notifications
+    
     var cmdQueuePopped: boolean = false;
     try {
       var result = parser.parse(line);
@@ -1214,6 +1214,33 @@ export class DebugSession extends events.EventEmitter {
       );
     });
   }
+
+  /**
+   * Retrieves the current depth of the stack.
+   * @param options.threadId *(LLDB specific)* The thread for which the stack depth should be 
+   *                         retrieved, defaults to the currently selected thread if not specified.
+   * @param options.maxDepth *(GDB specific)* If specified the returned stack depth will not exceed 
+   *                         this number.
+   */
+  getStackDepth(
+    options?: { threadId?: number; maxDepth?: number }, token?: string): Promise<number> {
+    return new Promise<number>((resolve, reject) => {
+      var fullCmd: string = 'stack-info-depth';
+      if (options) {
+        if (options.threadId) {
+          fullCmd = fullCmd + ' --thread' + options.threadId;
+        }
+        if (options.maxDepth) {
+          fullCmd = fullCmd + options.maxDepth;
+        }
+      }
+      this.enqueueCommand(
+        new DebugCommand(fullCmd, token,
+          (err, data) => { err ? reject(err) : resolve(parseInt(data.depth)); }
+        )
+      );
+    });
+  } 
 }
 
 /** Creates a FrameInfo object from the output of the MI Output parser. */
