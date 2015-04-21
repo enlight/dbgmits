@@ -681,23 +681,38 @@ describe("Debug Session", () => {
     });
 
     it("retrieves the current stack depth", () => {
+      var initialStackDepth = -1;
+      // GDB and LLDB report stack depth a bit differently, LLDB adds a couple of frames from 
+      // libc to the count, but GDB does not. So instead of checking the absolute stack depth
+      // we check the relative stack depth (starting from main()).
       var onBreakpointCheckStackDepth = new Promise<void>((resolve, reject) => {
-        debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
+        debugSession.on(DebugSession.EVENT_BREAKPOINT_HIT,
           (breakNotify: dbgmits.BreakpointHitNotify) => {
-            // the stack should be 3 levels deep: main()->printNextInt()->getNextInt()
-            // FIXME: Well, it is when using GDB, but it's actually 5 on LLDB due to it counting
-            // libc frames... so need to revise this test.
-            debugSession.getStackDepth()
-            .then((stackDepth: number) => {
-              expect(stackDepth).to.equal(3);
-            })
-            .then(resolve, reject);
+            switch (breakNotify.breakpointId) {
+              case 1: // breakpoint in main()
+                debugSession.getStackDepth()
+                .then((stackDepth: number) => { initialStackDepth = stackDepth; })
+                .then(() => { return debugSession.addBreakpoint('getNextInt'); })
+                .then(() => { return debugSession.resumeTarget(); })
+                .catch(reject);
+                break;
+
+              case 2: // breakpoint in getNextInt()
+                debugSession.getStackDepth()
+                .then((stackDepth: number) => {
+                  // the stack should be 2 levels deep counting from main(): 
+                  // printNextInt()->getNextInt()
+                  expect(stackDepth - initialStackDepth).to.equal(2);
+                })
+                .then(resolve)
+                .catch(reject);
+                break;
+            }
           }
         );
       });
-      // break at start of getNextInt()
-      return debugSession.addBreakpoint('getNextInt')
-        .then(() => {
+      return debugSession.addBreakpoint('main')
+      .then(() => {
         return Promise.all([
           onBreakpointCheckStackDepth,
           debugSession.startTarget()
