@@ -719,5 +719,90 @@ describe("Debug Session", () => {
         ])
       });
     });
+
+    it("retrieves a list of stack frames", () => {
+      var expectedStackDepth = -1;
+      var onBreakpointGetFrameList = new Promise<void>((resolve, reject) => {
+        debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
+          (breakNotify: dbgmits.BreakpointHitNotify) => {
+            debugSession.getStackDepth()
+            .then((stackDepth: number) => { expectedStackDepth = stackDepth; })
+            .then(() => { return debugSession.getStackFrames(); })
+            .then((frames: dbgmits.StackFrameInfo[]) => {
+              expect(frames.length).to.equal(expectedStackDepth);
+              for (var i = 0; i < frames.length; ++i) {
+                expect(frames[i].level).to.equal(i);
+              }
+              expect(frames[0].func.indexOf('getNextInt')).to.equal(0);
+              expect(frames[1].func.indexOf('printNextInt')).to.equal(0);
+              expect(frames[2].func.indexOf('main')).to.equal(0);
+            })
+            .then(resolve)
+            .catch(reject);
+          }
+        );
+      });
+      // break at the start of getNextInt()
+      return debugSession.addBreakpoint('getNextInt')
+      .then(() => {
+        return Promise.all([
+          onBreakpointGetFrameList,
+          debugSession.startTarget()
+        ])
+      });
+    });
+
+    it("retrieves a list of stack frames between levels 0-1", () => {
+      var onBreakpointGetFrameList = new Promise<void>((resolve, reject) => {
+        debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
+          (breakNotify: dbgmits.BreakpointHitNotify) => {
+            return debugSession.getStackFrames({ lowFrame: 0, highFrame: 1 })
+            .then((frames: dbgmits.StackFrameInfo[]) => {
+              expect(frames.length).to.equal(2);
+              for (var i = 0; i < frames.length; ++i) {
+                expect(frames[i].level).to.equal(i);
+              }
+              expect(frames[0].func.indexOf('getNextInt')).to.equal(0);
+              expect(frames[1].func.indexOf('printNextInt')).to.equal(0);
+            })
+            .then(resolve)
+            .catch(reject);
+          }
+        );
+      });
+      // break at the start of getNextInt()
+      return debugSession.addBreakpoint('getNextInt')
+      .then(() => {
+        return Promise.all([
+          onBreakpointGetFrameList,
+          debugSession.startTarget()
+        ])
+      });
+    });
+
+    it("retrieves a stack frame at level 1", () => {
+      var onBreakpointGetFrameList = new Promise<void>((resolve, reject) => {
+        debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
+          (breakNotify: dbgmits.BreakpointHitNotify) => {
+            return debugSession.getStackFrames({ highFrame: 1 })
+              .then((frames: dbgmits.StackFrameInfo[]) => {
+              expect(frames.length).to.equal(1);
+              expect(frames[0].level).to.equal(1);
+              expect(frames[0].func.indexOf('printNextInt')).to.equal(0);
+            })
+            .then(resolve)
+            .catch(reject);
+          }
+          );
+      });
+      // break at the start of getNextInt()
+      return debugSession.addBreakpoint('getNextInt')
+        .then(() => {
+        return Promise.all([
+          onBreakpointGetFrameList,
+          debugSession.startTarget()
+        ])
+      });
+    });
   });
 });

@@ -16,6 +16,27 @@ function getAsyncRecordType(char) {
     // todo: throw an error if no match found!
   }
 }
+
+// converts an array of key-value objects into a single object where each key is a property,
+// if a key appears in the input array multiple times the corresponding property in the
+// returned object will be an array of values
+function createObjFromResultList(resultList) {
+  var dict = {};
+  if (resultList) {
+    resultList.forEach(function(result) {
+      var prevValue = dict[result.name];
+      if (prevValue === undefined) {
+        dict[result.name] = result.value;
+      } else if (Array.isArray(prevValue)) {
+        dict[result.name].push(result.value);
+      } else {
+	    // a property with this name already exists, so convert it to an array
+        dict[result.name] = [prevValue, result.value];
+      }
+	});
+  }
+  return dict;
+}
   
 } // End of code that is injected into the generated PEG parser.
 
@@ -28,7 +49,7 @@ result_record
     return {
       token: t,
       recordType: resultType,
-      data: results
+      data: createObjFromResultList(results)
     }
   }
 
@@ -41,7 +62,7 @@ async_record
     return {
       token: t,
       recordType: getAsyncRecordType(at),
-      data: [ac, results]
+      data: [ac, createObjFromResultList(results)]
     }
   }
 
@@ -56,17 +77,21 @@ async_class
   = variable
 
 comma_delimited_results
-  = results:(',' r:result { return r; })+ {
-    var dict = {};
-    for (var i = 0; i < results.length; i++) {
-      dict[results[i][0]] = results[i][1];
+  = (',' r:result { return r; })+
+
+result_list
+  = first:result rest:comma_delimited_results? {
+    var results = [first];
+    if (rest) {
+	  // append the contents of rest to results
+      Array.prototype.push.apply(results, rest);
     }
-    return dict;
+    return createObjFromResultList(results);
   }
 
 result
   = n:variable '=' v:value {
-    return [n, v];
+    return { name: n, value: v };
   }
 
 // todo: this needs some refinement
@@ -89,17 +114,15 @@ value
 
 tuple
   = '{}' { return {}; }
-  / '{' first:result rest:comma_delimited_results? '}' {
-    rest[first[0]] = first[1];
-    return rest;
+  / '{' results:result_list '}' {
+    return results;
   }
 
 list
   = '[]' { return {}; }
   / '[' value (',' value)* ']'
-  / '[' first:result rest:comma_delimited_results? ']' {
-    rest[first[0]] = first[1];
-    return rest;
+  / '[' results:result_list ']' {
+    return results;
   }
 
 stream_record

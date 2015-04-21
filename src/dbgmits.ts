@@ -1231,7 +1231,7 @@ export class DebugSession extends events.EventEmitter {
           fullCmd = fullCmd + ' --thread' + options.threadId;
         }
         if (options.maxDepth) {
-          fullCmd = fullCmd + options.maxDepth;
+          fullCmd = fullCmd + ' ' + options.maxDepth;
         }
       }
       this.enqueueCommand(
@@ -1240,7 +1240,47 @@ export class DebugSession extends events.EventEmitter {
         )
       );
     });
-  } 
+  }
+
+  /**
+   * Retrieves the frames currently on the stack.
+   * The `lowFrame` and `highFrame` options can be used to limit the number of frames retrieved,
+   * if both are supplied only the frame with levels in that range (inclusive) are retrieved.
+   * If either `lowFrame` or `highFrame` option is omitted (but not both) then only a single
+   * frame corresponding to that level is retrieved.
+   * @param options.threadId *(LLDB specific)* The thread for which the stack frames should be 
+   *                         retrieved, defaults to the currently selected thread if not specified.
+   * @param options.noFrameFilters *(GDB specific)* If `true` the Python frame filters will not be 
+   *                               executed.
+   * @param options.lowFrame Must not be larger than the actual number of frames on the stack.
+   * @param options.highFrame May be larger than the actual number of frames on the stack, in which
+   *                          case only the existing frames will be retrieved.
+   */
+  getStackFrames(
+    options?: { threadId?: number; lowFrame?: number; highFrame?: number; noFrameFilters?: boolean }, 
+    token?: string) : Promise<StackFrameInfo[]> {
+    var fullCmd: string = 'stack-list-frames';
+    if (options) {
+      if (options.threadId) {
+        fullCmd = fullCmd + ' --thread' + options.threadId;
+      }
+      if (options.noFrameFilters === true) {
+        fullCmd = fullCmd + ' --no-frame-filters';
+      }
+      if ((options.lowFrame !== undefined) && (options.highFrame !== undefined)) {
+        fullCmd = fullCmd + ` ${options.lowFrame} ${options.highFrame}`;
+      } else if (options.lowFrame !== undefined) {
+        fullCmd = fullCmd + ` ${options.lowFrame} ${options.lowFrame}`;
+      } else if (options.highFrame !== undefined) {
+        fullCmd = fullCmd + ` ${options.highFrame} ${options.highFrame}`;
+      }
+    }
+    return new Promise<StackFrameInfo[]>((resolve, reject) => {
+      this.enqueueCommand(new DebugCommand(fullCmd, token,
+        (err, data) => { err ? reject(err) : resolve(extractStackFrames(data.stack.frame)); }
+      ));
+    });
+  }
 }
 
 /** Creates a FrameInfo object from the output of the MI Output parser. */
@@ -1266,6 +1306,15 @@ function extractStackFrameInfo(data: any): StackFrameInfo {
     line: data.line ? parseInt(data.line, 10) : undefined,
     from: data.from
   };
+}
+
+/** Creates a StackFrameInfo array from the output of the MI Output parser. */
+function extractStackFrames(data: any | any[]): StackFrameInfo[] {
+  if (Array.isArray(data)) {
+    return data.map((frame) => { return extractStackFrameInfo(frame); });
+  } else {
+    return [extractStackFrameInfo(data)];
+  }
 }
 
 function setProcessEnvironment(): void {

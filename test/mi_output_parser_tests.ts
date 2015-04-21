@@ -20,7 +20,7 @@ describe("MI Output Parser", () => {
       expect(result.recordType).to.equal(RecordType.Done);
     });
 
-    it("parses 'done' from 'add breakpoint' command",() => {
+    it("parses 'done' from 'add breakpoint' command", () => {
       var id = '1';
       var addr = '0x004009a3';
       var func = 'main';
@@ -48,6 +48,37 @@ describe("MI Output Parser", () => {
       expect(bkpt).to.have.property('line', line);
       expect(bkpt).to.have.property('times', '0');
       expect(bkpt).to.have.property('original-location', func);
+    });
+
+    it("parses 'done' from 'get stack depth' command", () => {
+      var frameLevel: string = '0';
+      var frameAddr: string = '0x000000000040080a';
+      var frameFunc: string = 'getNextInt';
+      var frameFile: string = '../test_target.cpp';
+      var frameFullname: string = '/test/test_target.cpp';
+      var frameLine: string = '6';
+      var result = parser.parse(
+        `^done,stack=[` +
+        `frame={level="${frameLevel}",addr="${frameAddr}",func="${frameFunc}",file="${frameFile}",` +
+        `fullname="${frameFullname}",line="${frameLine}"},` +
+        `frame={level="1",addr="0x0000000000400828",func="printNextInt",file="../test_target.cpp",` +
+        `fullname="/media/sf_dbgmits/test/test_target.cpp",line="11"},` +
+        `frame={level="2",addr="0x0000000000400860",func="main",file="../test_target.cpp",` +
+        `fullname="/media/sf_dbgmits/test/test_target.cpp",line="19"}]`
+      );
+
+      expect(result.recordType).to.equal(RecordType.Done);
+      expect(result.data).to.have.property('stack');
+      expect(result.data.stack).to.have.property('frame');
+      expect(result.data.stack.frame.length).to.equal(3);
+      
+      var frame: any = result.data.stack.frame[0];
+      expect(frame).to.have.property('level', frameLevel);
+      expect(frame).to.have.property('addr', frameAddr);
+      expect(frame).to.have.property('func', frameFunc);
+      expect(frame).to.have.property('file');
+      expect(frame).to.have.property('fullname');
+      expect(frame).to.have.property('line', frameLine);
     });
 
     it("parses 'running'", () => {
