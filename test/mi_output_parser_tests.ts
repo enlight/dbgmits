@@ -81,6 +81,18 @@ describe("MI Output Parser", () => {
       expect(frame).to.have.property('line', frameLine);
     });
 
+    it("parses 'done' from 'get locals' command", () => {
+      var result = parser.parse('^done,locals=[name="A",name="B",name="C"]');
+
+      expect(result.recordType).to.equal(RecordType.Done);
+      expect(result.data).to.have.property('locals');
+      expect(result.data.locals).to.have.property('name');
+      expect(result.data.locals.name.length).to.equal(3);
+      expect(result.data.locals.name[0]).to.equal('A');
+      expect(result.data.locals.name[1]).to.equal('B');
+      expect(result.data.locals.name[2]).to.equal('C');
+    });
+
     it("parses 'running'", () => {
       var result = parser.parse('^running');
       expect(result.recordType).to.equal(RecordType.Running);

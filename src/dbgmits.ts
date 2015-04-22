@@ -270,6 +270,30 @@ export interface ExceptionReceivedNotify extends TargetStoppedNotify {
   exception: string;
 }
 
+export interface VariableInfo {
+  /** Variable name. */
+  name: string;
+  /** String representation of the value of the variable. */
+  value?: string;
+  /** Type of the variable. */
+  type?: string;
+}
+
+/** Indicates how much information should be retrieved when calling 
+ *  [[DebugSession.getLocalVariables]].
+ */
+export enum VariableDetailLevel {
+  /** Only variable names will be retrieved, not their types or values. */
+  None = 0, // specifying the value is redundant, but is used here to emphasise its importance
+  /** Only variable names and values will be retrieved, not their types. */
+  All = 1,
+  /** 
+   * The name and type will be retrieved for all variables, however values will only be retrieved
+   * for simple variable types (not arrays, structures or unions). 
+   */
+  Simple = 2
+}
+
 /**
  * A debug session provides two-way communication with a debugger process via the GDB/LLDB 
  * machine interface.
@@ -1281,6 +1305,51 @@ export class DebugSession extends events.EventEmitter {
       ));
     });
   }
+
+  /**
+   * Get a list of all the local variables for the specified frame.
+   * @param detail Specifies what information should be retrieved for each local variable.
+   * @param options.threadId *(LLDB specific)* The thread for which local variables should be 
+   *                         retrieved, defaults to the currently selected thread if not specified.
+   * @param options.frameLevel Stack index of the frame for which to retrieve locals, 
+   *                           zero for the innermost frame, one for the frame from which the call
+   *                           to the innermost frame originated, etc. Defaults to the currently
+   *                           selected frame if not specified.
+   * @param options.noFrameFilters *(GDB specific)* If `true` then Python frame filters will not be
+   *                               executed.
+   * @param options.skipUnavailable If `true` information about local variables that are not 
+   *                                available will not be retrieved.
+   */
+  getLocalVariables(
+    detail: VariableDetailLevel,
+    options?: {
+      threadId?: number; frameLevel?: number; noFrameFilters?: boolean; skipUnavailable?: boolean
+    },
+    token?: string
+  ) : Promise<VariableInfo[]> {
+    var fullCmd: string = 'stack-list-locals';
+    if (options) {
+      if (options.threadId) {
+        fullCmd = fullCmd + ' --thread ' + options.threadId;
+      }
+      if (options.frameLevel) {
+        fullCmd = fullCmd + ' --frame ' + options.frameLevel;
+      }
+      if (options.noFrameFilters === true) {
+        fullCmd = fullCmd + ' --no-frame-filters';
+      }
+      if (options.skipUnavailable === true) {
+        fullCmd = fullCmd + ' --skip-unavailable';
+      }
+    }
+    fullCmd = fullCmd + ' ' + detail;
+
+    return new Promise<VariableInfo[]>((resolve, reject) => {
+      this.enqueueCommand(new DebugCommand(fullCmd, token,
+        (err, data) => { err ? reject(err) : resolve(extractVariables(data.locals)); }
+      ));
+    });
+  }
 }
 
 /** Creates a FrameInfo object from the output of the MI Output parser. */
@@ -1314,6 +1383,25 @@ function extractStackFrames(data: any | any[]): StackFrameInfo[] {
     return data.map((frame) => { return extractStackFrameInfo(frame); });
   } else {
     return [extractStackFrameInfo(data)];
+  }
+}
+
+/** 
+ * Converts the output produced by the MI Output parser from the response to the
+ * -stack-list-locals MI command into a more consistent and useful form.
+ */
+function extractVariables(data: any): VariableInfo[] {
+  if ('name' in data) {
+    if (Array.isArray(data.name)) {
+      // input is in the form: { name: [varName1, varName2, ...] }
+      return data.name.map((varName) => { return { name: varName }; });
+    } else {
+      // input is in the form: { name: varName }
+      return [{ name: data.name }];
+    }
+  } else {
+    // input is already in the correct form
+    return data;
   }
 }
 

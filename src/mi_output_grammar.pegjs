@@ -45,7 +45,7 @@ start
   / result_record
 
 result_record
-  = t:token? '^' resultType:result_class results:comma_delimited_results? {
+  = t:token? '^' resultType:result_class results:comma_prefixed_results? {
     return {
       token: t,
       recordType: resultType,
@@ -58,7 +58,7 @@ out_of_band_record
   / stream_record
 
 async_record
-  = t:token? at:[*+=] ac:async_class results:comma_delimited_results? {
+  = t:token? at:[*+=] ac:async_class results:comma_prefixed_results? {
     return {
       token: t,
       recordType: getAsyncRecordType(at),
@@ -76,23 +76,35 @@ result_class
 async_class
   = variable
 
-comma_delimited_results
+comma_prefixed_results
   = (',' r:result { return r; })+
 
 result_list
-  = first:result rest:comma_delimited_results? {
-    var results = [first];
-    if (rest) {
-	  // append the contents of rest to results
-      Array.prototype.push.apply(results, rest);
+  = first:result rest:comma_prefixed_results? {
+      var results = [first];
+      if (rest) {
+	    // append the contents of rest to results
+        Array.prototype.push.apply(results, rest);
+      }
+      return createObjFromResultList(results);
     }
-    return createObjFromResultList(results);
-  }
 
 result
   = n:variable '=' v:value {
     return { name: n, value: v };
   }
+
+comma_prefixed_values
+  = (',' v:value { return v; })+
+
+value_list
+  = first:value rest:comma_prefixed_values? {
+      var values = [first];
+      if (rest) {
+        Array.prototype.push.apply(values, rest);
+      }
+      return values;
+    }
 
 // todo: this needs some refinement
 variable "variable-identifier"
@@ -115,15 +127,17 @@ value
 tuple
   = '{}' { return {}; }
   / '{' results:result_list '}' {
-    return results;
-  }
+      return results;
+    }
 
 list
   = '[]' { return {}; }
-  / '[' value (',' value)* ']'
+  / '[' values:value_list ']' {
+      return values;
+    }
   / '[' results:result_list ']' {
-    return results;
-  }
+      return results;
+    }
 
 stream_record
   = console_stream_output

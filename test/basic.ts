@@ -22,6 +22,8 @@ var localTargetExe: string = './build/Debug/test_target';
 var hostExecutable: string = 'C:/Projects/hello-world/hello-world';
 var remoteHost: string = '192.168.56.101';
 var remotePort: number = 8099;
+// this should be kept up to date with any modifications to test_target.cpp
+var locationOfCallToPrintNextInt: string = 'test_target.cpp:99';
 
 /**
  * Creates a readable stream containing nothing but the text passed in.
@@ -501,7 +503,7 @@ describe("Debug Session", () => {
         );
       });
       // break on the line in main() that calls printNextInt()
-      return debugSession.addBreakpoint('test_target.cpp:19')
+      return debugSession.addBreakpoint(locationOfCallToPrintNextInt)
       .then(() => {
           return Promise.all([
             onBreakpointStepIntoLine,
@@ -534,7 +536,7 @@ describe("Debug Session", () => {
         );
       });
       // break on the line in main() that calls printNextInt()
-      return debugSession.addBreakpoint('test_target.cpp:19')
+      return debugSession.addBreakpoint(locationOfCallToPrintNextInt)
       .then(() => {
         return Promise.all([
           onBreakpointStepIntoInstruction,
@@ -567,7 +569,7 @@ describe("Debug Session", () => {
         );
       });
       // break on the line in main() that calls printNextInt()
-      return debugSession.addBreakpoint('test_target.cpp:19')
+      return debugSession.addBreakpoint(locationOfCallToPrintNextInt)
       .then(() => {
         return Promise.all([
           onBreakpointStepOverLine,
@@ -600,7 +602,7 @@ describe("Debug Session", () => {
         );
       });
       // break on the line in main() that calls printNextInt()
-      return debugSession.addBreakpoint('test_target.cpp:19')
+      return debugSession.addBreakpoint(locationOfCallToPrintNextInt)
       .then(() => {
         return Promise.all([
           onBreakpointStepOverInstruction,
@@ -656,7 +658,7 @@ describe("Debug Session", () => {
       return debugSession.end();
     });
 
-    it("retrieves info for the current stack frame", () => {
+    it("gets info for the current stack frame", () => {
       // verify we can retrieve the frame for printNextInt()
       var onBreakpointGetFrameInfo = new Promise<void>((resolve, reject) => {
         debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
@@ -680,7 +682,7 @@ describe("Debug Session", () => {
       });
     });
 
-    it("retrieves the current stack depth", () => {
+    it("gets the current stack depth", () => {
       var initialStackDepth = -1;
       // GDB and LLDB report stack depth a bit differently, LLDB adds a couple of frames from 
       // libc to the count, but GDB does not. So instead of checking the absolute stack depth
@@ -720,7 +722,7 @@ describe("Debug Session", () => {
       });
     });
 
-    it("retrieves a list of stack frames", () => {
+    it("gets a list of stack frames", () => {
       var expectedStackDepth = -1;
       var onBreakpointGetFrameList = new Promise<void>((resolve, reject) => {
         debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
@@ -752,7 +754,7 @@ describe("Debug Session", () => {
       });
     });
 
-    it("retrieves a list of stack frames between levels 0-1", () => {
+    it("gets a list of stack frames within a certain level range", () => {
       var onBreakpointGetFrameList = new Promise<void>((resolve, reject) => {
         debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
           (breakNotify: dbgmits.BreakpointHitNotify) => {
@@ -780,7 +782,7 @@ describe("Debug Session", () => {
       });
     });
 
-    it("retrieves a stack frame at level 1", () => {
+    it("gets a stack frame for a specific level", () => {
       var onBreakpointGetFrameList = new Promise<void>((resolve, reject) => {
         debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
           (breakNotify: dbgmits.BreakpointHitNotify) => {
@@ -793,13 +795,175 @@ describe("Debug Session", () => {
             .then(resolve)
             .catch(reject);
           }
-          );
+        );
       });
       // break at the start of getNextInt()
       return debugSession.addBreakpoint('getNextInt')
         .then(() => {
         return Promise.all([
           onBreakpointGetFrameList,
+          debugSession.startTarget()
+        ])
+      });
+    });
+
+    it("gets a single simple local variable (name only) for a frame", () => {
+      var onBreakpointGetLocals = new Promise<void>((resolve, reject) => {
+        debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
+          (breakNotify: dbgmits.BreakpointHitNotify) => {
+            // get the locals for the previous frame
+            return debugSession.getLocalVariables(dbgmits.VariableDetailLevel.None, { frameLevel: 1 })
+            .then((locals: dbgmits.VariableInfo[]) => {
+              expect(locals.length).to.equal(1);
+              expect(locals[0]).to.have.property('name', 'a');
+              expect(locals[0]).not.to.have.property('value');
+              expect(locals[0]).not.to.have.property('type');
+            })
+            .then(resolve)
+            .catch(reject);
+          }
+        );
+      });
+      // break at the start of funcWithOneSimpleLocalVariable_Inner()
+      return debugSession.addBreakpoint('funcWithOneSimpleLocalVariable_Inner')
+        .then(() => {
+        return Promise.all([
+          onBreakpointGetLocals,
+          debugSession.startTarget()
+        ])
+      });
+    });
+
+    it("gets a single simple local variable (name and value only) for a frame", () => {
+      var onBreakpointGetLocals = new Promise<void>((resolve, reject) => {
+        debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
+          (breakNotify: dbgmits.BreakpointHitNotify) => {
+            // get the locals for the previous frame
+            return debugSession.getLocalVariables(
+              dbgmits.VariableDetailLevel.All, { frameLevel: 1 }
+            )
+            .then((locals: dbgmits.VariableInfo[]) => {
+              expect(locals.length).to.equal(1);
+              expect(locals[0]).to.have.property('name', 'a');
+              expect(locals[0]).to.have.property('value', '5');
+              expect(locals[0]).not.to.have.property('type');
+            })
+            .then(resolve)
+            .catch(reject);
+          }
+        );
+      });
+      // break at the start of funcWithOneSimpleLocalVariable_Inner()
+      return debugSession.addBreakpoint('funcWithOneSimpleLocalVariable_Inner')
+        .then(() => {
+        return Promise.all([
+          onBreakpointGetLocals,
+          debugSession.startTarget()
+        ])
+      });
+    });
+
+    it("gets a single simple local variable (name, value, and type) for a frame", () => {
+      var onBreakpointGetLocals = new Promise<void>((resolve, reject) => {
+        debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
+          (breakNotify: dbgmits.BreakpointHitNotify) => {
+            // get the locals for the previous frame
+            return debugSession.getLocalVariables(
+              dbgmits.VariableDetailLevel.Simple, { frameLevel: 1 }
+            )
+            .then((locals: dbgmits.VariableInfo[]) => {
+              expect(locals.length).to.equal(1);
+              expect(locals[0]).to.have.property('name', 'a');
+              expect(locals[0]).to.have.property('value', '5');
+              // FIXME: LLDB MI currently does not provide the type, contrary to the spec.
+              //expect(locals[0]).to.have.property('type', 'int');
+            })
+            .then(resolve)
+            .catch(reject);
+          }
+        );
+      });
+      // break at the start of funcWithOneSimpleLocalVariable_Inner()
+      return debugSession.addBreakpoint('funcWithOneSimpleLocalVariable_Inner')
+        .then(() => {
+        return Promise.all([
+          onBreakpointGetLocals,
+          debugSession.startTarget()
+        ])
+      });
+    });
+
+    it("gets a single complex local variable (name and type) for the current frame", () => {
+      var onBreakpointGetLocals = new Promise<void>((resolve, reject) => {
+        debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
+          (breakNotify: dbgmits.BreakpointHitNotify) => {
+            // FIXME: Should use VariableDetailLevel.Simple instead so type information
+            //        is provided, but unfortunately LLDB MI doesn't format the output
+            //        correctly in that case.
+            // get the locals for the current frame
+            return debugSession.getLocalVariables(
+              dbgmits.VariableDetailLevel.All, { frameLevel: 1 }
+            )
+            .then((locals: dbgmits.VariableInfo[]) => {
+              expect(locals.length).to.equal(1);
+              expect(locals[0]).to.have.property('name', 'b');
+              // FIXME: uncomment when VariableDetailLevel.Simple works properly on LLDB
+              //expect(locals[0]).not.to.have.property('value');
+              // FIXME: LLDB MI currently does not provide the type, contrary to the spec.
+              //expect(locals[0]).to.have.property('type', 'int [3]');
+            })
+            .then(resolve)
+            .catch(reject);
+          }
+        );
+      });
+      // break at the start of funcWithOneComplexLocalVariable_Inner()
+      return debugSession.addBreakpoint('funcWithOneComplexLocalVariable_Inner')
+        .then(() => {
+        return Promise.all([
+          onBreakpointGetLocals,
+          debugSession.startTarget()
+        ])
+      });
+    });
+
+    it("gets three local variables for a frame", () => {
+      var onBreakpointGetLocals = new Promise<void>((resolve, reject) => {
+        debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
+          (breakNotify: dbgmits.BreakpointHitNotify) => {
+            // FIXME: Should use VariableDetailLevel.Simple instead so type information
+            //        is provided, but unfortunately LLDB MI doesn't format the output
+            //        correctly in that case.
+            // get the locals for the current frame
+            return debugSession.getLocalVariables(dbgmits.VariableDetailLevel.All, { frameLevel: 1 })
+            .then((locals: dbgmits.VariableInfo[]) => {
+              expect(locals.length).to.equal(3);
+
+              expect(locals[0]).to.have.property('name', 'e');
+              expect(locals[0]).to.have.property('value');
+              // FIXME: LLDB MI currently does not provide the type, contrary to the spec.
+              //expect(locals[0]).to.have.property('type', 'Point');
+              
+              expect(locals[1]).to.have.property('name', 'f');
+              expect(locals[1]).to.have.property('value', '9.5');
+              // FIXME: LLDB MI currently does not provide the type, contrary to the spec.
+              //expect(locals[1]).to.have.property('type', 'float');
+
+              expect(locals[2]).to.have.property('name', 'g');
+              expect(locals[2]).to.have.property('value', '300');
+              // FIXME: LLDB MI currently does not provide the type, contrary to the spec.
+              //expect(locals[1]).to.have.property('type', 'long');
+            })
+            .then(resolve)
+            .catch(reject);
+          }
+        );
+      });
+      // break at the start of funcWithThreeLocalVariables_Inner()
+      return debugSession.addBreakpoint('funcWithThreeLocalVariables_Inner')
+        .then(() => {
+        return Promise.all([
+          onBreakpointGetLocals,
           debugSession.startTarget()
         ])
       });
