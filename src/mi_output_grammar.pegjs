@@ -46,12 +46,12 @@ start
 
 result_record
   = t:token? '^' resultType:result_class results:comma_prefixed_results? {
-    return {
-      token: t,
-      recordType: resultType,
-      data: createObjFromResultList(results)
+      return {
+        token: t,
+        recordType: resultType,
+        data: createObjFromResultList(results)
+      }
     }
-  }
 
 out_of_band_record
   = async_record 
@@ -59,12 +59,12 @@ out_of_band_record
 
 async_record
   = t:token? at:[*+=] ac:async_class results:comma_prefixed_results? {
-    return {
-      token: t,
-      recordType: getAsyncRecordType(at),
-      data: [ac, createObjFromResultList(results)]
+      return {
+        token: t,
+        recordType: getAsyncRecordType(at),
+        data: [ac, createObjFromResultList(results)]
+      }
     }
-  }
 
 result_class
   = 'done' { return mioutput.RecordType.Done; }
@@ -90,9 +90,7 @@ result_list
     }
 
 result
-  = n:variable '=' v:value {
-    return { name: n, value: v };
-  }
+  = n:variable '=' v:value { return { name: n, value: v }; }
 
 comma_prefixed_values
   = (',' v:value { return v; })+
@@ -108,9 +106,7 @@ value_list
 
 // todo: this needs some refinement
 variable "variable-identifier"
-  = variable_start variable_part* {
-    return text();
-  }
+  = variable_start variable_part* { return text(); }
 
 variable_start
   = [a-z]i
@@ -126,18 +122,12 @@ value
 
 tuple
   = '{}' { return {}; }
-  / '{' results:result_list '}' {
-      return results;
-    }
+  / '{' results:result_list '}' { return results; }
 
 list
   = '[]' { return []; }
-  / '[' values:value_list ']' {
-      return values;
-    }
-  / '[' results:result_list ']' {
-      return results;
-    }
+  / '[' values:value_list ']' { return values; }
+  / '[' results:result_list ']' { return results; }
 
 stream_record
   = console_stream_output
@@ -146,32 +136,30 @@ stream_record
 
 console_stream_output
   = '~' streamText:c_string {
-    return { 
-      recordType: mioutput.RecordType.DebuggerConsoleOutput, 
-      data: streamText
+      return { 
+        recordType: mioutput.RecordType.DebuggerConsoleOutput, 
+        data: streamText
+      }
     }
-  }
 
 target_stream_output
   = '@' streamText:c_string {
-    return { 
-      recordType: mioutput.RecordType.TargetOutput, 
-      data: streamText
+      return { 
+        recordType: mioutput.RecordType.TargetOutput, 
+        data: streamText
+      }
     }
-  }
 
 log_stream_output
   = '&' streamText:c_string {
-    return { 
-      recordType: mioutput.RecordType.DebuggerLogOutput, 
-      data: streamText
+      return { 
+        recordType: mioutput.RecordType.DebuggerLogOutput, 
+        data: streamText
+      }
     }
-  }
 
 c_string "double-quoted-string"
-  = '"' chars:c_string_char* '"' {
-    return chars.join('');
-  }
+  = '"' chars:c_string_char* '"' { return chars.join(''); }
 
 escape_char
   = "'"
@@ -186,6 +174,4 @@ c_string_char
   / '\\' char:escape_char { return char; }
 
 token
-  = digits:[0-9]+ {
-    return digits.join('');
-  }
+  = digits:[0-9]+ { return digits.join(''); }
