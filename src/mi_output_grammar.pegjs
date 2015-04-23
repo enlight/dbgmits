@@ -131,7 +131,7 @@ tuple
     }
 
 list
-  = '[]' { return {}; }
+  = '[]' { return []; }
   / '[' values:value_list ']' {
       return values;
     }
@@ -173,10 +173,17 @@ c_string "double-quoted-string"
     return chars.join('');
   }
 
+escape_char
+  = "'"
+  / '"'
+  / '\\'
+  / 'n' { return '\n'; }
+  / 'r' { return '\r'; }
+  / 't' { return '\t'; }
+
 c_string_char
-  = !'"' . {
-    return text();
-  }
+  = !('"' / '\\') . { return text(); }
+  / '\\' char:escape_char { return char; }
 
 token
   = digits:[0-9]+ {

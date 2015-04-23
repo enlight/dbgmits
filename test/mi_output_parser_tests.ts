@@ -93,6 +93,16 @@ describe("MI Output Parser", () => {
       expect(result.data.locals.name[2]).to.equal('C');
     });
 
+    it("parses 'done' from 'get arguments' command", () => {
+      var result = parser.parse(
+        '^done,stack-args=[frame={level="0",args=[{name="d",value="300"},' +
+        '{name="e",value="0x0000000000400ef4 \\"Test\\""},{name="f",value="0x00007fffffffed40"}]}]'
+      );
+      expect(result.recordType).to.equal(RecordType.Done);
+      expect(result.data).to.have.property('stack-args');
+      expect(result.data['stack-args']).to.have.property('frame');
+    });
+
     it("parses 'running'", () => {
       var result = parser.parse('^running');
       expect(result.recordType).to.equal(RecordType.Running);
