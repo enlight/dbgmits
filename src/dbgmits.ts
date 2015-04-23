@@ -1320,13 +1320,13 @@ export class DebugSession extends events.EventEmitter {
    * @param options.skipUnavailable If `true` information about local variables that are not 
    *                                available will not be retrieved.
    */
-  getLocalVariables(
+  getStackFrameLocals(
     detail: VariableDetailLevel,
     options?: {
       threadId?: number; frameLevel?: number; noFrameFilters?: boolean; skipUnavailable?: boolean
     },
     token?: string
-  ) : Promise<VariableInfo[]> {
+  ): Promise<VariableInfo[]> {
     var fullCmd: string = 'stack-list-locals';
     if (options) {
       if (options.threadId) {
@@ -1346,7 +1346,7 @@ export class DebugSession extends events.EventEmitter {
 
     return new Promise<VariableInfo[]>((resolve, reject) => {
       this.enqueueCommand(new DebugCommand(fullCmd, token,
-        (err, data) => { err ? reject(err) : resolve(extractVariables(data.locals)); }
+        (err, data) => { err ? reject(err) : resolve(extractFrameLocals(data.locals)); }
       ));
     });
   }
@@ -1386,15 +1386,15 @@ function extractStackFrames(data: any | any[]): StackFrameInfo[] {
   }
 }
 
-/** 
+/**
  * Converts the output produced by the MI Output parser from the response to the
  * -stack-list-locals MI command into a more consistent and useful form.
  */
-function extractVariables(data: any): VariableInfo[] {
+function extractFrameLocals(data: any): VariableInfo[] {
   if ('name' in data) {
     if (Array.isArray(data.name)) {
       // input is in the form: { name: [varName1, varName2, ...] }
-      return data.name.map((varName) => { return { name: varName }; });
+      return data.name.map((varName): VariableInfo => { return { name: varName }; });
     } else {
       // input is in the form: { name: varName }
       return [{ name: data.name }];

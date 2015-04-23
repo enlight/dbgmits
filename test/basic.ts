@@ -812,7 +812,7 @@ describe("Debug Session", () => {
         debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
           (breakNotify: dbgmits.BreakpointHitNotify) => {
             // get the locals for the previous frame
-            return debugSession.getLocalVariables(dbgmits.VariableDetailLevel.None, { frameLevel: 1 })
+            return debugSession.getStackFrameLocals(dbgmits.VariableDetailLevel.None, { frameLevel: 1 })
             .then((locals: dbgmits.VariableInfo[]) => {
               expect(locals.length).to.equal(1);
               expect(locals[0]).to.have.property('name', 'a');
@@ -839,7 +839,7 @@ describe("Debug Session", () => {
         debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
           (breakNotify: dbgmits.BreakpointHitNotify) => {
             // get the locals for the previous frame
-            return debugSession.getLocalVariables(
+            return debugSession.getStackFrameLocals(
               dbgmits.VariableDetailLevel.All, { frameLevel: 1 }
             )
             .then((locals: dbgmits.VariableInfo[]) => {
@@ -868,7 +868,7 @@ describe("Debug Session", () => {
         debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
           (breakNotify: dbgmits.BreakpointHitNotify) => {
             // get the locals for the previous frame
-            return debugSession.getLocalVariables(
+            return debugSession.getStackFrameLocals(
               dbgmits.VariableDetailLevel.Simple, { frameLevel: 1 }
             )
             .then((locals: dbgmits.VariableInfo[]) => {
@@ -901,7 +901,7 @@ describe("Debug Session", () => {
             //        is provided, but unfortunately LLDB MI doesn't format the output
             //        correctly in that case.
             // get the locals for the current frame
-            return debugSession.getLocalVariables(
+            return debugSession.getStackFrameLocals(
               dbgmits.VariableDetailLevel.All, { frameLevel: 1 }
             )
             .then((locals: dbgmits.VariableInfo[]) => {
@@ -927,6 +927,46 @@ describe("Debug Session", () => {
       });
     });
 
+    it("gets two local variables for a frame", () => {
+      var onBreakpointGetLocals = new Promise<void>((resolve, reject) => {
+        debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
+          (breakNotify: dbgmits.BreakpointHitNotify) => {
+            // FIXME: Should use VariableDetailLevel.Simple instead so type information
+            //        is provided, but unfortunately LLDB MI doesn't format the output
+            //        correctly in that case.
+            // get the locals for the current frame
+            return debugSession.getStackFrameLocals(
+              dbgmits.VariableDetailLevel.All, { frameLevel: 1 }
+            )
+            .then((locals: dbgmits.VariableInfo[]) => {
+              expect(locals.length).to.equal(2);
+              
+              expect(locals[0]).to.have.property('name', 'c');
+              expect(locals[0]).to.have.property('value', 'true');
+              // FIXME: LLDB MI currently does not provide the type, contrary to the spec.
+              //expect(locals[0]).to.have.property('type', 'bool');
+              
+              expect(locals[1]).to.have.property('name', 'd');
+              // FIXME: uncomment when VariableDetailLevel.Simple works properly on LLDB
+              //expect(locals[1]).not.to.have.property('value');
+              // FIXME: LLDB MI currently does not provide the type, contrary to the spec.
+              //expect(locals[1]).to.have.property('type', 'const char *[3]');
+            })
+            .then(resolve)
+            .catch(reject);
+          }
+        );
+      });
+      // break at the start of funcWithTwoLocalVariables_Inner()
+      return debugSession.addBreakpoint('funcWithTwoLocalVariables_Inner')
+        .then(() => {
+        return Promise.all([
+          onBreakpointGetLocals,
+          debugSession.startTarget()
+        ])
+      });
+    });
+
     it("gets three local variables for a frame", () => {
       var onBreakpointGetLocals = new Promise<void>((resolve, reject) => {
         debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
@@ -935,7 +975,7 @@ describe("Debug Session", () => {
             //        is provided, but unfortunately LLDB MI doesn't format the output
             //        correctly in that case.
             // get the locals for the current frame
-            return debugSession.getLocalVariables(dbgmits.VariableDetailLevel.All, { frameLevel: 1 })
+            return debugSession.getStackFrameLocals(dbgmits.VariableDetailLevel.All, { frameLevel: 1 })
             .then((locals: dbgmits.VariableInfo[]) => {
               expect(locals.length).to.equal(3);
 
