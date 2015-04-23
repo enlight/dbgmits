@@ -279,6 +279,14 @@ export interface VariableInfo {
   type?: string;
 }
 
+/** Contains information about the arguments of a stack frame. */
+export interface StackFrameArgsInfo {
+  /** Index of the frame on the stack, zero for the innermost frame. */
+  level: number;
+  /** List of arguments for the frame. */
+  args: VariableInfo[];
+}
+
 /** Indicates how much information should be retrieved when calling 
  *  [[DebugSession.getLocalVariables]].
  */
@@ -1350,6 +1358,69 @@ export class DebugSession extends events.EventEmitter {
       ));
     });
   }
+
+  /**
+   * Get a list of all the arguments for the specified frame(s).
+   *
+   * The `lowFrame` and `highFrame` options can be used to limit the frames for which arguments
+   * are retrieved. If both are supplied only the frames with levels in that range (inclusive) are
+   * taken into account, if both are omitted the arguments of all frames currently on the stack
+   * will be retrieved. If either one is omitted (but not both) then only the arguments for the
+   * specified frame are retrieved.
+   *
+   * @param detail Specifies what information should be retrieved for each argument.
+   * @param options.threadId *(LLDB specific)* The thread for which arguments should be 
+   *                         retrieved, defaults to the currently selected thread if not specified.
+   * @param options.noFrameFilters *(GDB specific)* If `true` then Python frame filters will not be
+   *                               executed.
+   * @param options.skipUnavailable If `true` information about arguments that are not available
+   *                                will not be retrieved.
+   * @param options.lowFrame Must not be larger than the actual number of frames on the stack.
+   * @param options.highFrame May be larger than the actual number of frames on the stack, in which
+   *                          case only the existing frames will be retrieved.
+   */
+  getStackFrameArgs(
+    detail: VariableDetailLevel,
+    options?: {
+      threadId?: number;
+      noFrameFilters?: boolean;
+      skipUnavailable?: boolean;
+      lowFrame?: number;
+      highFrame?: number;
+    },
+    token?: string
+  ): Promise<StackFrameArgsInfo[]> {
+    var fullCmd: string = 'stack-list-arguments';
+    if (options) {
+      if (options.threadId) {
+        fullCmd = fullCmd + ' --thread ' + options.threadId;
+      }
+      if (options.noFrameFilters === true) {
+        fullCmd = fullCmd + ' --no-frame-filters';
+      }
+      if (options.skipUnavailable === true) {
+        fullCmd = fullCmd + ' --skip-unavailable';
+      }
+    }
+
+    fullCmd = fullCmd + ' ' + detail;
+    
+    if (options) {
+      if ((options.lowFrame !== undefined) && (options.highFrame !== undefined)) {
+        fullCmd = fullCmd + ` ${options.lowFrame} ${options.highFrame}`;
+      } else if (options.lowFrame !== undefined) {
+        fullCmd = fullCmd + ` ${options.lowFrame} ${options.lowFrame}`;
+      } else if (options.highFrame !== undefined) {
+        fullCmd = fullCmd + ` ${options.highFrame} ${options.highFrame}`;
+      }
+    }
+
+    return new Promise<StackFrameArgsInfo[]>((resolve, reject) => {
+      this.enqueueCommand(new DebugCommand(fullCmd, token,
+        (err, data) => { err ? reject(err) : resolve(extractFrameArgs(data['stack-args'])); }
+      ));
+    });
+  }
 }
 
 /** Creates a FrameInfo object from the output of the MI Output parser. */
@@ -1402,6 +1473,28 @@ function extractFrameLocals(data: any): VariableInfo[] {
   } else {
     // input is already in the correct form
     return data;
+  }
+}
+
+/**
+ * Converts the output produced by the MI Output parser from the response to the
+ * -stack-list-arguments MI command into a more consistent and useful form.
+ */
+function extractFrameArgs(data: any): StackFrameArgsInfo[] {
+  if (Array.isArray(data.frame)) {
+    // input is in the form: { frame: [{ level: 0, args: [...] }, { level: 1, args: arg1 }, ...]
+    data.frame.map((frame): StackFrameArgsInfo => {
+      return {
+        level: parseInt(frame.level),
+        args: Array.isArray(frame.args) ? frame.args : [frame.args]
+      };
+    });
+  } else {
+    // input is in the form: { frame: { level: 0, args: [...] }
+    return [{
+      level: parseInt(data.frame.level),
+      args: Array.isArray(data.frame.args) ? data.frame.args : [data.frame.args]
+    }];
   }
 }
 

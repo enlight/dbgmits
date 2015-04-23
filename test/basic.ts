@@ -23,7 +23,7 @@ var hostExecutable: string = 'C:/Projects/hello-world/hello-world';
 var remoteHost: string = '192.168.56.101';
 var remotePort: number = 8099;
 // this should be kept up to date with any modifications to test_target.cpp
-var locationOfCallToPrintNextInt: string = 'test_target.cpp:99';
+var locationOfCallToPrintNextInt: string = 'test_target.cpp:119';
 
 /**
  * Creates a readable stream containing nothing but the text passed in.
@@ -1008,5 +1008,133 @@ describe("Debug Session", () => {
         ])
       });
     });
+
+    it("gets frame arguments for a function with no arguments", () => {
+      var onBreakpointGetArgs = new Promise<void>((resolve, reject) => {
+        debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
+          (breakNotify: dbgmits.BreakpointHitNotify) => {
+            return debugSession.getStackFrameArgs(dbgmits.VariableDetailLevel.None, { lowFrame: 0 })
+            .then((frames: dbgmits.StackFrameArgsInfo[]) => {
+              expect(frames.length).to.equal(1);
+              expect(frames[0].level).to.equal(0);
+              expect(frames[0].args.length).to.equal(0);
+            })
+            .then(resolve)
+            .catch(reject);
+          }
+        );
+      });
+      // break at the start of funcWithNoArgs()
+      return debugSession.addBreakpoint('funcWithNoArgs')
+        .then(() => {
+        return Promise.all([
+          onBreakpointGetArgs,
+          debugSession.startTarget()
+        ])
+      });
+    });
+
+    it("gets frame arguments for a function with one simple argument", () => {
+      var onBreakpointGetArgs = new Promise<void>((resolve, reject) => {
+        debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
+          (breakNotify: dbgmits.BreakpointHitNotify) => {
+            // FIXME: should switch to simple detail level so we get type information,
+            //        but the LLDB MI driver needs to be fixed to support that detail level
+            //        first
+            return debugSession.getStackFrameArgs(dbgmits.VariableDetailLevel.All, { lowFrame: 0 })
+            .then((frames: dbgmits.StackFrameArgsInfo[]) => {
+              expect(frames.length).to.equal(1);
+              expect(frames[0].level).to.equal(0);
+              expect(frames[0].args.length).to.equal(1);
+
+              expect(frames[0].args[0]).to.have.property('name', 'a');
+              expect(frames[0].args[0]).to.have.property('value', '5');
+            })
+            .then(resolve)
+            .catch(reject);
+          }
+        );
+      });
+      // break at the start of funcWithOneSimpleArg()
+      return debugSession.addBreakpoint('funcWithOneSimpleArg')
+        .then(() => {
+        return Promise.all([
+          onBreakpointGetArgs,
+          debugSession.startTarget()
+        ])
+      });
+    });
+
+    it("gets frame arguments for a function with two arguments", () => {
+      var onBreakpointGetArgs = new Promise<void>((resolve, reject) => {
+        debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
+          (breakNotify: dbgmits.BreakpointHitNotify) => {
+            // FIXME: should switch to simple detail level so we get type information,
+            //        but the LLDB MI driver needs to be fixed to support that detail level
+            //        first
+            return debugSession.getStackFrameArgs(dbgmits.VariableDetailLevel.All, { lowFrame: 0 })
+            .then((frames: dbgmits.StackFrameArgsInfo[]) => {
+              expect(frames.length).to.equal(1);
+              expect(frames[0].level).to.equal(0);
+              expect(frames[0].args.length).to.equal(2);
+
+              expect(frames[0].args[0].name).to.equal('b');
+              expect(frames[0].args[0].value).to.equal('7');
+
+              expect(frames[0].args[1].name).to.equal('c');
+              expect(frames[0].args[1]).to.have.property('value');
+            })
+            .then(resolve)
+            .catch(reject);
+          }
+        );
+      });
+      // break at the start of funcWithNoArgsfuncWithTwoArgs()
+      return debugSession.addBreakpoint('funcWithTwoArgs')
+        .then(() => {
+        return Promise.all([
+          onBreakpointGetArgs,
+          debugSession.startTarget()
+        ])
+      });
+    });
+
+    it("gets frame arguments for a function with three arguments", () => {
+      var onBreakpointGetArgs = new Promise<void>((resolve, reject) => {
+        debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
+          (breakNotify: dbgmits.BreakpointHitNotify) => {
+            // FIXME: should switch to simple detail level so we get type information,
+            //        but the LLDB MI driver needs to be fixed to support that detail level
+            //        first
+            return debugSession.getStackFrameArgs(dbgmits.VariableDetailLevel.All, { lowFrame: 0 })
+            .then((frames: dbgmits.StackFrameArgsInfo[]) => {
+              expect(frames.length).to.equal(1);
+              expect(frames[0].level).to.equal(0);
+              expect(frames[0].args.length).to.equal(3);
+
+              expect(frames[0].args[0].name).to.equal('d');
+              expect(frames[0].args[0].value).to.equal('300');
+
+              expect(frames[0].args[1].name).to.equal('e');
+              expect(frames[0].args[1]).to.have.property('value');
+
+              expect(frames[0].args[2].name).to.equal('f');
+              expect(frames[0].args[2]).to.have.property('value');
+            })
+            .then(resolve)
+            .catch(reject);
+          }
+        );
+      });
+      // break at the start of funcWithThreeArgs()
+      return debugSession.addBreakpoint('funcWithThreeArgs')
+        .then(() => {
+        return Promise.all([
+          onBreakpointGetArgs,
+          debugSession.startTarget()
+        ])
+      });
+    });
+
   });
 });

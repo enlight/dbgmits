@@ -1,5 +1,31 @@
 #include <cstdio>
 
+struct Point
+{
+    float x;
+    float y;
+};
+
+bool funcWithNoArgs()
+{
+    return true;
+}
+
+int funcWithOneSimpleArg(int a)
+{
+    return a;
+}
+
+float funcWithTwoArgs(float b, Point c)
+{
+    return b + c.x + c.y;
+}
+
+bool funcWithThreeArgs(long d, const char* e, int f[3])
+{
+    return true;
+}
+
 // This function is just used as a location marker in funcWithOneSimpleLocalVariable(),
 // makes it possible to set a breakpoint after the local variables in 
 // funcWithOneSimpleLocalVariable() have been initialized without having to specify
@@ -64,12 +90,6 @@ bool funcWithThreeLocalVariables_Inner()
 
 float funcWithThreeLocalVariables()
 {
-    struct Point
-	{
-	    float x;
-		float y;
-	};
-	
 	Point e = { 5, 10 };
 	float f = 9.5f;
 	long g = 300;
@@ -103,6 +123,12 @@ int main(int argc, const char *argv[])
 	funcWithOneComplexLocalVariable();
 	funcWithTwoLocalVariables();
 	funcWithThreeLocalVariables();
+	
+	funcWithNoArgs();
+	funcWithOneSimpleArg(5);
+	funcWithTwoArgs(7.0f, { 7.0f, 9.0f });
+	int threeInts[] = { 1, 2, 3 };
+	funcWithThreeArgs(300, "Test", threeInts);
 	
     return 0;
 }
