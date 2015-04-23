@@ -1154,7 +1154,7 @@ export class DebugSession extends events.EventEmitter {
    * source line of the called function. 
    * [[EVENT_TARGET_STOPPED]] will be emitted when execution stops.
    *
-   * @param options.threadId *(LLDB specific)* Identifier of the thread to execute the command on. 
+   * @param options.threadId Identifier of the thread to execute the command on. 
    * @param options.reverse *(GDB specific)* If **true** the target is executed in reverse.
    */
   stepIntoLine(options?: { threadId?: number; reverse?: boolean }, token?: string): Promise<void> {
@@ -1165,7 +1165,7 @@ export class DebugSession extends events.EventEmitter {
    * Resumes execution of the target until the beginning of the next source line is reached.
    * [[EVENT_TARGET_STOPPED]] will be emitted when execution stops.
    *
-   * @param options.threadId *(LLDB specific)* Identifier of the thread to execute the command on. 
+   * @param options.threadId Identifier of the thread to execute the command on. 
    * @param options.reverse *(GDB specific)* If **true** the target is executed in reverse until 
    *                        the beginning of the previous source line is reached.
    */
@@ -1178,7 +1178,7 @@ export class DebugSession extends events.EventEmitter {
    * beginning of the function.
    * [[EVENT_TARGET_STOPPED]] will be emitted when execution stops.
    *
-   * @param options.threadId *(LLDB specific)* Identifier of the thread to execute the command on.
+   * @param options.threadId Identifier of the thread to execute the command on.
    * @param options.reverse *(GDB specific)* If **true** the target is executed in reverse until 
    *                        the previous instruction is reached.
    */
@@ -1192,7 +1192,7 @@ export class DebugSession extends events.EventEmitter {
    * until the function returns.
    * [[EVENT_TARGET_STOPPED]] will be emitted when execution stops.
    *
-   * @param options.threadId *(LLDB specific)* Identifier of the thread to execute the command on. 
+   * @param options.threadId Identifier of the thread to execute the command on. 
    * @param options.reverse *(GDB specific)* If **true** the target is executed in reverse until 
    *                        the previous instruction is reached.
    */
@@ -1205,7 +1205,7 @@ export class DebugSession extends events.EventEmitter {
    * Resumes execution of the target until the current function returns.
    * [[EVENT_TARGET_STOPPED]] will be emitted when execution stops.
    *
-   * @param options.threadId *(LLDB specific)* Identifier of the thread to execute the command on.
+   * @param options.threadId Identifier of the thread to execute the command on.
    * @param options.reverse *(GDB specific)* If **true** the target is executed in reverse.
    */
   stepOut(options?: { threadId?: number; reverse?: boolean }, token?: string): Promise<void> {
@@ -1235,9 +1235,18 @@ export class DebugSession extends events.EventEmitter {
   //
 
   /**
-   * Retrieves information about the currently selected stack frame.
+   * Retrieves information about a stack frame.
+   *
+   * @param options.threadId The thread for which the stack depth should be retrieved,
+   *                         defaults to the currently selected thread if not specified.
+   * @param options.frameLevel Stack index of the frame for which to retrieve locals, 
+   *                           zero for the innermost frame, one for the frame from which the call
+   *                           to the innermost frame originated, etc. Defaults to the currently
+   *                           selected frame if not specified. If a value is provided for this
+   *                           option then `threadId` must be specified as well.
    */
-  getSelectedStackFrame(token?: string): Promise<StackFrameInfo> {
+  getStackFrame(
+    options?: { threadId?: number; frameLevel?: number }, token?: string): Promise<StackFrameInfo> {
     return new Promise<StackFrameInfo>((resolve, reject) => {
       this.enqueueCommand(
         new DebugCommand('stack-info-frame', token,
@@ -1249,8 +1258,9 @@ export class DebugSession extends events.EventEmitter {
 
   /**
    * Retrieves the current depth of the stack.
-   * @param options.threadId *(LLDB specific)* The thread for which the stack depth should be 
-   *                         retrieved, defaults to the currently selected thread if not specified.
+   *
+   * @param options.threadId The thread for which the stack depth should be retrieved,
+   *                         defaults to the currently selected thread if not specified.
    * @param options.maxDepth *(GDB specific)* If specified the returned stack depth will not exceed 
    *                         this number.
    */
@@ -1276,12 +1286,14 @@ export class DebugSession extends events.EventEmitter {
 
   /**
    * Retrieves the frames currently on the stack.
+   *
    * The `lowFrame` and `highFrame` options can be used to limit the number of frames retrieved,
    * if both are supplied only the frame with levels in that range (inclusive) are retrieved.
    * If either `lowFrame` or `highFrame` option is omitted (but not both) then only a single
    * frame corresponding to that level is retrieved.
-   * @param options.threadId *(LLDB specific)* The thread for which the stack frames should be 
-   *                         retrieved, defaults to the currently selected thread if not specified.
+   *
+   * @param options.threadId The thread for which the stack frames should be retrieved,
+   *                         defaults to the currently selected thread if not specified.
    * @param options.noFrameFilters *(GDB specific)* If `true` the Python frame filters will not be 
    *                               executed.
    * @param options.lowFrame Must not be larger than the actual number of frames on the stack.
@@ -1316,9 +1328,10 @@ export class DebugSession extends events.EventEmitter {
 
   /**
    * Get a list of all the local variables for the specified frame.
+   *
    * @param detail Specifies what information should be retrieved for each local variable.
-   * @param options.threadId *(LLDB specific)* The thread for which local variables should be 
-   *                         retrieved, defaults to the currently selected thread if not specified.
+   * @param options.threadId The thread for which local variables should be retrieved,
+   *                         defaults to the currently selected thread if not specified.
    * @param options.frameLevel Stack index of the frame for which to retrieve locals, 
    *                           zero for the innermost frame, one for the frame from which the call
    *                           to the innermost frame originated, etc. Defaults to the currently
@@ -1369,8 +1382,8 @@ export class DebugSession extends events.EventEmitter {
    * specified frame are retrieved.
    *
    * @param detail Specifies what information should be retrieved for each argument.
-   * @param options.threadId *(LLDB specific)* The thread for which arguments should be 
-   *                         retrieved, defaults to the currently selected thread if not specified.
+   * @param options.threadId The thread for which arguments should be retrieved,
+   *                         defaults to the currently selected thread if not specified.
    * @param options.noFrameFilters *(GDB specific)* If `true` then Python frame filters will not be
    *                               executed.
    * @param options.skipUnavailable If `true` information about arguments that are not available
