@@ -1237,7 +1237,7 @@ export class DebugSession extends events.EventEmitter {
   /**
    * Retrieves information about the currently selected stack frame.
    */
-  getCurrentFrameInfo(token?: string): Promise<StackFrameInfo> {
+  getSelectedStackFrame(token?: string): Promise<StackFrameInfo> {
     return new Promise<StackFrameInfo>((resolve, reject) => {
       this.enqueueCommand(
         new DebugCommand('stack-info-frame', token,

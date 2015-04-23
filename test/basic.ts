@@ -485,7 +485,7 @@ describe("Debug Session", () => {
       var onStepFinishedCheckFrame = new Promise<void>((resolve, reject) => {
         debugSession.once(DebugSession.EVENT_STEP_FINISHED, 
           (notification: dbgmits.StepFinishedNotify) => {
-            debugSession.getCurrentFrameInfo()
+            debugSession.getSelectedStackFrame()
             .then((info: dbgmits.StackFrameInfo) => {
               expect(info.func.indexOf('printNextInt')).to.equal(0);
             })
@@ -518,7 +518,7 @@ describe("Debug Session", () => {
       var onStepFinishedCheckFrame = new Promise<void>((resolve, reject) => {
         debugSession.once(DebugSession.EVENT_STEP_FINISHED, 
           (notification: dbgmits.StepFinishedNotify) => {
-            debugSession.getCurrentFrameInfo()
+            debugSession.getSelectedStackFrame()
             .then((info: dbgmits.StackFrameInfo) => {
               expect(info.func.indexOf('printNextInt')).to.equal(0);
             })
@@ -551,7 +551,7 @@ describe("Debug Session", () => {
       var onStepFinishedCheckFrame = new Promise<void>((resolve, reject) => {
         debugSession.once(DebugSession.EVENT_STEP_FINISHED, 
           (notification: dbgmits.StepFinishedNotify) => {
-            debugSession.getCurrentFrameInfo()
+            debugSession.getSelectedStackFrame()
             .then((info: dbgmits.StackFrameInfo) => {
               expect(info).to.have.property('func', 'main');
             })
@@ -584,7 +584,7 @@ describe("Debug Session", () => {
       var onStepFinishedCheckFrame = new Promise<void>((resolve, reject) => {
         debugSession.once(DebugSession.EVENT_STEP_FINISHED, 
           (notification: dbgmits.StepFinishedNotify) => {
-            debugSession.getCurrentFrameInfo()
+            debugSession.getSelectedStackFrame()
             .then((info: dbgmits.StackFrameInfo) => {
               expect(info).to.have.property('func', 'main');
             })
@@ -617,7 +617,7 @@ describe("Debug Session", () => {
       var onStepFinishedCheckFrame = new Promise<void>((resolve, reject) => {
         debugSession.once(DebugSession.EVENT_STEP_FINISHED, 
           (notification: dbgmits.StepFinishedNotify) => {
-            debugSession.getCurrentFrameInfo()
+            debugSession.getSelectedStackFrame()
             .then((info: dbgmits.StackFrameInfo) => {
               expect(info).to.have.property('func', 'main');
             })
@@ -663,7 +663,7 @@ describe("Debug Session", () => {
       var onBreakpointGetFrameInfo = new Promise<void>((resolve, reject) => {
         debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
           (breakNotify: dbgmits.BreakpointHitNotify) => {
-            debugSession.getCurrentFrameInfo()
+            debugSession.getSelectedStackFrame()
             .then((info: dbgmits.StackFrameInfo) => {
               expect(info).to.have.property('func');
               expect(info.func.indexOf('printNextInt')).to.equal(0);
