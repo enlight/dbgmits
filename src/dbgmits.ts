@@ -302,6 +302,17 @@ export enum VariableDetailLevel {
   Simple = 2
 }
 
+export interface IWatchInfo {
+  id: string;
+  childCount: number;
+  value: string;
+  expressionType: string;
+  threadId: number;
+  isDynamic: boolean;
+  displayHint: string;
+  hasMoreChildren: boolean;
+}
+
 /**
  * A debug session provides two-way communication with a debugger process via the GDB/LLDB 
  * machine interface.
@@ -1434,6 +1445,88 @@ export class DebugSession extends events.EventEmitter {
       ));
     });
   }
+
+  //
+  // Watch Manipulation (aka Variable Objects)
+  //
+
+  /**
+   * Creates a new watch to monitor the value of the given expression.
+   *
+   * @param expression
+   * @param options.id Unique identifier for the new watch, if omitted one is auto-generated.
+   *                   Auto-generated identifiers begin with the letters `var` and are followed by
+   *                   one or more digits, when providing your own identifiers it's best to use a 
+   *                   different naming scheme that doesn't clash with auto-generated identifiers.
+   * @param options.threadId The thread within which the watch expression will be evaluated,
+   *                         defaults to the currently selected thread if not specified.
+   * @param options.threadGroup
+   * @param options.frameLevel The index of the stack frame within which the watch expression will 
+   *                           be evaluated, defaults to the currently selected frame if not
+   *                           specified.
+   * @param options.frameAddress
+   * @param options.isFloating Set to `true` if the expression should be re-evaluated every time
+   *                           within the current frame. Defaults to `false` which means that the
+   *                           expression will be bound to the current frame when the watch is
+   *                           created.
+   */
+  addWatch(
+    expression: string,
+    options?: {
+      id?: string;
+      threadId?: number;
+      threadGroup?: string;
+      frameLevel?: number;
+      frameAddress?: string;
+      isFloating?: boolean;
+    }
+  ): Promise<IWatchInfo> {
+    var fullCmd: string = 'var-create';
+    var id = '-'; // auto-generate id
+    var addr = '*'; // use current frame
+
+    if (options) {
+      if (options.id) {
+        id = options.id;
+      }
+      if (options.threadId) {
+        fullCmd = fullCmd + ' --thread ' + options.threadId;
+      }
+      if (options.threadGroup) {
+        fullCmd = fullCmd + ' --thread-group ' + options.threadGroup;
+      }
+      if (options.frameLevel) {
+        fullCmd = fullCmd + ' --frame ' + options.frameLevel;
+      }
+      if (options.isFloating === true) {
+        addr = '@';
+      }
+      else if (options.frameAddress) {
+        addr = options.frameAddress;
+      }
+    }
+
+    fullCmd = fullCmd + ` ${id} ${addr} ${expression}`;
+
+    return new Promise<IWatchInfo>((resolve, reject) => {
+      this.enqueueCommand(new DebugCommand(fullCmd, null,
+        (err, data) => { err ? reject(err) : resolve(extractWatch(data)); }
+      ));
+    });
+  }
+
+  /**
+   * Destroys a previously created watch.
+   *
+   * @param Identifier of the watch to destroy.
+   */
+  removeWatch(id: string): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      this.enqueueCommand(new DebugCommand('var-delete ' + id, null,
+        (err, data) => { err ? reject(err) : resolve(); }
+      ));
+    });
+  }
 }
 
 /** Creates a FrameInfo object from the output of the MI Output parser. */
@@ -1509,6 +1602,19 @@ function extractFrameArgs(data: any): StackFrameArgsInfo[] {
       args: Array.isArray(data.frame.args) ? data.frame.args : [data.frame.args]
     }];
   }
+}
+
+function extractWatch(data: any): IWatchInfo {
+  return {
+    id: data.name,
+    childCount: parseInt(data.numchild),
+    value: data.value,
+    expressionType: data['type'],
+    threadId: parseInt(data['thread-id']),
+    hasMoreChildren: data.has_more !== '0',
+    isDynamic: data.dynamic === '1',
+    displayHint: data.displayhint
+  };
 }
 
 function setProcessEnvironment(): void {
