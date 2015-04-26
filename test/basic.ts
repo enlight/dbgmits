@@ -24,7 +24,7 @@ var hostExecutable: string = 'C:/Projects/hello-world/hello-world';
 var remoteHost: string = '192.168.56.101';
 var remotePort: number = 8099;
 // this should be kept up to date with any modifications to test_target.cpp
-var locationOfCallToPrintNextInt: string = 'test_target.cpp:119';
+var locationOfCallToPrintNextInt: string = 'test_target.cpp:140';
 
 /**
  * Creates a readable stream containing nothing but the text passed in.
@@ -1174,7 +1174,7 @@ describe("Debug Session", () => {
         );
       });
       // add breakpoint to the get to the starting point of the test
-      return debugSession.addBreakpoint('funcWithThreeLocalVariables_Inner')
+      return debugSession.addBreakpoint('funcWithMoreVariablesToWatch_Inner')
       .then(() => {
         return Promise.all([
           onBreakpointCreateWatch,
@@ -1187,7 +1187,7 @@ describe("Debug Session", () => {
       var onStepFinishedAddWatch = new Promise<void>((resolve, reject) => {
         debugSession.once(DebugSession.EVENT_STEP_FINISHED,
           (notification: dbgmits.StepFinishedNotify) => {
-            // add a new watch for a local variable in funcWithThreeLocalVariables()
+            // add a new watch for a local variable in funcWithMoreVariablesToWatch()
             debugSession.addWatch('e')
             .then((watch: IWatchInfo) => {
               expect(watch.id).not.to.be.empty;
@@ -1212,7 +1212,7 @@ describe("Debug Session", () => {
         );
       });
       // add breakpoint to the get near the starting point of the test
-      return debugSession.addBreakpoint('funcWithThreeLocalVariables_Inner')
+      return debugSession.addBreakpoint('funcWithMoreVariablesToWatch_Inner')
       .then(() => {
         return Promise.all([
           onBreakpointStepOut,
@@ -1227,7 +1227,7 @@ describe("Debug Session", () => {
         debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
           (breakNotify: dbgmits.BreakpointHitNotify) => {
             var theWatch: IWatchInfo;
-            // add a new watch for a local variable in funcWithThreeLocalVariables()
+            // add a new watch for a local variable in funcWithMoreVariablesToWatch()
             return debugSession.addWatch('f', { threadId: 1, frameLevel: 1, isFloating: true })
             .then((watch: IWatchInfo) => { return debugSession.removeWatch(watch.id); })
             .then(resolve)
@@ -1236,7 +1236,7 @@ describe("Debug Session", () => {
         );
       });
       // add breakpoint to the get to the starting point of the test
-      return debugSession.addBreakpoint('funcWithThreeLocalVariables_Inner')
+      return debugSession.addBreakpoint('funcWithMoreVariablesToWatch_Inner')
       .then(() => {
         return Promise.all([
           onBreakpointCreateAndDestroyWatch,

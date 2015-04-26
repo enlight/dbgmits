@@ -302,6 +302,7 @@ export enum VariableDetailLevel {
   Simple = 2
 }
 
+/** Contains information about a newly created watch. */
 export interface IWatchInfo {
   id: string;
   childCount: number;
@@ -1453,22 +1454,28 @@ export class DebugSession extends events.EventEmitter {
   /**
    * Creates a new watch to monitor the value of the given expression.
    *
-   * @param expression
+   * @param expression Any expression valid in the current language set (so long as it doesn't
+   *                   begin with a `*`), or one of the following:
+   *                   - a memory cell address, e.g. `*0x0000000000400cd0`
+   *                   - a CPU register name, e.g. `$sp`
    * @param options.id Unique identifier for the new watch, if omitted one is auto-generated.
    *                   Auto-generated identifiers begin with the letters `var` and are followed by
    *                   one or more digits, when providing your own identifiers it's best to use a 
    *                   different naming scheme that doesn't clash with auto-generated identifiers.
-   * @param options.threadId The thread within which the watch expression will be evaluated,
-   *                         defaults to the currently selected thread if not specified.
+   * @param options.threadId The thread within which the watch expression will be evaluated.
+   *                         *Default*: the currently selected thread.
    * @param options.threadGroup
    * @param options.frameLevel The index of the stack frame within which the watch expression will 
-   *                           be evaluated, defaults to the currently selected frame if not
-   *                           specified.
-   * @param options.frameAddress
+   *                           be evaluated initially, zero for the innermost stack frame. Note that
+   *                           if `frameLevel` is specified then `threadId` must also be specified.
+   *                           *Default*: the currently selected frame.
+   * @param options.frameAddress *(GDB specific)* Address of the frame within which the expression
+   *                             should be evaluated.
    * @param options.isFloating Set to `true` if the expression should be re-evaluated every time
-   *                           within the current frame. Defaults to `false` which means that the
-   *                           expression will be bound to the current frame when the watch is
-   *                           created.
+   *                           within the current frame, i.e. it's not bound to a specific frame.
+   *                           Set to `false` if the expression should be bound to the frame within
+   *                           which the watch is created.
+   *                           *Default*: `false`.
    */
   addWatch(
     expression: string,
@@ -1604,6 +1611,10 @@ function extractFrameArgs(data: any): StackFrameArgsInfo[] {
   }
 }
 
+/**
+ * Converts the output produced by the MI Output parser from the response to the
+ * -var-create MI command into an object that conforms to the IWatchInfo interface.
+ */
 function extractWatch(data: any): IWatchInfo {
   return {
     id: data.name,

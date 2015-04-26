@@ -100,6 +100,27 @@ float funcWithThreeLocalVariables()
 	return e.x + e.y + f + g;
 }
 
+bool funcWithMoreVariablesToWatch_Inner()
+{
+    return true;
+}
+
+void funcWithMoreVariablesToWatch()
+{
+    Point e = { 5, 10 };
+	float f = 9.5f;
+	
+	funcWithMoreVariablesToWatch_Inner();
+}
+
+void funcWithVariablesToWatch()
+{
+    int e = 5;
+    float f = 5;
+	
+	funcWithMoreVariablesToWatch();
+}
+
 int getNextInt()
 {
     static int nextInt = 0;
@@ -129,6 +150,7 @@ int main(int argc, const char *argv[])
 	funcWithTwoArgs(7.0f, { 7.0f, 9.0f });
 	int threeInts[] = { 1, 2, 3 };
 	funcWithThreeArgs(300, "Test", threeInts);
+	funcWithVariablesToWatch();
 	
     return 0;
 }
