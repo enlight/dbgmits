@@ -314,6 +314,53 @@ export interface IWatchInfo {
   hasMoreChildren: boolean;
 }
 
+/** Contains information about the changes in the state of a watch. */
+export interface IWatchUpdateInfo {
+  /** Unique identifier of the watch whose state changed. */
+  id: string;
+  /** 
+   * If the number of children changed this is the updated count,
+   * otherwise this field is undefined.
+  */
+  childCount?: number;
+  /** The value of the watch expression after the update. */
+  value?: string;
+  /** 
+   * If the type of the watch expression changed this will be the new type,
+   * otherwise this field is undefined.
+   */
+  expressionType?: string;
+  /** 
+   * If `true` the watch expression is in-scope and has a valid value after the update.
+   * If `false' the watch expression is not in-scope and has no valid value, but if [[isObsolete]]
+   * is likewise `false` then the value may become valid at some point in the future if the watch 
+   * expression comes back into scope.
+   */
+  isInScope: boolean;
+  /** 
+   * `true` if the value of the watch expression is permanently unavailable, possibly because
+   * the target has changed or has been recompiled. Obsolete watches should be removed by the
+   * front-end.
+   */
+  isObsolete: boolean;
+  /** `true` iff the value if the type of the watch expression has changed. */
+  hasTypeChanged?: boolean;
+  /** `true` iff the watch relies on a Python-based visualizer. */
+  isDynamic?: boolean;
+  /** 
+   * If `isDynamic` is `true` this field may contain a hint for the front-end on how the value of
+   * the watch expression should be displayed. Otherwise this field is undefined.
+   */
+  displayHint?: string;
+  /** `true` iff there are more children outside the update range. */
+  hasMoreChildren: boolean;
+  /** 
+   * If `isDynamic` is `true` and new children were added within the update range this will
+   * be a list of those new children. Otherwise this field is undefined.
+   */
+  newChildren?: string;
+}
+
 /**
  * A debug session provides two-way communication with a debugger process via the GDB/LLDB 
  * machine interface.
@@ -1534,6 +1581,25 @@ export class DebugSession extends events.EventEmitter {
       ));
     });
   }
+
+  /**
+   * Updates the state of an existing watch.
+   *
+   * @param Identifier of the watch to update.
+   */
+  updateWatch(id: string, detail?: VariableDetailLevel): Promise<IWatchUpdateInfo[]> {
+    var fullCmd: string = 'var-update';
+    if (detail !== undefined) {
+      fullCmd = fullCmd + ' ' + detail;
+    }
+    fullCmd = fullCmd + ' ' + id;
+
+    return new Promise<IWatchUpdateInfo[]>((resolve, reject) => {
+      this.enqueueCommand(new DebugCommand(fullCmd, null,
+        (err, data) => { err ? reject(err) : resolve(extractWatchChangelist(data.changelist)); }
+      ));
+    });
+  }
 }
 
 /** Creates a FrameInfo object from the output of the MI Output parser. */
@@ -1626,6 +1692,28 @@ function extractWatch(data: any): IWatchInfo {
     isDynamic: data.dynamic === '1',
     displayHint: data.displayhint
   };
+}
+
+/**
+ * Converts the output produced by the MI Output parser from the response to the
+ * -var-update MI command into an array of objects that conform to the IWatchUpdateInfo.
+ */
+function extractWatchChangelist(changelist: any[]): IWatchUpdateInfo[] {
+  return changelist.map((data: any) => {
+    return {
+      id: data.name,
+      childCount: (data.new_num_children ? parseInt(data.new_num_children) : undefined),
+      value: data.value,
+      expressionType: data.new_type,
+      isInScope: data.in_scope === 'true',
+      isObsolete: data.in_scope === 'invalid',
+      hasTypeChanged: data.type_changed === 'true',
+      isDynamic: data.dynamic === '1',
+      displayHint: data.displayhint,
+      hasMoreChildren: data.has_more === '1',
+      newChildren: data.new_children
+    }
+  });
 }
 
 function setProcessEnvironment(): void {

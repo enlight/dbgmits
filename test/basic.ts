@@ -24,7 +24,7 @@ var hostExecutable: string = 'C:/Projects/hello-world/hello-world';
 var remoteHost: string = '192.168.56.101';
 var remotePort: number = 8099;
 // this should be kept up to date with any modifications to test_target.cpp
-var locationOfCallToPrintNextInt: string = 'test_target.cpp:140';
+var locationOfCallToPrintNextInt: string = 'test_target.cpp:119';
 
 /**
  * Creates a readable stream containing nothing but the text passed in.
@@ -1136,113 +1136,5 @@ describe("Debug Session", () => {
         ])
       });
     });
-
   });
-
-  describe("Watch Manipulation", () => {
-    var debugSession: DebugSession;
-
-    beforeEach(() => {
-      debugSession = dbgmits.startDebugSession();
-      return debugSession.setExecutableFile(localTargetExe);
-    });
-
-    afterEach(() => {
-      return debugSession.end();
-    });
-    
-    it("adds a new floating watch for a local variable in an outer frame", () => {
-      var onBreakpointCreateWatch = new Promise<void>((resolve, reject) => {
-        debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
-          (breakNotify: dbgmits.BreakpointHitNotify) => {
-            var theWatch: IWatchInfo;
-            // add a new watch for a local variable in funcWithThreeLocalVariables()
-            return debugSession.addWatch('f', { threadId: 1, frameLevel: 1, isFloating: true })
-            .then((watch: IWatchInfo) => {
-              expect(watch.id).not.to.be.empty;
-              expect(watch.childCount).to.equal(0);
-              expect(watch.value).to.equal('9.5');
-              expect(watch.expressionType).to.equal('float');
-              expect(watch.threadId).to.equal(1);
-              expect(watch.isDynamic).to.be.false;
-              expect(watch.hasMoreChildren).to.be.false;
-              expect(watch.displayHint).to.be.undefined;
-            })
-            .then(resolve)
-            .catch(reject);
-          }
-        );
-      });
-      // add breakpoint to the get to the starting point of the test
-      return debugSession.addBreakpoint('funcWithMoreVariablesToWatch_Inner')
-      .then(() => {
-        return Promise.all([
-          onBreakpointCreateWatch,
-          debugSession.startTarget()
-        ])
-      });
-    });
-
-    it("adds a new fixed watch for a local variable in the current frame", () => {
-      var onStepFinishedAddWatch = new Promise<void>((resolve, reject) => {
-        debugSession.once(DebugSession.EVENT_STEP_FINISHED,
-          (notification: dbgmits.StepFinishedNotify) => {
-            // add a new watch for a local variable in funcWithMoreVariablesToWatch()
-            debugSession.addWatch('e')
-            .then((watch: IWatchInfo) => {
-              expect(watch.id).not.to.be.empty;
-              expect(watch.childCount).to.equal(2);
-              expect(watch.expressionType).to.equal('Point');
-              expect(watch.threadId).to.equal(1);
-              expect(watch.isDynamic).to.be.false;
-              expect(watch.hasMoreChildren).to.be.false;
-              expect(watch.displayHint).to.be.undefined;
-            })
-            .then(resolve)
-            .catch(reject);
-          }
-        )
-      });
-      // step out into funcWithThreeLocalVariables()
-      var onBreakpointStepOut = new Promise<void>((resolve, reject) => {
-        debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
-          (breakNotify: dbgmits.BreakpointHitNotify) => {
-            resolve(debugSession.stepOut());
-          }
-        );
-      });
-      // add breakpoint to the get near the starting point of the test
-      return debugSession.addBreakpoint('funcWithMoreVariablesToWatch_Inner')
-      .then(() => {
-        return Promise.all([
-          onBreakpointStepOut,
-          onStepFinishedAddWatch,
-          debugSession.startTarget()
-        ])
-      });
-    });
-
-    it("removes a watch", () => {
-      var onBreakpointCreateAndDestroyWatch = new Promise<void>((resolve, reject) => {
-        debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
-          (breakNotify: dbgmits.BreakpointHitNotify) => {
-            var theWatch: IWatchInfo;
-            // add a new watch for a local variable in funcWithMoreVariablesToWatch()
-            return debugSession.addWatch('f', { threadId: 1, frameLevel: 1, isFloating: true })
-            .then((watch: IWatchInfo) => { return debugSession.removeWatch(watch.id); })
-            .then(resolve)
-            .catch(reject);
-          }
-        );
-      });
-      // add breakpoint to the get to the starting point of the test
-      return debugSession.addBreakpoint('funcWithMoreVariablesToWatch_Inner')
-      .then(() => {
-        return Promise.all([
-          onBreakpointCreateAndDestroyWatch,
-          debugSession.startTarget()
-        ])
-      });
-    });
-
 });
