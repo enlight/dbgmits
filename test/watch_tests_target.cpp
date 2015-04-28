@@ -28,8 +28,10 @@ void funcWithVariablesToWatch()
 {
     int e = 5;
     float f = 5;
+	float *g = &f;
 	
 	funcWithMoreVariablesToWatch();
+	return;
 }
 
 int main(int argc, const char *argv[])

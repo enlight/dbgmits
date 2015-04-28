@@ -314,6 +314,13 @@ export interface IWatchInfo {
   hasMoreChildren: boolean;
 }
 
+export interface IWatchChildInfo extends IWatchInfo {
+  /** The expression the front-end should display to identify this child. */
+  expression: string;
+  /** `true` if the watch state is not implicitely updated. */
+  isFrozen: boolean;
+}
+
 /** Contains information about the changes in the state of a watch. */
 export interface IWatchUpdateInfo {
   /** Unique identifier of the watch whose state changed. */
@@ -1600,6 +1607,51 @@ export class DebugSession extends events.EventEmitter {
       ));
     });
   }
+
+  /**
+   * Retrieves a list of direct children of the specified watch.
+   *
+   * A watch is automatically created for each child that is retrieved (if one doesn't already exist).
+   * The `from` and `to` options can be used to retrieve a subset of children starting from child
+   * index `from` and up to (but excluding) child index `to`, note that this currently doesn't work
+   * on LLDB.
+   *
+   * @param Identifier of the watch whose children should be retrieved.
+   * @param options.detail One of:
+   *     - [[VariableDetailLevel.None]]: Do not retrieve values of children, this is the default.
+   *     - [[VariableDetailLevel.All]]: Retrieve values for all children.
+   *     - [[VariableDetailLevel.Simple]]: Only retrieve values of children that have a simple type.
+   * @param options.from Zero-based index of the first child to retrieve, if less than zero the
+   *                     range is reset. `to` must also be set in order for this option to have any
+   *                     effect.
+   * @param options.to Zero-based index +1 of the last child to retrieve, if less than zero the
+   *                   range is reset. `from` must also be set in order for this option to have any
+   *                   effect.
+   */
+  getWatchChildren(
+    id: string, 
+    options?: {
+      detail?: VariableDetailLevel;
+      from?: number;
+      to?: number;
+    }): Promise<IWatchChildInfo[]> {
+    var fullCmd: string = 'var-list-children';
+    if (options && (options.detail !== undefined)) {
+      fullCmd = fullCmd + ' ' + options.detail;
+    }
+    fullCmd = fullCmd + ' ' + id;
+    if (options) {
+      if (options.from && options.to) {
+        fullCmd = fullCmd + ' ' + options.from + ' ' + options.to;
+      }
+    }
+
+    return new Promise<IWatchChildInfo[]>((resolve, reject) => {
+      this.enqueueCommand(new DebugCommand(fullCmd, null,
+        (err, data) => { err ? reject(err) : resolve(extractWatchChildren(data.children)); }
+      ));
+    });
+  }
 }
 
 /** Creates a FrameInfo object from the output of the MI Output parser. */
@@ -1696,7 +1748,7 @@ function extractWatch(data: any): IWatchInfo {
 
 /**
  * Converts the output produced by the MI Output parser from the response to the
- * -var-update MI command into an array of objects that conform to the IWatchUpdateInfo.
+ * -var-update MI command into an array of objects that conform to the IWatchUpdateInfo interface.
  */
 function extractWatchChangelist(changelist: any[]): IWatchUpdateInfo[] {
   return changelist.map((data: any) => {
@@ -1714,6 +1766,41 @@ function extractWatchChangelist(changelist: any[]): IWatchUpdateInfo[] {
       newChildren: data.new_children
     }
   });
+}
+
+/** 
+ * Converts the output produced by the MI Output parser from the response to the
+ * -var-list-children MI command into an array of objects that conform to the IWatchChildInfo 
+ * interface.
+ */
+function extractWatchChildren(data: any | any[]): IWatchChildInfo[] {
+  var extractWatchChild = (data: any): IWatchChildInfo => {
+    return {
+      id: data.name,
+      childCount: parseInt(data.numchild),
+      value: data.value,
+      expressionType: data['type'],
+      threadId: parseInt(data['thread-id']),
+      hasMoreChildren: data.has_more !== '0',
+      isDynamic: data.dynamic === '1',
+      displayHint: data.displayhint,
+      expression: data.exp,
+      isFrozen: data.frozen === '1'
+    };
+  }
+
+  // FIXME: the input shouldn't actually ever be the string '[]', but LLDB-MI has this quirk,
+  // hopefully it'll be fixed in the near future and the string comparison can be removed
+  if ((data === undefined) || Array.isArray(data) || (data === '[]')) {
+    // input will only be an array if the array is empty
+    return [];
+  } else if (Array.isArray(data.child)) {
+    // input is in the form: { child: [{ name: var1.child1, ... }, { name: var1.child2, ... }, ...]
+    return data.child.map((child: any) => { return extractWatchChild(child); });
+  } else {
+    // input is in the form: { child: { name: var1.child1, ... } }
+    return [extractWatchChild(data.child)];
+  }
 }
 
 function setProcessEnvironment(): void {
