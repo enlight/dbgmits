@@ -76,7 +76,7 @@ module MIOutput {
    * returned object will be an array of values.
    */
   export function createObjFromResultList(resultList: Array<{ name: string; value: string }>): any {
-    var dict = {};
+    var dict: { [index: string]: any } = {};
     if (resultList) {
       resultList.forEach((result) => {
         var prevValue = dict[result.name];

@@ -1682,7 +1682,7 @@ function extractStackFrameInfo(data: any): StackFrameInfo {
 /** Creates a StackFrameInfo array from the output of the MI Output parser. */
 function extractStackFrames(data: any | any[]): StackFrameInfo[] {
   if (Array.isArray(data)) {
-    return data.map((frame) => { return extractStackFrameInfo(frame); });
+    return data.map((frame: any) => { return extractStackFrameInfo(frame); });
   } else {
     return [extractStackFrameInfo(data)];
   }
@@ -1696,7 +1696,7 @@ function extractFrameLocals(data: any): VariableInfo[] {
   if ('name' in data) {
     if (Array.isArray(data.name)) {
       // input is in the form: { name: [varName1, varName2, ...] }
-      return data.name.map((varName): VariableInfo => { return { name: varName }; });
+      return data.name.map((varName: string): VariableInfo => { return { name: varName }; });
     } else {
       // input is in the form: { name: varName }
       return [{ name: data.name }];
@@ -1714,7 +1714,7 @@ function extractFrameLocals(data: any): VariableInfo[] {
 function extractFrameArgs(data: any): StackFrameArgsInfo[] {
   if (Array.isArray(data.frame)) {
     // input is in the form: { frame: [{ level: 0, args: [...] }, { level: 1, args: arg1 }, ...]
-    data.frame.map((frame): StackFrameArgsInfo => {
+    data.frame.map((frame: any): StackFrameArgsInfo => {
       return {
         level: parseInt(frame.level),
         args: Array.isArray(frame.args) ? frame.args : [frame.args]
@@ -1858,17 +1858,18 @@ export function startDebugSession(): DebugSession {
 
 // There are more reasons listed in the GDB/MI spec., the ones here are just the subset that's 
 // actually used by LLDB MI at this time (11-Apr-2015).
-var targetStopReasonMap = {
-  'breakpoint-hit': TargetStopReason.BreakpointHit,
-  'end-stepping-range': TargetStopReason.EndSteppingRange,
-  'exited-normally': TargetStopReason.ExitedNormally,
-  'signal-received': TargetStopReason.SignalReceived,
-  'exception-received': TargetStopReason.ExceptionReceived
-};
+var targetStopReasonMap = new Map<string, TargetStopReason>()
+  .set('breakpoint-hit', TargetStopReason.BreakpointHit)
+  .set('end-stepping-range', TargetStopReason.EndSteppingRange)
+  .set('exited-normally', TargetStopReason.ExitedNormally)
+  .set('signal-received', TargetStopReason.SignalReceived)
+  .set('exception-received', TargetStopReason.ExceptionReceived);
 
-function parseTargetStopReason(reason: string): TargetStopReason {
-  if (reason in targetStopReasonMap) {
-    return targetStopReasonMap[reason];
+function parseTargetStopReason(reasonString: string): TargetStopReason {
+  var reasonCode = targetStopReasonMap.get(reasonString);
+  console.log('REASON: ' + reasonString + ' ' + reasonCode);
+  if (reasonCode !== undefined) {
+    return reasonCode;
   }
   // TODO: log and keep on running
   return TargetStopReason.Unrecognized;
