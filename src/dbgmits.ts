@@ -368,6 +368,19 @@ export interface IWatchUpdateInfo {
   newChildren?: string;
 }
 
+/** Output format specifiers for watch values. */
+export enum WatchFormatSpec {
+  Binary,
+  Decimal,
+  Hexadecimal,
+  Octal,
+  /** 
+   * This specifier is used to indicate that one of the other ones should be automatically chosen
+   * based on the expression type, for example `Decimal` for integers, `Hexadecimal` for pointers.
+   */
+  Default
+}
+
 /**
  * A debug session provides two-way communication with a debugger process via the GDB/LLDB 
  * machine interface.
@@ -1579,7 +1592,7 @@ export class DebugSession extends events.EventEmitter {
   /**
    * Destroys a previously created watch.
    *
-   * @param Identifier of the watch to destroy.
+   * @param id Identifier of the watch to destroy.
    */
   removeWatch(id: string): Promise<void> {
     return new Promise<void>((resolve, reject) => {
@@ -1592,7 +1605,7 @@ export class DebugSession extends events.EventEmitter {
   /**
    * Updates the state of an existing watch.
    *
-   * @param Identifier of the watch to update.
+   * @param id Identifier of the watch to update.
    */
   updateWatch(id: string, detail?: VariableDetailLevel): Promise<IWatchUpdateInfo[]> {
     var fullCmd: string = 'var-update';
@@ -1616,7 +1629,7 @@ export class DebugSession extends events.EventEmitter {
    * index `from` and up to (but excluding) child index `to`, note that this currently doesn't work
    * on LLDB.
    *
-   * @param Identifier of the watch whose children should be retrieved.
+   * @param id Identifier of the watch whose children should be retrieved.
    * @param options.detail One of:
    *     - [[VariableDetailLevel.None]]: Do not retrieve values of children, this is the default.
    *     - [[VariableDetailLevel.All]]: Retrieve values for all children.
@@ -1649,6 +1662,21 @@ export class DebugSession extends events.EventEmitter {
     return new Promise<IWatchChildInfo[]>((resolve, reject) => {
       this.enqueueCommand(new DebugCommand(fullCmd, null,
         (err, data) => { err ? reject(err) : resolve(extractWatchChildren(data.children)); }
+      ));
+    });
+  }
+
+  /**
+   * Sets the output format for the value of a watch.
+   *
+   * @param id Identifier of the watch for which the format specifier should be set.
+   * @param formatSpec The output format for the watch.
+   */
+  setWatchValueFormat(id: string, formatSpec: WatchFormatSpec): Promise<void> {
+    var fullCmd: string = `var-set-format ${id} ` + watchFormatSpecToStringMap.get(formatSpec);
+    return new Promise<void>((resolve, reject) => {
+      this.enqueueCommand(new DebugCommand(fullCmd, null,
+        (err, data) => { err ? reject(err) : resolve(); }
       ));
     });
   }
@@ -1889,3 +1917,11 @@ function parseStoppedThreadsList(stoppedThreads: string): number[] {
     return [parseInt(stoppedThreads, 10)];
   }
 }
+
+// maps WatchFormatSpec enum members to the corresponding MI string
+var watchFormatSpecToStringMap = new Map<WatchFormatSpec, string>()
+  .set(WatchFormatSpec.Binary, 'binary')
+  .set(WatchFormatSpec.Decimal, 'decimal')
+  .set(WatchFormatSpec.Hexadecimal, 'hexadecimal')
+  .set(WatchFormatSpec.Octal, 'octal')
+  .set(WatchFormatSpec.Default, 'natural');

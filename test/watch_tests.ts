@@ -319,4 +319,49 @@ describe("Watch Manipulation", () => {
       ])
     });
   });
+
+  it("sets the format specifier for a watch", () => {
+    return runToFuncAndStepOut(debugSession, 'funcWithMoreVariablesToWatch', () => {
+      return debugSession.addWatch('e')
+      .then((watch: IWatchInfo) => {
+        return debugSession.setWatchValueFormat(watch.id, dbgmits.WatchFormatSpec.Decimal);
+      });
+      // TODO: check the value output format is correct
+    });
+  });
 });
+
+function runToFuncAndStepOut(
+  debugSession: DebugSession, funcName: string, afterStepOut: () => Promise<any>): Promise<any> {
+  var onStepOutRunTest = () => {
+    return new Promise<void>((resolve, reject) => {
+      debugSession.once(DebugSession.EVENT_STEP_FINISHED,
+        (stepNotify: dbgmits.StepFinishedNotify) => {
+          afterStepOut()
+          .then(resolve)
+          .catch(reject);
+        }
+      );
+    });
+  }
+  var onBreakpointStepOut = new Promise<void>((resolve, reject) => {
+    debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
+      (breakNotify: dbgmits.BreakpointHitNotify) => {
+        Promise.all([
+          onStepOutRunTest(),
+          debugSession.stepOut()
+        ])
+        .then(() => { resolve(); })
+        .catch(reject);
+      }
+    );
+  });
+  // add breakpoint to get to the starting point
+  return debugSession.addBreakpoint(funcName)
+  .then(() => {
+    return Promise.all([
+      onBreakpointStepOut,
+      debugSession.startTarget()
+    ])
+  });
+}
