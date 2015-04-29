@@ -322,11 +322,43 @@ describe("Watch Manipulation", () => {
 
   it("sets the format specifier for a watch", () => {
     return runToFuncAndStepOut(debugSession, 'funcWithMoreVariablesToWatch', () => {
+      var watchId;
+      // watch an integer variable
       return debugSession.addWatch('e')
       .then((watch: IWatchInfo) => {
-        return debugSession.setWatchValueFormat(watch.id, dbgmits.WatchFormatSpec.Decimal);
-      });
-      // TODO: check the value output format is correct
+        watchId = watch.id;
+        return debugSession.setWatchValueFormat(watchId, dbgmits.WatchFormatSpec.Binary);
+      })
+      // FIXME: binary values are formatted differently between LLDB and GDB, this will fail on GDB
+      .then((value: string) => { expect(value).to.equal('0b101'); })
+      .then(() => {
+        return debugSession.setWatchValueFormat(watchId, dbgmits.WatchFormatSpec.Decimal);
+      })
+      .then((value: string) => { expect(value).to.equal('5'); })
+      .then(() => {
+        return debugSession.setWatchValueFormat(watchId, dbgmits.WatchFormatSpec.Hexadecimal);
+      })
+      .then((value: string) => { expect(value).to.equal('0x5'); })
+      .then(() => {
+        return debugSession.setWatchValueFormat(watchId, dbgmits.WatchFormatSpec.Octal);
+      })
+      .then((value: string) => { expect(value).to.equal('05'); })
+      .then(() => {
+        return debugSession.setWatchValueFormat(watchId, dbgmits.WatchFormatSpec.Default);
+      })
+      .then((value: string) => { expect(value).to.equal('5'); })
+    });
+  });
+
+  it("gets the value of a watch", () => {
+    return runToFuncAndStepOut(debugSession, 'funcWithMoreVariablesToWatch', () => {
+      return debugSession.addWatch('e')
+      .then((watch: IWatchInfo) => {
+        return debugSession.getWatchValue(watch.id);
+      })
+      .then((value: string) => {
+        expect(value).to.equal('5');
+      })
     });
   });
 });

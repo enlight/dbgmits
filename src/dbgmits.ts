@@ -911,6 +911,34 @@ export class DebugSession extends events.EventEmitter {
   }
 
   /**
+   * Sends an MI command to the debugger and returns the response.
+   * 
+   * @param command Full MI command string, excluding the optional token and dash prefix.
+   * @param token Token to be prefixed to the command string (must consist only of digits).
+   * @param transformOutput This function will be invoked with the output of the MI Output parser
+   *                        and should transform that output into an instance of type `T`.
+   * @returns A promise that will be resolved when the command response is received.
+   */
+  private getCommandOutput<T>(command: string, token?: string, transformOutput?: (data: any) => T)
+    : Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+      this.enqueueCommand(
+        new DebugCommand(command, token, (err, data) => {
+          if (err) {
+            reject(err);
+          } else {
+            try {
+              resolve(transformOutput ? transformOutput(data) : data);
+            } catch (err) {
+              reject(err);
+            }
+          }
+        })
+      );
+    });
+  }
+
+  /**
    * Sets the executable file to be debugged, the symbol table will also be read from this file.
    *
    * This must be called prior to [[connectToRemoteTarget]] when setting up a remote debugging 
@@ -1670,14 +1698,38 @@ export class DebugSession extends events.EventEmitter {
    * Sets the output format for the value of a watch.
    *
    * @param id Identifier of the watch for which the format specifier should be set.
-   * @param formatSpec The output format for the watch.
+   * @param formatSpec The output format for the watch value.
+   * @returns A promise that will be resolved with the value of the watch formatted using the
+   *          provided `formatSpec`.
    */
-  setWatchValueFormat(id: string, formatSpec: WatchFormatSpec): Promise<void> {
+  setWatchValueFormat(id: string, formatSpec: WatchFormatSpec): Promise<string> {
     var fullCmd: string = `var-set-format ${id} ` + watchFormatSpecToStringMap.get(formatSpec);
-    return new Promise<void>((resolve, reject) => {
-      this.enqueueCommand(new DebugCommand(fullCmd, null,
-        (err, data) => { err ? reject(err) : resolve(); }
-      ));
+
+    return this.getCommandOutput<string>(fullCmd, null, (output: any) => {
+      if (output.value) {
+        return output.value; // GDB-MI
+      } else {
+        return output.changelist[0].value; // LLDB-MI
+      }
+    });
+  }
+
+  /**
+   * Evaluates the watch expression and returns the result.
+   *
+   * @param id Identifier of the watch for which the format specifier should be set.
+   * @param formatSpec The output format for the watch value.
+   * @returns A promise that will be resolved with the value of the watch.
+   */
+  getWatchValue(id: string, formatSpec?: WatchFormatSpec): Promise<string> {
+    var fullCmd: string = 'var-evaluate-expression';
+    if (formatSpec !== undefined) {
+      fullCmd = fullCmd + ' -f ' + watchFormatSpecToStringMap.get(formatSpec);
+    }
+    fullCmd = fullCmd + ' ' + id;
+
+    return this.getCommandOutput<string>(fullCmd, null, (output: any) => {
+      return output.value;
     });
   }
 }
