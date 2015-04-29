@@ -43,7 +43,7 @@ class DebugCommand {
 }
 
 /** Frame-specific information returned by breakpoint and stepping MI commands. */
-export interface FrameInfo {
+export interface IFrameInfo {
   /** Name of the function corresponding to the frame. */
   func?: string;
   /** Arguments of the function corresponding to the frame. */
@@ -59,7 +59,7 @@ export interface FrameInfo {
 }
 
 /** Frame-specific information returned by stack related MI commands. */
-export interface StackFrameInfo {
+export interface IStackFrameInfo {
   /** Level of the stack frame, zero for the innermost frame. */
   level: number;
   /** Name of the function corresponding to the frame. */
@@ -210,11 +210,11 @@ export interface TargetStoppedNotify {
 
 export interface BreakpointHitNotify extends TargetStoppedNotify {
   breakpointId: number;
-  frame: FrameInfo;
+  frame: IFrameInfo;
 }
 
 export interface StepFinishedNotify extends TargetStoppedNotify {
-  frame: FrameInfo;
+  frame: IFrameInfo;
 }
 
 export interface SignalReceivedNotify extends TargetStoppedNotify {
@@ -227,7 +227,7 @@ export interface ExceptionReceivedNotify extends TargetStoppedNotify {
   exception: string;
 }
 
-export interface VariableInfo {
+export interface IVariableInfo {
   /** Variable name. */
   name: string;
   /** String representation of the value of the variable. */
@@ -237,11 +237,11 @@ export interface VariableInfo {
 }
 
 /** Contains information about the arguments of a stack frame. */
-export interface StackFrameArgsInfo {
+export interface IStackFrameArgsInfo {
   /** Index of the frame on the stack, zero for the innermost frame. */
   level: number;
   /** List of arguments for the frame. */
-  args: VariableInfo[];
+  args: IVariableInfo[];
 }
 
 /** Indicates how much information should be retrieved when calling 
@@ -1238,13 +1238,9 @@ export class DebugSession extends events.EventEmitter {
    *                           option then `threadId` must be specified as well.
    */
   getStackFrame(
-    options?: { threadId?: number; frameLevel?: number }, token?: string): Promise<StackFrameInfo> {
-    return new Promise<StackFrameInfo>((resolve, reject) => {
-      this.enqueueCommand(
-        new DebugCommand('stack-info-frame', token,
-          (err, data) => { err ? reject(err) : resolve(extractStackFrameInfo(data.frame)); }
-        )
-      );
+    options?: { threadId?: number; frameLevel?: number }, token?: string): Promise<IStackFrameInfo> {
+    return this.getCommandOutput('stack-info-frame', token, (output: any) => {
+      return extractStackFrameInfo(output.frame);
     });
   }
 
@@ -1258,21 +1254,18 @@ export class DebugSession extends events.EventEmitter {
    */
   getStackDepth(
     options?: { threadId?: number; maxDepth?: number }, token?: string): Promise<number> {
-    return new Promise<number>((resolve, reject) => {
-      var fullCmd: string = 'stack-info-depth';
-      if (options) {
-        if (options.threadId) {
-          fullCmd = fullCmd + ' --thread' + options.threadId;
-        }
-        if (options.maxDepth) {
-          fullCmd = fullCmd + ' ' + options.maxDepth;
-        }
+    var fullCmd: string = 'stack-info-depth';
+    if (options) {
+      if (options.threadId) {
+        fullCmd = fullCmd + ' --thread ' + options.threadId;
       }
-      this.enqueueCommand(
-        new DebugCommand(fullCmd, token,
-          (err, data) => { err ? reject(err) : resolve(parseInt(data.depth)); }
-        )
-      );
+      if (options.maxDepth) {
+        fullCmd = fullCmd + ' ' + options.maxDepth;
+      }
+    }
+    
+    return this.getCommandOutput(fullCmd, token, (output: any) => {
+      return parseInt(output.depth);
     });
   }
 
@@ -1294,7 +1287,7 @@ export class DebugSession extends events.EventEmitter {
    */
   getStackFrames(
     options?: { threadId?: number; lowFrame?: number; highFrame?: number; noFrameFilters?: boolean }, 
-    token?: string) : Promise<StackFrameInfo[]> {
+    token?: string) : Promise<IStackFrameInfo[]> {
     var fullCmd: string = 'stack-list-frames';
     if (options) {
       if (options.threadId) {
@@ -1311,15 +1304,19 @@ export class DebugSession extends events.EventEmitter {
         fullCmd = fullCmd + ` ${options.highFrame} ${options.highFrame}`;
       }
     }
-    return new Promise<StackFrameInfo[]>((resolve, reject) => {
-      this.enqueueCommand(new DebugCommand(fullCmd, token,
-        (err, data) => { err ? reject(err) : resolve(extractStackFrames(data.stack.frame)); }
-      ));
+
+    return this.getCommandOutput(fullCmd, token, (output: any) => {
+      var data = output.stack.frame;
+      if (Array.isArray(data)) {
+        return data.map((frame: any) => { return extractStackFrameInfo(frame); });
+      } else {
+        return [extractStackFrameInfo(data)];
+      }
     });
   }
 
   /**
-   * Get a list of all the local variables for the specified frame.
+   * Retrieves a list of all the local variables for the specified frame.
    *
    * @param detail Specifies what information should be retrieved for each local variable.
    * @param options.threadId The thread for which local variables should be retrieved,
@@ -1339,7 +1336,7 @@ export class DebugSession extends events.EventEmitter {
       threadId?: number; frameLevel?: number; noFrameFilters?: boolean; skipUnavailable?: boolean
     },
     token?: string
-  ): Promise<VariableInfo[]> {
+  ): Promise<IVariableInfo[]> {
     var fullCmd: string = 'stack-list-locals';
     if (options) {
       if (options.threadId) {
@@ -1357,15 +1354,25 @@ export class DebugSession extends events.EventEmitter {
     }
     fullCmd = fullCmd + ' ' + detail;
 
-    return new Promise<VariableInfo[]>((resolve, reject) => {
-      this.enqueueCommand(new DebugCommand(fullCmd, token,
-        (err, data) => { err ? reject(err) : resolve(extractFrameLocals(data.locals)); }
-      ));
+    return this.getCommandOutput(fullCmd, token, (output: any) => {
+      var data = output.locals;
+      if ('name' in data) {
+        if (Array.isArray(data.name)) {
+          // data is in the form: { name: [varName1, varName2, ...] }
+          return data.name.map((varName: string): IVariableInfo => { return { name: varName }; });
+        } else {
+          // data is in the form: { name: varName }
+          return [{ name: data.name }];
+        }
+      } else {
+        // data is already in the correct form
+        return data;
+      }
     });
   }
 
   /**
-   * Get a list of all the arguments for the specified frame(s).
+   * Retrieves a list of all the arguments for the specified frame(s).
    *
    * The `lowFrame` and `highFrame` options can be used to limit the frames for which arguments
    * are retrieved. If both are supplied only the frames with levels in that range (inclusive) are
@@ -1394,7 +1401,7 @@ export class DebugSession extends events.EventEmitter {
       highFrame?: number;
     },
     token?: string
-  ): Promise<StackFrameArgsInfo[]> {
+  ): Promise<IStackFrameArgsInfo[]> {
     var fullCmd: string = 'stack-list-arguments';
     if (options) {
       if (options.threadId) {
@@ -1420,10 +1427,23 @@ export class DebugSession extends events.EventEmitter {
       }
     }
 
-    return new Promise<StackFrameArgsInfo[]>((resolve, reject) => {
-      this.enqueueCommand(new DebugCommand(fullCmd, token,
-        (err, data) => { err ? reject(err) : resolve(extractFrameArgs(data['stack-args'])); }
-      ));
+    return this.getCommandOutput(fullCmd, token, (output: any) => {
+      var data = output['stack-args'];
+      if (Array.isArray(data.frame)) {
+        // data is in the form: { frame: [{ level: 0, args: [...] }, { level: 1, args: arg1 }, ...]
+        data.frame.map((frame: any): IStackFrameArgsInfo => {
+          return {
+            level: parseInt(frame.level),
+            args: Array.isArray(frame.args) ? frame.args : [frame.args]
+          };
+        });
+      } else {
+        // data is in the form: { frame: { level: 0, args: [...] }
+        return [{
+          level: parseInt(data.frame.level),
+          args: Array.isArray(data.frame.args) ? data.frame.args : [data.frame.args]
+        }];
+      }
     });
   }
 
@@ -1495,10 +1515,17 @@ export class DebugSession extends events.EventEmitter {
 
     fullCmd = fullCmd + ` ${id} ${addr} ${expression}`;
 
-    return new Promise<IWatchInfo>((resolve, reject) => {
-      this.enqueueCommand(new DebugCommand(fullCmd, null,
-        (err, data) => { err ? reject(err) : resolve(extractWatch(data)); }
-      ));
+    return this.getCommandOutput(fullCmd, null, (output: any) => {
+      return {
+        id: output.name,
+        childCount: parseInt(output.numchild),
+        value: output.value,
+        expressionType: output['type'],
+        threadId: parseInt(output['thread-id']),
+        hasMoreChildren: output.has_more !== '0',
+        isDynamic: output.dynamic === '1',
+        displayHint: output.displayhint
+      };
     });
   }
 
@@ -1523,10 +1550,22 @@ export class DebugSession extends events.EventEmitter {
     }
     fullCmd = fullCmd + ' ' + id;
 
-    return new Promise<IWatchUpdateInfo[]>((resolve, reject) => {
-      this.enqueueCommand(new DebugCommand(fullCmd, null,
-        (err, data) => { err ? reject(err) : resolve(extractWatchChangelist(data.changelist)); }
-      ));
+    return this.getCommandOutput(fullCmd, null, (output: any) => {
+      return output.changelist.map((data: any) => {
+        return {
+          id: data.name,
+          childCount: (data.new_num_children ? parseInt(data.new_num_children) : undefined),
+          value: data.value,
+          expressionType: data.new_type,
+          isInScope: data.in_scope === 'true',
+          isObsolete: data.in_scope === 'invalid',
+          hasTypeChanged: data.type_changed === 'true',
+          isDynamic: data.dynamic === '1',
+          displayHint: data.displayhint,
+          hasMoreChildren: data.has_more === '1',
+          newChildren: data.new_children
+        }
+      });
     });
   }
 
@@ -1568,10 +1607,8 @@ export class DebugSession extends events.EventEmitter {
       }
     }
 
-    return new Promise<IWatchChildInfo[]>((resolve, reject) => {
-      this.enqueueCommand(new DebugCommand(fullCmd, null,
-        (err, data) => { err ? reject(err) : resolve(extractWatchChildren(data.children)); }
-      ));
+    return this.getCommandOutput(fullCmd, null, (output: any) => {
+      return extractWatchChildren(output.children);
     });
   }
 
@@ -1666,8 +1703,11 @@ function extractBreakpointInfo(data: any): IBreakpointInfo {
   };
 }
 
-/** Creates a FrameInfo object from the output of the MI Output parser. */
-function extractFrameInfo(data: any): FrameInfo {
+/** 
+ * Creates an object that conforms to the IFrameInfo interface from the output of the
+ * MI Output parser.
+ */
+function extractFrameInfo(data: any): IFrameInfo {
   return {
     func: data.func,
     args: data.args,
@@ -1678,8 +1718,11 @@ function extractFrameInfo(data: any): FrameInfo {
   };
 }
 
-/** Creates a StackFrameInfo object from the output of the MI Output parser. */
-function extractStackFrameInfo(data: any): StackFrameInfo {
+/** 
+ * Creates an object that conforms to the IStackFrameInfo interface from the output of the
+ * MI Output parser.
+ */
+function extractStackFrameInfo(data: any): IStackFrameInfo {
   return {
     level: parseInt(data.level),
     func: data.func,
@@ -1689,95 +1732,6 @@ function extractStackFrameInfo(data: any): StackFrameInfo {
     line: data.line ? parseInt(data.line, 10) : undefined,
     from: data.from
   };
-}
-
-/** Creates a StackFrameInfo array from the output of the MI Output parser. */
-function extractStackFrames(data: any | any[]): StackFrameInfo[] {
-  if (Array.isArray(data)) {
-    return data.map((frame: any) => { return extractStackFrameInfo(frame); });
-  } else {
-    return [extractStackFrameInfo(data)];
-  }
-}
-
-/**
- * Converts the output produced by the MI Output parser from the response to the
- * -stack-list-locals MI command into a more consistent and useful form.
- */
-function extractFrameLocals(data: any): VariableInfo[] {
-  if ('name' in data) {
-    if (Array.isArray(data.name)) {
-      // input is in the form: { name: [varName1, varName2, ...] }
-      return data.name.map((varName: string): VariableInfo => { return { name: varName }; });
-    } else {
-      // input is in the form: { name: varName }
-      return [{ name: data.name }];
-    }
-  } else {
-    // input is already in the correct form
-    return data;
-  }
-}
-
-/**
- * Converts the output produced by the MI Output parser from the response to the
- * -stack-list-arguments MI command into a more consistent and useful form.
- */
-function extractFrameArgs(data: any): StackFrameArgsInfo[] {
-  if (Array.isArray(data.frame)) {
-    // input is in the form: { frame: [{ level: 0, args: [...] }, { level: 1, args: arg1 }, ...]
-    data.frame.map((frame: any): StackFrameArgsInfo => {
-      return {
-        level: parseInt(frame.level),
-        args: Array.isArray(frame.args) ? frame.args : [frame.args]
-      };
-    });
-  } else {
-    // input is in the form: { frame: { level: 0, args: [...] }
-    return [{
-      level: parseInt(data.frame.level),
-      args: Array.isArray(data.frame.args) ? data.frame.args : [data.frame.args]
-    }];
-  }
-}
-
-/**
- * Converts the output produced by the MI Output parser from the response to the
- * -var-create MI command into an object that conforms to the IWatchInfo interface.
- */
-function extractWatch(data: any): IWatchInfo {
-  return {
-    id: data.name,
-    childCount: parseInt(data.numchild),
-    value: data.value,
-    expressionType: data['type'],
-    threadId: parseInt(data['thread-id']),
-    hasMoreChildren: data.has_more !== '0',
-    isDynamic: data.dynamic === '1',
-    displayHint: data.displayhint
-  };
-}
-
-/**
- * Converts the output produced by the MI Output parser from the response to the
- * -var-update MI command into an array of objects that conform to the IWatchUpdateInfo interface.
- */
-function extractWatchChangelist(changelist: any[]): IWatchUpdateInfo[] {
-  return changelist.map((data: any) => {
-    return {
-      id: data.name,
-      childCount: (data.new_num_children ? parseInt(data.new_num_children) : undefined),
-      value: data.value,
-      expressionType: data.new_type,
-      isInScope: data.in_scope === 'true',
-      isObsolete: data.in_scope === 'invalid',
-      hasTypeChanged: data.type_changed === 'true',
-      isDynamic: data.dynamic === '1',
-      displayHint: data.displayhint,
-      hasMoreChildren: data.has_more === '1',
-      newChildren: data.new_children
-    }
-  });
 }
 
 /** 
@@ -1801,16 +1755,16 @@ function extractWatchChildren(data: any | any[]): IWatchChildInfo[] {
     };
   }
 
-  // FIXME: the input shouldn't actually ever be the string '[]', but LLDB-MI has this quirk,
+  // FIXME: the data shouldn't actually ever be the string '[]', but LLDB-MI has this quirk,
   // hopefully it'll be fixed in the near future and the string comparison can be removed
   if ((data === undefined) || Array.isArray(data) || (data === '[]')) {
-    // input will only be an array if the array is empty
+    // data will only be an array if the array is empty
     return [];
   } else if (Array.isArray(data.child)) {
-    // input is in the form: { child: [{ name: var1.child1, ... }, { name: var1.child2, ... }, ...]
+    // data is in the form: { child: [{ name: var1.child1, ... }, { name: var1.child2, ... }, ...]
     return data.child.map((child: any) => { return extractWatchChild(child); });
   } else {
-    // input is in the form: { child: { name: var1.child1, ... } }
+    // data is in the form: { child: { name: var1.child1, ... } }
     return [extractWatchChild(data.child)];
   }
 }

@@ -487,7 +487,7 @@ describe("Debug Session", () => {
         debugSession.once(DebugSession.EVENT_STEP_FINISHED, 
           (notification: dbgmits.StepFinishedNotify) => {
             debugSession.getStackFrame()
-            .then((info: dbgmits.StackFrameInfo) => {
+            .then((info: dbgmits.IStackFrameInfo) => {
               expect(info.func.indexOf('printNextInt')).to.equal(0);
             })
             .then(resolve, reject);
@@ -520,7 +520,7 @@ describe("Debug Session", () => {
         debugSession.once(DebugSession.EVENT_STEP_FINISHED, 
           (notification: dbgmits.StepFinishedNotify) => {
             debugSession.getStackFrame()
-            .then((info: dbgmits.StackFrameInfo) => {
+            .then((info: dbgmits.IStackFrameInfo) => {
               expect(info.func.indexOf('printNextInt')).to.equal(0);
             })
             .then(resolve, reject);
@@ -553,7 +553,7 @@ describe("Debug Session", () => {
         debugSession.once(DebugSession.EVENT_STEP_FINISHED, 
           (notification: dbgmits.StepFinishedNotify) => {
             debugSession.getStackFrame()
-            .then((info: dbgmits.StackFrameInfo) => {
+            .then((info: dbgmits.IStackFrameInfo) => {
               expect(info).to.have.property('func', 'main');
             })
             .then(resolve, reject);
@@ -586,7 +586,7 @@ describe("Debug Session", () => {
         debugSession.once(DebugSession.EVENT_STEP_FINISHED, 
           (notification: dbgmits.StepFinishedNotify) => {
             debugSession.getStackFrame()
-            .then((info: dbgmits.StackFrameInfo) => {
+            .then((info: dbgmits.IStackFrameInfo) => {
               expect(info).to.have.property('func', 'main');
             })
             .then(resolve, reject);
@@ -619,7 +619,7 @@ describe("Debug Session", () => {
         debugSession.once(DebugSession.EVENT_STEP_FINISHED, 
           (notification: dbgmits.StepFinishedNotify) => {
             debugSession.getStackFrame()
-            .then((info: dbgmits.StackFrameInfo) => {
+            .then((info: dbgmits.IStackFrameInfo) => {
               expect(info).to.have.property('func', 'main');
             })
             .then(resolve, reject);
@@ -665,7 +665,7 @@ describe("Debug Session", () => {
         debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
           (breakNotify: dbgmits.BreakpointHitNotify) => {
             debugSession.getStackFrame()
-            .then((info: dbgmits.StackFrameInfo) => {
+            .then((info: dbgmits.IStackFrameInfo) => {
               expect(info).to.have.property('func');
               expect(info.func.indexOf('printNextInt')).to.equal(0);
             })
@@ -731,7 +731,7 @@ describe("Debug Session", () => {
             debugSession.getStackDepth()
             .then((stackDepth: number) => { expectedStackDepth = stackDepth; })
             .then(() => { return debugSession.getStackFrames(); })
-            .then((frames: dbgmits.StackFrameInfo[]) => {
+            .then((frames: dbgmits.IStackFrameInfo[]) => {
               expect(frames.length).to.equal(expectedStackDepth);
               for (var i = 0; i < frames.length; ++i) {
                 expect(frames[i].level).to.equal(i);
@@ -760,7 +760,7 @@ describe("Debug Session", () => {
         debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
           (breakNotify: dbgmits.BreakpointHitNotify) => {
             return debugSession.getStackFrames({ lowFrame: 0, highFrame: 1 })
-            .then((frames: dbgmits.StackFrameInfo[]) => {
+            .then((frames: dbgmits.IStackFrameInfo[]) => {
               expect(frames.length).to.equal(2);
               for (var i = 0; i < frames.length; ++i) {
                 expect(frames[i].level).to.equal(i);
@@ -788,7 +788,7 @@ describe("Debug Session", () => {
         debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
           (breakNotify: dbgmits.BreakpointHitNotify) => {
             return debugSession.getStackFrames({ highFrame: 1 })
-              .then((frames: dbgmits.StackFrameInfo[]) => {
+              .then((frames: dbgmits.IStackFrameInfo[]) => {
               expect(frames.length).to.equal(1);
               expect(frames[0].level).to.equal(1);
               expect(frames[0].func.indexOf('printNextInt')).to.equal(0);
@@ -814,7 +814,7 @@ describe("Debug Session", () => {
           (breakNotify: dbgmits.BreakpointHitNotify) => {
             // get the locals for the previous frame
             return debugSession.getStackFrameLocals(dbgmits.VariableDetailLevel.None, { frameLevel: 1 })
-            .then((locals: dbgmits.VariableInfo[]) => {
+            .then((locals: dbgmits.IVariableInfo[]) => {
               expect(locals.length).to.equal(1);
               expect(locals[0]).to.have.property('name', 'a');
               expect(locals[0]).not.to.have.property('value');
@@ -843,7 +843,7 @@ describe("Debug Session", () => {
             return debugSession.getStackFrameLocals(
               dbgmits.VariableDetailLevel.All, { frameLevel: 1 }
             )
-            .then((locals: dbgmits.VariableInfo[]) => {
+            .then((locals: dbgmits.IVariableInfo[]) => {
               expect(locals.length).to.equal(1);
               expect(locals[0]).to.have.property('name', 'a');
               expect(locals[0]).to.have.property('value', '5');
@@ -872,7 +872,7 @@ describe("Debug Session", () => {
             return debugSession.getStackFrameLocals(
               dbgmits.VariableDetailLevel.Simple, { frameLevel: 1 }
             )
-            .then((locals: dbgmits.VariableInfo[]) => {
+            .then((locals: dbgmits.IVariableInfo[]) => {
               expect(locals.length).to.equal(1);
               expect(locals[0]).to.have.property('name', 'a');
               expect(locals[0]).to.have.property('value', '5');
@@ -905,7 +905,7 @@ describe("Debug Session", () => {
             return debugSession.getStackFrameLocals(
               dbgmits.VariableDetailLevel.All, { frameLevel: 1 }
             )
-            .then((locals: dbgmits.VariableInfo[]) => {
+            .then((locals: dbgmits.IVariableInfo[]) => {
               expect(locals.length).to.equal(1);
               expect(locals[0]).to.have.property('name', 'b');
               // FIXME: uncomment when VariableDetailLevel.Simple works properly on LLDB
@@ -939,7 +939,7 @@ describe("Debug Session", () => {
             return debugSession.getStackFrameLocals(
               dbgmits.VariableDetailLevel.All, { frameLevel: 1 }
             )
-            .then((locals: dbgmits.VariableInfo[]) => {
+            .then((locals: dbgmits.IVariableInfo[]) => {
               expect(locals.length).to.equal(2);
               
               expect(locals[0]).to.have.property('name', 'c');
@@ -977,7 +977,7 @@ describe("Debug Session", () => {
             //        correctly in that case.
             // get the locals for the current frame
             return debugSession.getStackFrameLocals(dbgmits.VariableDetailLevel.All, { frameLevel: 1 })
-            .then((locals: dbgmits.VariableInfo[]) => {
+            .then((locals: dbgmits.IVariableInfo[]) => {
               expect(locals.length).to.equal(3);
 
               expect(locals[0]).to.have.property('name', 'e');
@@ -1015,7 +1015,7 @@ describe("Debug Session", () => {
         debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
           (breakNotify: dbgmits.BreakpointHitNotify) => {
             return debugSession.getStackFrameArgs(dbgmits.VariableDetailLevel.None, { lowFrame: 0 })
-            .then((frames: dbgmits.StackFrameArgsInfo[]) => {
+            .then((frames: dbgmits.IStackFrameArgsInfo[]) => {
               expect(frames.length).to.equal(1);
               expect(frames[0].level).to.equal(0);
               expect(frames[0].args.length).to.equal(0);
@@ -1043,7 +1043,7 @@ describe("Debug Session", () => {
             //        but the LLDB MI driver needs to be fixed to support that detail level
             //        first
             return debugSession.getStackFrameArgs(dbgmits.VariableDetailLevel.All, { lowFrame: 0 })
-            .then((frames: dbgmits.StackFrameArgsInfo[]) => {
+            .then((frames: dbgmits.IStackFrameArgsInfo[]) => {
               expect(frames.length).to.equal(1);
               expect(frames[0].level).to.equal(0);
               expect(frames[0].args.length).to.equal(1);
@@ -1074,7 +1074,7 @@ describe("Debug Session", () => {
             //        but the LLDB MI driver needs to be fixed to support that detail level
             //        first
             return debugSession.getStackFrameArgs(dbgmits.VariableDetailLevel.All, { lowFrame: 0 })
-            .then((frames: dbgmits.StackFrameArgsInfo[]) => {
+            .then((frames: dbgmits.IStackFrameArgsInfo[]) => {
               expect(frames.length).to.equal(1);
               expect(frames[0].level).to.equal(0);
               expect(frames[0].args.length).to.equal(2);
@@ -1108,7 +1108,7 @@ describe("Debug Session", () => {
             //        but the LLDB MI driver needs to be fixed to support that detail level
             //        first
             return debugSession.getStackFrameArgs(dbgmits.VariableDetailLevel.All, { lowFrame: 0 })
-            .then((frames: dbgmits.StackFrameArgsInfo[]) => {
+            .then((frames: dbgmits.IStackFrameArgsInfo[]) => {
               expect(frames.length).to.equal(1);
               expect(frames[0].level).to.equal(0);
               expect(frames[0].args.length).to.equal(3);
