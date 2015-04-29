@@ -77,7 +77,7 @@ export interface StackFrameInfo {
 }
 
 /** Breakpoint-specific information returned by various MI commands. */
-export interface BreakpointInfo {
+export interface IBreakpointInfo {
   id: string;
   breakpointType: string;
   catchpointType?: string;
@@ -101,49 +101,6 @@ export interface BreakpointInfo {
   hitCount?: number;
   isInstalled?: boolean;
   what?: string;
-}
-
-export type BreakpointCallback = (err: Error, data: BreakpointInfo, token?: string) => void;
-
-/**
- * Transforms the response into an object that implements the [[BreakpointInfo]] interface.
- */
-class BreakpointCommand extends DebugCommand {
-  constructor(cmd: string, token?: string, done?: BreakpointCallback) {
-    super(cmd, token);
-    this.done = (err: Error, data: any) => {
-      if (err) {
-        done(err, null);
-      } else {
-        var info: BreakpointInfo = {
-          id: data.bkpt['number'],
-          breakpointType: data.bkpt['type'],
-          catchpointType: data.bkpt['catch-type'],
-          isTemp: (data.bkpt.disp !== undefined) ? (data.bkpt.disp === 'del') : undefined,
-          isEnabled: (data.bkpt.enabled !== undefined) ? (data.bkpt.enabled === 'y') : undefined,
-          address: data.bkpt.addr,
-          func: data.bkpt.func,
-          filename: data.bkpt.file || data.bkpt.filename, // LLDB MI uses non standard 'file'
-          fullname: data.bkpt.fullname,
-          line: data.bkpt.line,
-          at: data.bkpt.at,
-          pending: data.bkpt.pending,
-          evaluatedBy: data.bkpt['evaluated-by'],
-          threadId: data.bkpt.thread,
-          condition: data.bkpt.cond,
-          ignoreCount: data.bkpt.ignore,
-          enableCount: data.bkpt.enable,
-          mask: data.bkpt.mask,
-          passCount: data.bkpt.pass,
-          originalLocation: data.bkpt['original-location'],
-          hitCount: data.bkpt.times,
-          isInstalled: (data.bkpt.installed !== undefined) ? (data.bkpt.installed === 'y') : undefined,
-          what: data.bkpt.what
-        };
-        done(err, info, token);
-      }
-    };
-  }
 }
 
 /**
@@ -1023,7 +980,7 @@ export class DebugSession extends events.EventEmitter {
       threadId?: number;
     },
     token?: string
-  ): Promise<BreakpointInfo> {
+  ): Promise<IBreakpointInfo> {
     var cmd: string = 'break-insert';
     if (options) {
       if (options.isTemp) {
@@ -1052,12 +1009,8 @@ export class DebugSession extends events.EventEmitter {
       }
     }
     
-    return new Promise<BreakpointInfo>((resolve, reject) => {
-      this.enqueueCommand(
-        new BreakpointCommand(cmd + ' ' + location, token,
-          (err, data) => { err ? reject(err) : resolve(data); }
-        )
-      );
+    return this.getCommandOutput<IBreakpointInfo>(cmd + ' ' + location, token, (output: any) => {
+      return extractBreakpointInfo(output);
     });
   }
 
@@ -1123,14 +1076,10 @@ export class DebugSession extends events.EventEmitter {
    *                    zero means the breakpoint will stop the program every time it's hit.
    */
   ignoreBreakpoint(
-    breakId: number, ignoreCount: number, token?: string): Promise<BreakpointInfo> {
-    return new Promise<BreakpointInfo>((resolve, reject) => {
-      this.enqueueCommand(
-        new BreakpointCommand(`break-after ${breakId} ${ignoreCount}`, token,
-          (err, data) => { err ? reject(err) : resolve(data); }
-        )
-      );
-    });
+    breakId: number, ignoreCount: number, token?: string): Promise<IBreakpointInfo> {
+    return this.getCommandOutput<IBreakpointInfo>(`break-after ${breakId} ${ignoreCount}`, token,
+      (output: any) => { return extractBreakpointInfo(output); }
+    );
   }
 
   /**
@@ -1734,6 +1683,38 @@ export class DebugSession extends events.EventEmitter {
   }
 }
 
+/**
+ * Converts the output produced by the MI Output parser from the response to the
+ * -break-insert and -break-after MI commands into a more useful form.
+ */
+function extractBreakpointInfo(data: any): IBreakpointInfo {
+  return {
+    id: data.bkpt['number'],
+    breakpointType: data.bkpt['type'],
+    catchpointType: data.bkpt['catch-type'],
+    isTemp: (data.bkpt.disp !== undefined) ? (data.bkpt.disp === 'del') : undefined,
+    isEnabled: (data.bkpt.enabled !== undefined) ? (data.bkpt.enabled === 'y') : undefined,
+    address: data.bkpt.addr,
+    func: data.bkpt.func,
+    filename: data.bkpt.file || data.bkpt.filename, // LLDB MI uses non standard 'file'
+    fullname: data.bkpt.fullname,
+    line: data.bkpt.line,
+    at: data.bkpt.at,
+    pending: data.bkpt.pending,
+    evaluatedBy: data.bkpt['evaluated-by'],
+    threadId: data.bkpt.thread,
+    condition: data.bkpt.cond,
+    ignoreCount: data.bkpt.ignore,
+    enableCount: data.bkpt.enable,
+    mask: data.bkpt.mask,
+    passCount: data.bkpt.pass,
+    originalLocation: data.bkpt['original-location'],
+    hitCount: data.bkpt.times,
+    isInstalled: (data.bkpt.installed !== undefined) ? (data.bkpt.installed === 'y') : undefined,
+    what: data.bkpt.what
+  };
+}
+
 /** Creates a FrameInfo object from the output of the MI Output parser. */
 function extractFrameInfo(data: any): FrameInfo {
   return {
@@ -1947,7 +1928,6 @@ var targetStopReasonMap = new Map<string, TargetStopReason>()
 
 function parseTargetStopReason(reasonString: string): TargetStopReason {
   var reasonCode = targetStopReasonMap.get(reasonString);
-  console.log('REASON: ' + reasonString + ' ' + reasonCode);
   if (reasonCode !== undefined) {
     return reasonCode;
   }

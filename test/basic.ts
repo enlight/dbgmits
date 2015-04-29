@@ -384,7 +384,7 @@ describe("Debug Session", () => {
     it("adds a breakpoint by function name", () => {
       var funcName: string = 'main';
       return debugSession.addBreakpoint(funcName)
-      .then((info: dbgmits.BreakpointInfo) => {
+      .then((info: dbgmits.IBreakpointInfo) => {
         expect(info).to.have.property('id');
         expect(info).to.have.property('breakpointType', 'breakpoint');
         expect(info).to.have.property('isEnabled', true);
@@ -396,7 +396,7 @@ describe("Debug Session", () => {
       var filename: string = 'test_target.cpp';
       var line: string = '17';
       return debugSession.addBreakpoint(`${filename}:${line}`)
-        .then((info: dbgmits.BreakpointInfo) => {
+        .then((info: dbgmits.IBreakpointInfo) => {
           expect(info).to.have.property('id');
           expect(info).to.have.property('breakpointType', 'breakpoint');
           expect(info).to.have.property('isEnabled', true);
@@ -407,19 +407,19 @@ describe("Debug Session", () => {
 
     it("removes a breakpoint", () => {
       return debugSession.addBreakpoint('main')
-      .then((info: dbgmits.BreakpointInfo) => { return parseInt(info.id, 10); })
+      .then((info: dbgmits.IBreakpointInfo) => { return parseInt(info.id, 10); })
       .then((breakpointId: number) => { return debugSession.removeBreakpoint(breakpointId); });
     });
 
     it("enables a breakpoint", () => {
       return debugSession.addBreakpoint('main', { isDisabled: true })
-      .then((info: dbgmits.BreakpointInfo) => { return parseInt(info.id, 10); })
+      .then((info: dbgmits.IBreakpointInfo) => { return parseInt(info.id, 10); })
       .then((breakpointId: number) => { return debugSession.enableBreakpoint(breakpointId); });
     });
 
     it("disables a breakpoint", () => {
       return debugSession.addBreakpoint('main', { isDisabled: false })
-      .then((data: dbgmits.BreakpointInfo) => { return parseInt(data.id, 10); })
+      .then((data: dbgmits.IBreakpointInfo) => { return parseInt(data.id, 10); })
       .then((breakpointId: number) => { debugSession.disableBreakpoint(breakpointId); });
     });
   });
