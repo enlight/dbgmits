@@ -838,7 +838,7 @@ export class DebugSession extends events.EventEmitter {
   }
 
   /**
-   * Sends a MI command to the debugger process.
+   * Sends an MI command to the debugger process.
    */
   private sendCommandToDebugger(command: DebugCommand): void {
     var cmdStr: string;
@@ -853,7 +853,7 @@ export class DebugSession extends events.EventEmitter {
   }
 
   /**
-   * Adds a MI command to the back of the command queue.
+   * Adds an MI command to the back of the command queue.
    *
    * If the command queue is empty when this method is called then the command is dispatched
    * immediately, otherwise it will be dispatched after all the previously queued commands are
@@ -865,6 +865,21 @@ export class DebugSession extends events.EventEmitter {
     if (this.cmdQueue.length === 1) {
       this.sendCommandToDebugger(this.cmdQueue[0]);
     }
+  }
+
+  /**
+   * Sends an MI command to the debugger.
+   *
+   * @param command Full MI command string, excluding the optional token and dash prefix.
+   * @param token Token to be prefixed to the command string (must consist only of digits).
+   * @returns A promise that will be resolved when the command response is received.
+   */
+  private executeCommand(command: string, token?: string): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      this.enqueueCommand(
+        new DebugCommand(command, token, (err, data) => { err ? reject(err) : resolve(); })
+      );
+    });
   }
 
   /**
@@ -906,16 +921,10 @@ export class DebugSession extends events.EventEmitter {
    * @param token Token (digits only) that can be used to match up the command with a response.
    */
   setExecutableFile(file: string, token?: string): Promise<void> {
-    return new Promise<void>((resolve, reject) => {
-      // NOTE: While the GDB/MI spec. contains multiple -file-XXX commands that allow the
-      // executable and symbol files to be specified separately the LLDB MI driver
-      // currently (30-Mar-2015) only supports this one command.
-      this.enqueueCommand(
-        new DebugCommand(`file-exec-and-symbols ${file}`, token,
-          (err, data) => { err ? reject(err) : resolve(); }
-        )
-      );
-    });
+    // NOTE: While the GDB/MI spec. contains multiple -file-XXX commands that allow the
+    // executable and symbol files to be specified separately the LLDB MI driver
+    // currently (30-Mar-2015) only supports this one command.
+    return this.executeCommand(`file-exec-and-symbols ${file}`, token);
   }
 
   /**
@@ -926,13 +935,7 @@ export class DebugSession extends events.EventEmitter {
    * @param token Token (digits only) that can be used to match up the command with a response.
    */
   connectToRemoteTarget(host: string, port: number, token?: string): Promise<void> {
-    return new Promise<void>((resolve, reject) => {
-      this.enqueueCommand(
-        new DebugCommand(`target-select remote ${host}:${port}`, token,
-          (err, data) => { err ? reject(err) : resolve(); }
-        )
-      );
-    });
+    return this.executeCommand(`target-select remote ${host}:${port}`, token);
   }
 
   //
@@ -1018,54 +1021,30 @@ export class DebugSession extends events.EventEmitter {
    * Removes a breakpoint.
    */
   removeBreakpoint(breakId: number, token?: string): Promise<void> {
-    return new Promise<void>((resolve, reject) => {
-      this.enqueueCommand(
-        new DebugCommand('break-delete ' + breakId, token,
-          (err, data) => { err ? reject(err) : resolve(); }
-        )
-      );
-    });
+    return this.executeCommand('break-delete ' + breakId, token);
   }
 
   /**
    * Removes multiple breakpoints.
    */
   removeBreakpoints(breakIds: number[], token?: string): Promise<void> {
-    return new Promise<void>((resolve, reject) => {
-      // FIXME: LLDB MI driver only supports removing one breakpoint at a time,
-      //        so multiple breakpoints need to be removed one by one.
-      this.enqueueCommand(
-        new DebugCommand('break-delete ' + breakIds.join(' '), token,
-          (err, data) => { err ? reject(err) : resolve(); }
-        )
-      );
-    });
+    // FIXME: LLDB MI driver only supports removing one breakpoint at a time,
+    //        so multiple breakpoints need to be removed one by one.
+    return this.executeCommand('break-delete ' + breakIds.join(' '), token);
   }
 
   /**
    * Enables a breakpoint.
    */
   enableBreakpoint(breakId: number, token?: string): Promise<void> {
-    return new Promise<void>((resolve, reject) => {
-      this.enqueueCommand(
-        new DebugCommand('break-enable ' + breakId, token,
-          (err, data) => { err ? reject(err) : resolve(); }
-        )
-      );
-    });
+    return this.executeCommand('break-enable ' + breakId, token);
   }
 
   /**
    * Disables a breakpoint.
    */
   disableBreakpoint(breakId: number, token?: string): Promise<void> {
-    return new Promise<void>((resolve, reject) => {
-      this.enqueueCommand(
-        new DebugCommand('break-disable ' + breakId, token,
-          (err, data) => { err ? reject(err) : resolve(); }
-        )
-      );
-    });
+    return this.executeCommand('break-disable ' + breakId, token);
   }
 
   /**
@@ -1092,13 +1071,7 @@ export class DebugSession extends events.EventEmitter {
    */
   setBreakpointCondition(
     breakId: number, condition: string, token?: string): Promise<void> {
-    return new Promise<void>((resolve, reject) => {
-      this.enqueueCommand(
-        new DebugCommand(`break-condition ${breakId} ${condition}`, token,
-          (err, data) => { err ? reject(err) : resolve(); }
-        )
-      );
-    });
+    return this.executeCommand(`break-condition ${breakId} ${condition}`, token);
   }
 
   //
@@ -1110,13 +1083,7 @@ export class DebugSession extends events.EventEmitter {
    * using [[startTarget]].
    */
   setTargetArguments(args: string, token?: string): Promise<void> {
-    return new Promise<void>((resolve, reject) => {
-      this.enqueueCommand(
-        new DebugCommand('exec-arguments ' + args, token, 
-          (err, data) => { err ? reject(err) : resolve(); }
-        )
-      );
-    });
+    return this.executeCommand('exec-arguments ' + args, token);
   }
 
   /**
@@ -1131,31 +1098,24 @@ export class DebugSession extends events.EventEmitter {
    */
   startTarget(
     options?: { threadGroup?: string; stopAtStart?: boolean}, token?: string): Promise<void> {
-    return new Promise<void>((resolve, reject) => {
-      var fullCmd: string = 'exec-run';
-      if (options) {
-        if (options.threadGroup) {
-          fullCmd = fullCmd + ' --thread-group ' + options.threadGroup;
-        } 
-        if (options.stopAtStart) {
-          fullCmd = fullCmd + ' --start';
-        }
+    var fullCmd: string = 'exec-run';
+    if (options) {
+      if (options.threadGroup) {
+        fullCmd = fullCmd + ' --thread-group ' + options.threadGroup;
       }
-      this.enqueueCommand(
-        new DebugCommand(fullCmd, token, (err, data) => { err ? reject(err) : resolve(); })
-      );
-    });
+      if (options.stopAtStart) {
+        fullCmd = fullCmd + ' --start';
+      }
+    }
+
+    return this.executeCommand(fullCmd, token);
   }
 
   /**
    * Kills the target process.
    */
   abortTarget(token?: string): Promise<void> {
-    return new Promise<void>((resolve, reject) => {
-      this.enqueueCommand(
-        new DebugCommand('exec-abort', token, (err, data) => { err ? reject(err) : resolve(); })
-      );
-    });
+    return this.executeCommand('exec-abort', token);
   }
 
   /**
@@ -1169,20 +1129,17 @@ export class DebugSession extends events.EventEmitter {
    */
   resumeTarget(
     options?: { threadGroup: string; reverse: boolean }, token?: string): Promise<void> {
-    return new Promise<void>((resolve, reject) => {
-      var fullCmd: string = 'exec-continue';
-      if (options) {
-        if (options.threadGroup) {
-          fullCmd = fullCmd + ' --thread-group ' + options.threadGroup;
-        }
-        if (options.reverse) {
-          fullCmd = fullCmd + ' --reverse';
-        }
+    var fullCmd: string = 'exec-continue';
+    if (options) {
+      if (options.threadGroup) {
+        fullCmd = fullCmd + ' --thread-group ' + options.threadGroup;
       }
-      this.enqueueCommand(
-        new DebugCommand(fullCmd, token, (err, data) => { err ? reject(err) : resolve(); })
-      );
-    });
+      if (options.reverse) {
+        fullCmd = fullCmd + ' --reverse';
+      }
+    }
+
+    return this.executeCommand(fullCmd, token);
   }
 
   /**
@@ -1193,15 +1150,12 @@ export class DebugSession extends events.EventEmitter {
    *                    Otherwise it should be the identifier of the thread group to pause.
    */
   pauseTarget(threadGroup?: string, token?: string): Promise<void> {
-    return new Promise<void>((resolve, reject) => {
-      var fullCmd: string = 'exec-interrupt';
-      if (threadGroup) {
-        fullCmd = fullCmd + ' --thread-group ' + threadGroup;
-      }
-      this.enqueueCommand(
-        new DebugCommand(fullCmd, token, (err, data) => { err ? reject(err) : resolve(); })
-      );
-    });
+    var fullCmd: string = 'exec-interrupt';
+    if (threadGroup) {
+      fullCmd = fullCmd + ' --thread-group ' + threadGroup;
+    }
+    
+    return this.executeCommand(fullCmd, token);
   }
 
   /**
@@ -1214,7 +1168,7 @@ export class DebugSession extends events.EventEmitter {
    * @param options.reverse *(GDB specific)* If **true** the target is executed in reverse.
    */
   stepIntoLine(options?: { threadId?: number; reverse?: boolean }, token?: string): Promise<void> {
-    return this.enqueueExecCommand('exec-step', options, token);
+    return this.executeCommand(appendExecCmdOptions('exec-step', options), token);
   }
 
   /**
@@ -1226,7 +1180,7 @@ export class DebugSession extends events.EventEmitter {
    *                        the beginning of the previous source line is reached.
    */
   stepOverLine(options?: { threadId?: number; reverse?: boolean }, token?: string): Promise<void> {
-    return this.enqueueExecCommand('exec-next', options, token);
+    return this.executeCommand(appendExecCmdOptions('exec-next', options), token);
   }
 
   /**
@@ -1240,7 +1194,7 @@ export class DebugSession extends events.EventEmitter {
    */
   stepIntoInstruction(
     options?: { threadId?: number; reverse?: boolean }, token?: string): Promise<void> {
-    return this.enqueueExecCommand('exec-step-instruction', options, token);
+    return this.executeCommand(appendExecCmdOptions('exec-step-instruction', options), token);
   }
 
   /**
@@ -1254,7 +1208,7 @@ export class DebugSession extends events.EventEmitter {
    */
   stepOverInstruction(
     options?: { threadId?: number; reverse?: boolean }, token?: string): Promise<void> {
-    return this.enqueueExecCommand('exec-next-instruction', options, token);
+    return this.executeCommand(appendExecCmdOptions('exec-next-instruction', options), token);
   }
 
   /**
@@ -1265,25 +1219,7 @@ export class DebugSession extends events.EventEmitter {
    * @param options.reverse *(GDB specific)* If **true** the target is executed in reverse.
    */
   stepOut(options?: { threadId?: number; reverse?: boolean }, token?: string): Promise<void> {
-    return this.enqueueExecCommand('exec-finish', options, token);
-  }
-
-  private enqueueExecCommand(
-    cmd: string, options: { threadId?: number; reverse?: boolean }, token?: string): Promise<void> {
-    return new Promise<void>((resolve, reject) => {
-      var fullCmd: string = cmd;
-      if (options) {
-        if (options.threadId) {
-          fullCmd = fullCmd + ' --thread' + options.threadId;
-        }
-        if (options.reverse) {
-          fullCmd = fullCmd + ' --reverse';
-        }
-      }
-      this.enqueueCommand(
-        new DebugCommand(fullCmd, token, (err, data) => { err ? reject(err) : resolve(); })
-      );
-    });
+    return this.executeCommand(appendExecCmdOptions('exec-finish', options), token);
   }
 
   //
@@ -1572,11 +1508,7 @@ export class DebugSession extends events.EventEmitter {
    * @param id Identifier of the watch to destroy.
    */
   removeWatch(id: string): Promise<void> {
-    return new Promise<void>((resolve, reject) => {
-      this.enqueueCommand(new DebugCommand('var-delete ' + id, null,
-        (err, data) => { err ? reject(err) : resolve(); }
-      ));
-    });
+    return this.executeCommand('var-delete ' + id);
   }
 
   /**
@@ -1681,6 +1613,25 @@ export class DebugSession extends events.EventEmitter {
       return output.value;
     });
   }
+}
+
+/** 
+ * Appends some common options used by -exec-* MI commands to the given string.
+ *
+ * @returns The result of appending the options to the input string.
+ */
+function appendExecCmdOptions(
+  input: string, options: { threadId?: number; reverse?: boolean }): string {
+  var cmd: string = input;
+  if (options) {
+    if (options.threadId) {
+      cmd = cmd + ' --thread ' + options.threadId;
+    }
+    if (options.reverse) {
+      cmd = cmd + ' --reverse';
+    }
+  }
+  return cmd;
 }
 
 /**
