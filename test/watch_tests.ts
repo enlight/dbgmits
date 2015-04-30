@@ -65,41 +65,18 @@ describe("Watch Manipulation", () => {
   });
 
   it("adds a new fixed watch for a simple local variable in the current frame", () => {
-    var onStepFinishedAddWatch = new Promise<void>((resolve, reject) => {
-      debugSession.once(DebugSession.EVENT_STEP_FINISHED,
-        (notification: dbgmits.StepFinishedNotify) => {
-          // add a new watch for a local variable in funcWithMoreVariablesToWatch()
-          debugSession.addWatch('e')
-          .then((watch: IWatchInfo) => {
-            expect(watch.id).not.to.be.empty;
-            expect(watch.childCount).to.equal(2);
-            expect(watch.expressionType).to.equal('Point');
-            expect(watch.threadId).to.equal(1);
-            expect(watch.isDynamic).to.be.false;
-            expect(watch.hasMoreChildren).to.be.false;
-            expect(watch.displayHint).to.be.undefined;
-          })
-          .then(resolve)
-          .catch(reject);
-        }
-      )
-    });
-    // step out into funcWithThreeLocalVariables()
-    var onBreakpointStepOut = new Promise<void>((resolve, reject) => {
-      debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
-        (breakNotify: dbgmits.BreakpointHitNotify) => {
-          resolve(debugSession.stepOut());
-        }
-      );
-    });
-    // add breakpoint to the get near the starting point of the test
-    return debugSession.addBreakpoint('funcWithMoreVariablesToWatch_Inner')
-    .then(() => {
-      return Promise.all([
-        onBreakpointStepOut,
-        onStepFinishedAddWatch,
-        debugSession.startTarget()
-      ])
+    return runToFuncAndStepOut(debugSession, 'funcWithMoreVariablesToWatch_Inner', () => {
+      // add a new watch for a local variable in funcWithMoreVariablesToWatch()
+      return debugSession.addWatch('e')
+      .then((watch: IWatchInfo) => {
+        expect(watch.id).not.to.be.empty;
+        expect(watch.childCount).to.equal(2);
+        expect(watch.expressionType).to.equal('Point');
+        expect(watch.threadId).to.equal(1);
+        expect(watch.isDynamic).to.be.false;
+        expect(watch.hasMoreChildren).to.be.false;
+        expect(watch.displayHint).to.be.undefined;
+      });
     });
   });
 
@@ -148,175 +125,58 @@ describe("Watch Manipulation", () => {
         );
       });
     }
-    // create a watch on a variable and step over the line that alters the value of the variable
-    var onStepOutStepOver = () => {
-      return new Promise<void>((resolve, reject) => {
-        debugSession.once(DebugSession.EVENT_STEP_FINISHED,
-          (stepNotify: dbgmits.StepFinishedNotify) => {
-            debugSession.addWatch('f')
-            .then((watch: IWatchInfo) => {
-              return Promise.all([
-                onStepOverUpdateWatch(watch),
-                debugSession.stepOverLine()
-              ]);
-            })
-            .then(() => { resolve(); })
-            .catch(reject);
-          }
-        );
+
+    return runToFuncAndStepOut(debugSession, 'funcWithMoreVariablesToWatch_Inner', () => {
+      // create a watch on a variable and step over the line that alters the value of the variable
+      return debugSession.addWatch('f')
+      .then((watch: IWatchInfo) => {
+        return Promise.all([
+          onStepOverUpdateWatch(watch),
+          debugSession.stepOverLine()
+        ]);
       });
-    }
-    // step out of funcWithMoreVariablesToWatch_Inner() into funcWithMoreVariablesToWatch()
-    var onBreakpointStepOut = new Promise<void>((resolve, reject) => {
-      debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
-        (breakNotify: dbgmits.BreakpointHitNotify) => {
-          Promise.all([
-            onStepOutStepOver(),
-            debugSession.stepOut()
-          ])
-          .then(() => { resolve(); })
-          .catch(reject);
-        }
-      );
-    });
-    // add breakpoint to get to the starting point of the test
-    return debugSession.addBreakpoint('funcWithMoreVariablesToWatch_Inner')
-    .then(() => {
-      return Promise.all([
-        onBreakpointStepOut,
-        debugSession.startTarget()
-      ])
     });
   });
 
   it("gets a list of members of a simple variable under watch", () => {
-    var onStepOutGetWatchChildren = () => {
-      return new Promise<void>((resolve, reject) => {
-        debugSession.once(DebugSession.EVENT_STEP_FINISHED,
-          (stepNotify: dbgmits.StepFinishedNotify) => {
-            debugSession.addWatch('f')
-            .then((watch: IWatchInfo) => {
-              return debugSession.getWatchChildren(watch.id);
-            })
-            .then((children: dbgmits.IWatchChildInfo[]) => {
-              // watches on simple variables shouldn't have any children
-              expect(children.length).to.equal(0);
-            })
-            .then(resolve)
-            .catch(reject);
-          }
-        );
+    return runToFuncAndStepOut(debugSession, 'funcWithMoreVariablesToWatch', () => {
+      return debugSession.addWatch('f')
+      .then((watch: IWatchInfo) => {
+        return debugSession.getWatchChildren(watch.id);
+      })
+      .then((children: dbgmits.IWatchChildInfo[]) => {
+        // watches on simple variables shouldn't have any children
+        expect(children.length).to.equal(0);
       });
-    }
-    // step out of funcWithMoreVariablesToWatch() into funcWithVariablesToWatch()
-    var onBreakpointStepOut = new Promise<void>((resolve, reject) => {
-      debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
-        (breakNotify: dbgmits.BreakpointHitNotify) => {
-          Promise.all([
-            onStepOutGetWatchChildren(),
-            debugSession.stepOut()
-          ])
-          .then(() => { resolve(); })
-          .catch(reject);
-        }
-      );
-    });
-    // add breakpoint to get to the starting point of the test
-    return debugSession.addBreakpoint('funcWithMoreVariablesToWatch')
-    .then(() => {
-      return Promise.all([
-        onBreakpointStepOut,
-        debugSession.startTarget()
-      ])
     });
   });
 
   it("gets a list of members of a pointer variable under watch", () => {
-    var onStepOutGetWatchChildren = () => {
-      return new Promise<void>((resolve, reject) => {
-        debugSession.once(DebugSession.EVENT_STEP_FINISHED,
-          (stepNotify: dbgmits.StepFinishedNotify) => {
-            debugSession.addWatch('g')
-            .then((watch: IWatchInfo) => {
-              return debugSession.getWatchChildren(watch.id);
-            })
-            .then((children: dbgmits.IWatchChildInfo[]) => {
-              // watches on pointer variables should have a single child
-              expect(children.length).to.equal(1);
-              expect(children[0].expressionType).to.equal('float');
-            })
-            .then(resolve)
-            .catch(reject);
-          }
-        );
+    return runToFuncAndStepOut(debugSession, 'funcWithMoreVariablesToWatch', () => {
+      return debugSession.addWatch('g')
+      .then((watch: IWatchInfo) => {
+        return debugSession.getWatchChildren(watch.id);
+      })
+      .then((children: dbgmits.IWatchChildInfo[]) => {
+        // watches on pointer variables should have a single child
+        expect(children.length).to.equal(1);
+        expect(children[0].expressionType).to.equal('float');
       });
-    }
-    // step out of funcWithMoreVariablesToWatch() into funcWithVariablesToWatch()
-    var onBreakpointStepOut = new Promise<void>((resolve, reject) => {
-      debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
-        (breakNotify: dbgmits.BreakpointHitNotify) => {
-          Promise.all([
-            onStepOutGetWatchChildren(),
-            debugSession.stepOut()
-          ])
-          .then(() => { resolve(); })
-          .catch(reject);
-        }
-      );
-    });
-    // add breakpoint to get to the starting point of the test
-    return debugSession.addBreakpoint('funcWithMoreVariablesToWatch')
-    .then(() => {
-      return Promise.all([
-        onBreakpointStepOut,
-        debugSession.startTarget()
-      ])
     });
   });
 
   it("gets a list of members of a struct variable under watch", () => {
-    var onStepOutGetWatchChildren = () => {
-      return new Promise<void>((resolve, reject) => {
-        debugSession.once(DebugSession.EVENT_STEP_FINISHED,
-          (stepNotify: dbgmits.StepFinishedNotify) => {
-            debugSession.addWatch('e')
-            .then((watch: IWatchInfo) => {
-              return debugSession.getWatchChildren(
-                watch.id, { detail: dbgmits.VariableDetailLevel.None }
-              );
-            })
-            .then((children: dbgmits.IWatchChildInfo[]) => {
-              // watches on variables of aggregate types should have one or more children
-              expect(children.length).to.equal(2);
-              expect(children[0].expressionType).to.equal('float');
-              expect(children[1].expressionType).to.equal('float');
-            })
-            .then(resolve)
-            .catch(reject);
-          }
-        );
+    return runToFuncAndStepOut(debugSession, 'funcWithMoreVariablesToWatch_Inner', () => {
+      return debugSession.addWatch('e')
+      .then((watch: IWatchInfo) => {
+        return debugSession.getWatchChildren(watch.id, { detail: dbgmits.VariableDetailLevel.None });
+      })
+      .then((children: dbgmits.IWatchChildInfo[]) => {
+        // watches on variables of aggregate types should have one or more children
+        expect(children.length).to.equal(2);
+        expect(children[0].expressionType).to.equal('float');
+        expect(children[1].expressionType).to.equal('float');
       });
-    }
-    // step out of funcWithMoreVariablesToWatch_Inner() into funcWithMoreVariablesToWatch()
-    var onBreakpointStepOut = new Promise<void>((resolve, reject) => {
-      debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
-        (breakNotify: dbgmits.BreakpointHitNotify) => {
-          Promise.all([
-            onStepOutGetWatchChildren(),
-            debugSession.stepOut()
-          ])
-          .then(() => { resolve(); })
-          .catch(reject);
-        }
-      );
-    });
-    // add breakpoint to get to the starting point of the test
-    return debugSession.addBreakpoint('funcWithMoreVariablesToWatch_Inner')
-    .then(() => {
-      return Promise.all([
-        onBreakpointStepOut,
-        debugSession.startTarget()
-      ])
     });
   });
 
@@ -415,6 +275,16 @@ describe("Watch Manipulation", () => {
   });
 });
 
+/**
+ * This function performs the following tasks asynchronously (but sequentially):
+ * 1. Adds a breakpoint on the given function.
+ * 2. Runs the target until the breakpoint is hit.
+ * 3. Steps out of the function within which the breakpoint was hit.
+ * 4. Invokes a callback.
+ *
+ * @param afterStepOut Callback to invoke after the debugger finishes stepping out of the specified
+ *                     function.
+ */
 function runToFuncAndStepOut(
   debugSession: DebugSession, funcName: string, afterStepOut: () => Promise<any>): Promise<any> {
   var onStepOutRunTest = () => {
