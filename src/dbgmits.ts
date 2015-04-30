@@ -1740,6 +1740,29 @@ export class DebugSession extends events.EventEmitter {
       throw new MalformedResponseError('Expected to find "path_expr".', output, cmd);
     });
   }
+
+  //
+  // Data Inspection & Manipulation
+  //
+
+  /**
+   * Evaluates the given expression within the target process and returns the result.
+   *
+   * The expression may contain function calls, which will be executed synchronously.
+   *
+   * @expression The expression to evaluate.
+   * @returns A promise that will be resolved with the value of the expression.
+   */
+  evaluateExpression(expression: string): Promise<string> {
+    var cmd = `data-evaluate-expression "${expression}"`;
+
+    return this.getCommandOutput(cmd, null, (output: any) => {
+      if (output.value) {
+        return output.value;
+      }
+      throw new MalformedResponseError('Expected to find "value".', output, cmd);
+    });
+  }
 }
 
 /** 
