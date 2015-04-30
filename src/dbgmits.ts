@@ -113,7 +113,7 @@ export class CommandFailedError implements Error {
   message: string;
   /** Optional error code sent by the debugger. */
   code: string;
-  /** The command text that was sent to debugger (minus token and dash prefix). */
+  /** The command text that was sent to the debugger (minus token and dash prefix). */
   command: string;
   /** Optional token for the failed command (if the command had one). */
   token: string;
@@ -124,6 +124,28 @@ export class CommandFailedError implements Error {
     this.code = code;
     this.command = command;
     this.token = token;
+  }
+}
+
+/**
+ * Used to indicate the response to an MI command didn't match the expected format.
+ */
+export class MalformedResponseError implements Error {
+  /** The name of this error class. */
+  name: string;
+
+  /**
+   * @param message The description of the error.
+   * @param response The malformed response text (usually just the relevant part).
+   * @param command The command text that was sent to the debugger (minus token and dash prefix).
+   * @param token Token of the command (if the command had one).
+   */
+  constructor(
+    public message: string,
+    public response: string,
+    public command?: string,
+    public token?: string) {
+    this.name = "MalformedResponseError";
   }
 }
 
@@ -336,6 +358,17 @@ export enum WatchFormatSpec {
    * based on the expression type, for example `Decimal` for integers, `Hexadecimal` for pointers.
    */
   Default
+}
+
+/** A watch may have one or more of these attributes associated with it. */
+export enum WatchAttribute {
+  /** Indicates the watch value can be modified. */
+  Editable,
+  /** 
+   * Indicates the watch value can't be modified. This will be the case for any watch with 
+   * children (at least when implemented correctly by the debugger, *cough* not LLDB-MI *cough*).
+   */
+  NonEditable
 }
 
 /**
@@ -1635,7 +1668,7 @@ export class DebugSession extends events.EventEmitter {
   /**
    * Evaluates the watch expression and returns the result.
    *
-   * @param id Identifier of the watch for which the format specifier should be set.
+   * @param id Identifier of the watch whose value should be retrieved.
    * @param formatSpec The output format for the watch value.
    * @returns A promise that will be resolved with the value of the watch.
    */
@@ -1646,8 +1679,48 @@ export class DebugSession extends events.EventEmitter {
     }
     fullCmd = fullCmd + ' ' + id;
 
-    return this.getCommandOutput<string>(fullCmd, null, (output: any) => {
+    return this.getCommandOutput(fullCmd, null, (output: any) => {
       return output.value;
+    });
+  }
+
+  /**
+   * Sets the value of the watch expression to the value of the given expression.
+   *
+   * @param id Identifier of the watch whose value should be modified.
+   * @param expression The value of this expression will be assigned to the watch expression.
+   * @returns A promise that will be resolved with the new value of the watch.
+   */
+  setWatchValue(id: string, expression: string): Promise<string> {
+    return this.getCommandOutput(`var-assign ${id} "${expression}"`, null, (output: any) => {
+      return output.value;
+    });
+  }
+
+  /**
+   * Retrives a list of attributes for the given watch.
+   *
+   * @param id Identifier of the watch whose attributes should be retrieved.
+   * @returns A promise that will be resolved with the list of watch attributes.
+   */
+  getWatchAttributes(id: string): Promise<WatchAttribute[]> {
+    var cmd = 'var-show-attributes ' + id;
+
+    return this.getCommandOutput(cmd, null, (output: any) => {
+      if (output.status) { // LLDB-MI
+        return [stringToWatchAttributeMap.get(output.status)];
+      } else if (output.attr) { // GDB-MI
+        if (Array.isArray(output.attr)) {
+          return output.attr.map((attr: string) => {
+            return stringToWatchAttributeMap.get(attr);
+          });
+        } else {
+          return [stringToWatchAttributeMap.get(output.attr)];
+        }
+      }
+      throw new MalformedResponseError(
+        'Expected to find "status" or "attr", found neither.', output, cmd
+      );
     });
   }
 }
@@ -1862,3 +1935,7 @@ var watchFormatSpecToStringMap = new Map<WatchFormatSpec, string>()
   .set(WatchFormatSpec.Hexadecimal, 'hexadecimal')
   .set(WatchFormatSpec.Octal, 'octal')
   .set(WatchFormatSpec.Default, 'natural');
+
+var stringToWatchAttributeMap = new Map<string, WatchAttribute>()
+  .set('editable', WatchAttribute.Editable)
+  .set('noneditable', WatchAttribute.NonEditable);

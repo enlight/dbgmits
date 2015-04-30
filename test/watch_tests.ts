@@ -361,6 +361,46 @@ describe("Watch Manipulation", () => {
       })
     });
   });
+
+  it("sets the value of a watch", () => {
+    return runToFuncAndStepOut(debugSession, 'funcWithMoreVariablesToWatch', () => {
+      var newValue = '999';
+      return debugSession.addWatch('e')
+      .then((watch: IWatchInfo) => {
+        return debugSession.setWatchValue(watch.id, newValue);
+      })
+      .then((value: string) => {
+        expect(value).to.equal(newValue);
+      })
+    });
+  });
+
+  it("gets the attributes for a watch on a variable of a simple type", () => {
+    return runToFuncAndStepOut(debugSession, 'funcWithMoreVariablesToWatch', () => {
+      return debugSession.addWatch('e')
+      .then((watch: IWatchInfo) => {
+        return debugSession.getWatchAttributes(watch.id);
+      })
+      .then((attrs: dbgmits.WatchAttribute[]) => {
+        expect(attrs.length).to.equal(1);
+        expect(attrs[0]).to.equal(dbgmits.WatchAttribute.Editable);
+      })
+    });
+  });
+  
+  // FIXME: re-enable this when LLDB-MI starts returning 'noneditable' attributes like it should
+  it.skip("gets the attributes for a watch on a variable of an aggregate type", () => {
+    return runToFuncAndStepOut(debugSession, 'funcWithMoreVariablesToWatch_Inner', () => {
+      return debugSession.addWatch('e')
+      .then((watch: IWatchInfo) => {
+        return debugSession.getWatchAttributes(watch.id);
+      })
+      .then((attrs: dbgmits.WatchAttribute[]) => {
+        expect(attrs.length).to.equal(1);
+        expect(attrs[0]).to.equal(dbgmits.WatchAttribute.NonEditable);
+      })
+    });
+  });
 });
 
 function runToFuncAndStepOut(
