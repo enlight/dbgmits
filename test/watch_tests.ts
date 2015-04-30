@@ -401,6 +401,18 @@ describe("Watch Manipulation", () => {
       })
     });
   });
+
+  it("gets the watch expression", () => {
+    return runToFuncAndStepOut(debugSession, 'funcWithMoreVariablesToWatch_Inner', () => {
+      return debugSession.addWatch('f')
+      .then((watch: IWatchInfo) => {
+        return debugSession.getWatchExpression(watch.id);
+      })
+      .then((expr: string) => {
+        expect(expr).to.equal('f');
+      })
+    });
+  });
 });
 
 function runToFuncAndStepOut(

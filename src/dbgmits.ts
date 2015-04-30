@@ -1723,6 +1723,23 @@ export class DebugSession extends events.EventEmitter {
       );
     });
   }
+
+  /**
+   * Retrieves an expression that can be evaluated in the current context to obtain the watch value.
+   *
+   * @param id Identifier of the watch whose path expression should be retrieved.
+   * @returns A promise that will be resolved with the path expression of the watch.
+   */
+  getWatchExpression(id: string): Promise<string> {
+    var cmd = 'var-info-path-expression ' + id;
+    
+    return this.getCommandOutput(cmd, null, (output: any) => {
+      if (output.path_expr) {
+        return output.path_expr;
+      }
+      throw new MalformedResponseError('Expected to find "path_expr".', output, cmd);
+    });
+  }
 }
 
 /** 
