@@ -55,4 +55,49 @@ describe("Data Inspection and Manipulation", () => {
       .then((value: string) => { expect(value).to.equal('true'); });
     });
   });
+
+  it("reads memory at an address specified as a hex literal", () => {
+    return runToFuncAndStepOut(debugSession, 'memoryAccessBreakpoint', () => {
+      var theAddr;
+      return debugSession.evaluateExpression('&array')
+      .then((address: string) => {
+        theAddr = address;
+        return debugSession.readMemory(address, 4);
+      })
+      .then((blocks: dbgmits.IMemoryBlock[]) => {
+        expect(blocks.length).to.equal(1);
+        expect(blocks[0]).to.have.property('begin', theAddr);
+        expect(blocks[0]).to.have.property('end');
+        expect(blocks[0]).to.have.property('offset');
+        expect(blocks[0]).to.have.property('contents', '01020304');
+      });
+    });
+  });
+
+  // FIXME: re-enable when LLDB-MI is fixed to accept expressions for -data-read-memory-bytes
+  it.skip("reads memory at an address obtained from an expression", () => {
+    return runToFuncAndStepOut(debugSession, 'memoryAccessBreakpoint', () => {
+      return debugSession.readMemory('&array', 4)
+      .then((blocks: dbgmits.IMemoryBlock[]) => {
+        expect(blocks.length).to.equal(1);
+        expect(blocks[0]).to.have.property('contents', '01020304');
+      });
+    });
+  });
+
+  // FIXME: re-enable when LLDB-MI is fixed to use the offset for -data-read-memory-bytes
+  it.skip("reads memory at an address with an offset", () => {
+    return runToFuncAndStepOut(debugSession, 'memoryAccessBreakpoint', () => {
+      var theAddr;
+      return debugSession.evaluateExpression('&array')
+      .then((address: string) => {
+        theAddr = address;
+        return debugSession.readMemory(address, 2, { byteOffset: 2 });
+      })
+      .then((blocks: dbgmits.IMemoryBlock[]) => {
+        expect(blocks.length).to.equal(1);
+        expect(blocks[0]).to.have.property('contents', '0304');
+      });
+    });
+  });
 });

@@ -371,6 +371,21 @@ export enum WatchAttribute {
   NonEditable
 }
 
+/** Contains the contents of a block of memory from the target process. */
+export interface IMemoryBlock {
+  /** Start address of the memory block (hex literal). */
+  begin: string;
+  /** End address of the memory block (hex literal). */
+  end: string;
+  /** 
+   * Offset of the memory block (in bytes, as a hex literal) from the start address passed into
+   * [[DebugSession.readMemory]].
+   */
+  offset: string;
+  /** Contents of the memory block in hexadecimal. */
+  contents: string;
+}
+
 /**
  * A debug session provides two-way communication with a debugger process via the GDB/LLDB 
  * machine interface.
@@ -1777,6 +1792,36 @@ export class DebugSession extends events.EventEmitter {
         return output.value;
       }
       throw new MalformedResponseError('Expected to find "value".', output, fullCmd);
+    });
+  }
+
+  /**
+   * Attempts to read all accessible memory regions in the given range.
+   *
+   * @param address Start of the range from which memory should be read, this can be a literal 
+   *                address (e.g. `0x00007fffffffed30`) or an expression (e.g. `&someBuffer`) that
+   *                evaluates to the desired address.
+   * @param numBytesToRead Number of bytes that should be read.
+   * @param options.byteOffset Offset in bytes relative to `address` from which to begin reading.
+   * @returns A promise that will be resolved with a list of memory blocks that were read.
+   */
+  readMemory(address: string, numBytesToRead: number, options?: { byteOffset?: number })
+    : Promise<IMemoryBlock[]> {
+    var fullCmd = 'data-read-memory-bytes';
+    if (options && options.byteOffset) {
+      fullCmd = fullCmd + ' -o ' + options.byteOffset;
+    }
+    // FIXME: LLDB-MI doesn't bother evaluating the address as an expression, so it has to be
+    // a literal until that's fixed, and it can't be quoted either (which is important in case
+    // the expression contains spaces).
+    fullCmd = fullCmd + ` ${address} ${numBytesToRead}`;
+    //fullCmd = fullCmd + ` "${address}" ${numBytesToRead}`;
+
+    return this.getCommandOutput(fullCmd, null, (output: any) => {
+      if (output.memory) {
+        return output.memory;
+      }
+      throw new MalformedResponseError('Expected to find "memory".', output, fullCmd);
     });
   }
 }
