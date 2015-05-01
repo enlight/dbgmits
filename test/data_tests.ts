@@ -48,6 +48,10 @@ describe("Data Inspection and Manipulation", () => {
       .then(() => { return debugSession.evaluateExpression('get10() == 10'); })
       .then((value: string) => { expect(value).to.equal('true'); })
       .then(() => { return debugSession.evaluateExpression('get10() == getInt(10)'); })
+      .then((value: string) => { expect(value).to.equal('true'); })
+      .then(() => { 
+        return debugSession.evaluateExpression('a == 1', { threadId: 1, frameLevel: 0 }); 
+      })
       .then((value: string) => { expect(value).to.equal('true'); });
     });
   });

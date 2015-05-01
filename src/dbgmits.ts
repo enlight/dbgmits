@@ -1750,17 +1750,33 @@ export class DebugSession extends events.EventEmitter {
    *
    * The expression may contain function calls, which will be executed synchronously.
    *
-   * @expression The expression to evaluate.
+   * @param expression The expression to evaluate.
+   * @param options.threadId The thread within which the expression should be evaluated.
+   *                         *Default*: the currently selected thread.
+   * @param options.frameLevel The index of the stack frame within which the expression should 
+   *                           be evaluated, zero for the innermost stack frame. Note that
+   *                           if `frameLevel` is specified then `threadId` must also be specified.
+   *                           *Default*: the currently selected frame.
    * @returns A promise that will be resolved with the value of the expression.
    */
-  evaluateExpression(expression: string): Promise<string> {
-    var cmd = `data-evaluate-expression "${expression}"`;
+  evaluateExpression(
+    expression: string, options?: { threadId?: number; frameLevel?: number }): Promise<string> {
+    var fullCmd = 'data-evaluate-expression';
+    if (options) {
+      if (options.threadId) {
+        fullCmd = fullCmd + ' --thread ' + options.threadId;
+      }
+      if (options.frameLevel) {
+        fullCmd = fullCmd + ' --frame ' + options.frameLevel;
+      }
+    }
+    fullCmd = fullCmd + ` "${expression}"`;
 
-    return this.getCommandOutput(cmd, null, (output: any) => {
+    return this.getCommandOutput(fullCmd, null, (output: any) => {
       if (output.value) {
         return output.value;
       }
-      throw new MalformedResponseError('Expected to find "value".', output, cmd);
+      throw new MalformedResponseError('Expected to find "value".', output, fullCmd);
     });
   }
 }
