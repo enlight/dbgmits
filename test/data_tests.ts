@@ -100,4 +100,27 @@ describe("Data Inspection and Manipulation", () => {
       });
     });
   });
+
+  it("gets a list of register names", () => {
+    var onBreakpointGetRegisterNames = new Promise<void>((resolve, reject) => {
+      debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
+        (breakNotify: dbgmits.BreakpointHitNotify) => {
+          debugSession.getRegisterNames()
+          .then((registerNames: string[]) => { expect(registerNames.length).to.be.greaterThan(0); })
+          .then(() => { return debugSession.getRegisterNames([1, 2, 3]); })
+          .then((registerNames: string[]) => { expect(registerNames.length).to.equal(3); })
+          .then(resolve)
+          .catch(reject);
+        }
+      );
+    });
+    // add breakpoint to get to the starting point of the test
+    return debugSession.addBreakpoint('main')
+    .then(() => {
+      return Promise.all([
+        onBreakpointGetRegisterNames,
+        debugSession.startTarget()
+      ])
+    });
+  });
 });

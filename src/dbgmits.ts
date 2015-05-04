@@ -1824,6 +1824,27 @@ export class DebugSession extends events.EventEmitter {
       throw new MalformedResponseError('Expected to find "memory".', output, fullCmd);
     });
   }
+
+  /**
+   * Retrieves a list of register names for the current target.
+   *
+   * @param registerNumbers List of numbers corresponding to the register names to be retrieved.
+   *                        If this argument is omitted all register names will be retrieved.
+   * @returns A promise that will be resolved with a list of register names.
+   */
+  getRegisterNames(registerNumbers?: number[]): Promise<string[]> {
+    var fullCmd = 'data-list-register-names';
+    if (registerNumbers && (registerNumbers.length > 0)) {
+      fullCmd = fullCmd + ' ' + registerNumbers.join(' ');
+    }
+
+    return this.getCommandOutput(fullCmd, null, (output: any) => {
+      if (output['register-names']) {
+        return output['register-names'];
+      }
+      throw new MalformedResponseError('Expected to find "register-names".', output, fullCmd);
+    });
+  }
 }
 
 /** 
