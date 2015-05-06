@@ -20,6 +20,8 @@ import runToFuncAndStepOut = testUtils.runToFuncAndStepOut;
 // the directory in which Gruntfile.js resides is also Mocha's working directory,
 // so any relative paths will be relative to that directory
 var localTargetExe: string = './build/Debug/data_tests_target';
+// source line number of main() (must be updated if data_tests_target.cpp is modified!)
+var mainFuncLineNum = 44;
 
 describe("Data Inspection and Manipulation", () => {
   var debugSession: DebugSession;
@@ -119,6 +121,122 @@ describe("Data Inspection and Manipulation", () => {
     .then(() => {
       return Promise.all([
         onBreakpointGetRegisterNames,
+        debugSession.startTarget()
+      ])
+    });
+  });
+
+  it("disassembles an address range", () => {
+    var onBreakpointDisassemble = new Promise<void>((resolve, reject) => {
+      debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
+        (breakNotify: dbgmits.BreakpointHitNotify) => {
+          debugSession.evaluateExpression('&main')
+          .then((value: string) => {
+            var matches = /^0x[0-9a-f]+/i.exec(value);
+            expect(matches).not.null;
+            var end = '0x' + (parseInt(matches[0], 16) + 10).toString(16);
+            return debugSession.disassembleAddressRange(matches[0], end);
+          })
+          .then((instructions: dbgmits.IAsmInstruction[]) => {
+            expect(instructions.length).to.be.greaterThan(0);
+            expect(instructions[0]).to.have.property('address');
+            expect(instructions[0]).to.have.property('func');
+            expect(instructions[0]).to.have.property('offset');
+            expect(instructions[0]).to.have.property('inst');
+          })
+          .then(resolve)
+          .catch(reject);
+        }
+      );
+    });
+    // add breakpoint to get to the starting point of the test
+    return debugSession.addBreakpoint('main')
+    .then(() => {
+      return Promise.all([
+        onBreakpointDisassemble,
+        debugSession.startTarget()
+      ])
+    });
+  });
+
+  // FIXME: LLDB-MI doesn't format the output correctly in mixed mode, re-enable when it does
+  it.skip("disassembles an address range line by line", () => {
+    var onBreakpointDisassemble = new Promise<void>((resolve, reject) => {
+      debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
+        (breakNotify: dbgmits.BreakpointHitNotify) => {
+          debugSession.evaluateExpression('&main')
+          .then((value: string) => {
+            var matches = /^0x[0-9a-f]/i.exec(value);
+            expect(matches).not.null;
+            var end = parseInt(matches[0], 16) + 10;
+            return debugSession.disassembleAddressRangeByLine(matches[0], end.toString(16));
+          })
+          .then((lines: dbgmits.ISourceLineAsm[]) => {
+            expect(lines.length).to.be.greaterThan(0);
+            expect(lines[0].instructions.length).to.be.greaterThan(0);
+          })
+          .then(resolve)
+          .catch(reject);
+        }
+      );
+    });
+    // add breakpoint to get to the starting point of the test
+    return debugSession.addBreakpoint('main')
+    .then(() => {
+      return Promise.all([
+        onBreakpointDisassemble,
+        debugSession.startTarget()
+      ])
+    });
+  });
+
+  // FIXME: LLDB-MI doesn't support file/line arguments yet, re-enable when it does
+  it.skip("disassembles a file", () => {
+    var onBreakpointDisassemble = new Promise<void>((resolve, reject) => {
+      debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
+        (breakNotify: dbgmits.BreakpointHitNotify) => {
+          // disassemble main()
+          return debugSession.disassembleFile('data_tests_target.cpp', mainFuncLineNum, -1)
+          .then((instructions: dbgmits.IAsmInstruction[]) => {
+            expect(instructions.length).to.be.greaterThan(0);
+          })
+          .then(resolve)
+          .catch(reject);
+        }
+      );
+    });
+    // add breakpoint to get to the starting point of the test
+    return debugSession.addBreakpoint('main')
+    .then(() => {
+      return Promise.all([
+        onBreakpointDisassemble,
+        debugSession.startTarget()
+      ])
+    });
+  });
+
+  // FIXME: LLDB-MI doesn't support file/line arguments yet, and it doesn't format output correctly
+  // in mixed mode, re-enable when it does both of those things properly
+  it.skip("disassembles a file line by line", () => {
+    var onBreakpointDisassemble = new Promise<void>((resolve, reject) => {
+      debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
+        (breakNotify: dbgmits.BreakpointHitNotify) => {
+          // disassemble main()
+          return debugSession.disassembleFileByLine('data_tests_target.cpp', mainFuncLineNum, -1)
+          .then((lines: dbgmits.ISourceLineAsm[]) => {
+            expect(lines.length).to.be.greaterThan(0);
+            expect(lines[0].instructions.length).to.be.greaterThan(0);
+          })
+          .then(resolve)
+          .catch(reject);
+        }
+      );
+    });
+    // add breakpoint to get to the starting point of the test
+    return debugSession.addBreakpoint('main')
+    .then(() => {
+      return Promise.all([
+        onBreakpointDisassemble,
         debugSession.startTarget()
       ])
     });

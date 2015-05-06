@@ -386,6 +386,44 @@ export interface IMemoryBlock {
   contents: string;
 }
 
+/** Contains information about an ASM instruction. */
+export interface IAsmInstruction {
+  /** Address at which this instruction was disassembled. */
+  address: string;
+  /** Name of the function this instruction came from. */
+  func: string;
+  /** Offset of this instruction from the start of `func` (as a decimal). */
+  offset: number;
+  /** Text disassembly of this instruction. */
+  inst: string;
+  /** 
+   * Raw opcode bytes for this instruction.
+   * NOTE: This field is currently not filled in by LLDB-MI.
+   */
+  opcodes?: string;
+  /**
+   * Size of the raw opcode in bytes.
+   * NOTE: This field is an LLDB-MI specific extension.
+   */
+  size?: number;
+}
+
+/** Contains ASM instructions for a single source line. */
+export interface ISourceLineAsm {
+  /** Source filename from the compilation unit, may be absolute or relative. */
+  file: string;
+  /** 
+   * Absolute filename of `file` (with all symbolic links resolved).
+   * If the source file can't be found this field will populated from the debug information.
+   * NOTE: This field is currently not filled in by LLDB-MI.
+   */
+  fullname: string;
+  /** Source line number in `file`. */
+  line: number;
+  /** ASM instructions corresponding to `line` in `file`. */
+  instructions: IAsmInstruction[];
+}
+
 /**
  * A debug session provides two-way communication with a debugger process via the GDB/LLDB 
  * machine interface.
@@ -1845,6 +1883,120 @@ export class DebugSession extends events.EventEmitter {
       throw new MalformedResponseError('Expected to find "register-names".', output, fullCmd);
     });
   }
+
+  /**
+   * Retrieves assembly instructions within the specified address range.
+   *
+   * No source line information will be provided for the assembly instructions that are retrieved,
+   * if such information is required [[disassembleAddressRangeByLine]] should be used instead.
+   *
+   * @param start Start of the address range to disassemble. GDB allows this to be an expression
+   *              that can be evaluated to obtain the address (e.g. $pc), however LLDB-MI only
+   *              accepts number literals (e.g. 0x4009cc).
+   * @param end End of the address range to disassemble, same caveats apply as for `start`.
+   * @param showOpcodes If `true` the raw opcode bytes will be retrieved for each instruction.
+   * @returns A promise that will be resolved with a list of assembly instructions (and associated
+   *          meta-data).
+   */
+  disassembleAddressRange(start: string, end: string, showOpcodes?: boolean)
+    : Promise<IAsmInstruction[]> {
+    var fullCmd = `data-disassemble -s ${start} -e ${end} -- ` + (showOpcodes ? '2' : '0');
+    
+    return this.getCommandOutput(fullCmd, null, (output: any) => {
+      if (output.asm_insns) {
+        return extractAsmInstructions(output.asm_insns);
+      }
+      throw new MalformedResponseError('Expected to find "asm_insns".', output, fullCmd);
+    });
+  }
+
+  /**
+   * Retrieves assembly instructions within a specified address range grouped by source line.
+   *
+   * If source line information is not required [[disassembleAddressRange]] should be used instead.
+   *
+   * @param start Start of the address range to disassemble. GDB allows this to be an expression
+   *              that can be evaluated to obtain the address (e.g. $pc), however LLDB-MI only
+   *              accepts number literals (e.g. 0x4009cc).
+   * @param end End of the address range to disassemble, same caveats apply as for `start`.
+   * @param showOpcodes If `true` the raw opcode bytes will be retrieved for each instruction.
+   * @returns A promise that will be resolved with a list lines, each of which will contain one 
+   *          or more assembly instructions (and associated meta-data).
+   */
+  disassembleAddressRangeByLine(start: string, end: string, showOpcodes?: boolean)
+    : Promise<ISourceLineAsm[]> {
+    var fullCmd = `data-disassemble -s ${start} -e ${end} -- ` + (showOpcodes ? '3' : '1');
+    
+    return this.getCommandOutput(fullCmd, null, (output: any) => {
+      if (output.asm_insns) {
+        return extractAsmBySourceLine(output.asm_insns);
+      }
+      throw new MalformedResponseError('Expected to find "asm_insns".', output, fullCmd);
+    });
+  }
+
+  /**
+   * Retrieves assembly instructions for the specified source file.
+   *
+   * No source line information will be provided for the assembly instructions that are retrieved,
+   * if such information is required [[disassembleFileByLine]] should be used instead.
+   *
+   * @param filename Source file to disassemble, e.g. main.cpp
+   * @param line Line number in `filename` to disassemble around.
+   * @param options.maxInstructions Maximum number of assembly instructions to retrieve.
+   *                                If this option is ommitted the entire function at the specified
+   *                                source line will be disassembled.
+   * @param options.showOpcodes If `true` the raw opcode bytes will be retrieved for each instruction.
+   * @returns A promise that will be resolved with a list of assembly instructions (and associated
+   *          meta-data).
+   */
+  disassembleFile(
+    filename: string, line: number, options?: { maxInstructions?: number; showOpcodes?: boolean }
+  ): Promise<IAsmInstruction[]> {
+    var fullCmd = `data-disassemble -f ${filename} -l ${line}`;
+    if (options && (options.maxInstructions !== undefined)) {
+      fullCmd = fullCmd + ' -n ' + options.maxInstructions;
+    }
+    fullCmd = fullCmd + ' -- ' + ((options && options.showOpcodes) ? '2' : '0');
+    
+    return this.getCommandOutput(fullCmd, null, (output: any) => {
+      if (output.asm_insns) {
+        return extractAsmInstructions(output.asm_insns);
+      }
+      throw new MalformedResponseError('Expected to find "asm_insns".', output, fullCmd);
+    });
+  }
+
+  /**
+   * Retrieves assembly instructions for the specified source file grouped by source line.
+   *
+   * If source line information is not required [[disassembleFile]] should be used instead.
+   *
+   * @param filename Source file to disassemble, e.g. main.cpp
+   * @param line Line number in `filename` to disassemble around.
+   * @param options.maxInstructions Maximum number of assembly instructions to retrieve.
+   *                                If this option is ommitted the entire function at the specified
+   *                                source line will be disassembled.
+   * @param options.showOpcodes If `true` the raw opcode bytes will be retrieved for each instruction.
+   * @returns A promise that will be resolved with a list lines, each of which will contain one 
+   *          or more assembly instructions (and associated meta-data).
+   */
+  disassembleFileByLine(
+    filename: string, line: number, options?: { maxInstructions?: number; showOpcodes?: boolean }
+  ): Promise<ISourceLineAsm[]> {
+    var fullCmd = `data-disassemble -f ${filename} -l ${line}`;
+    if (options && (options.maxInstructions !== undefined)) {
+      fullCmd = fullCmd + ' -n ' + options.maxInstructions;
+    }
+    fullCmd = fullCmd + ' -- ' + ((options && options.showOpcodes) ? '3' : '1');
+    
+    return this.getCommandOutput(fullCmd, null, (output: any) => {
+      if (output.asm_insns) {
+        return extractAsmBySourceLine(output.asm_insns);
+      }
+      throw new MalformedResponseError('Expected to find "asm_insns".', output, fullCmd);
+    });
+  }
 }
 
 /** 
@@ -1962,6 +2114,40 @@ function extractWatchChildren(data: any | any[]): IWatchChildInfo[] {
     // data is in the form: { child: { name: var1.child1, ... } }
     return [extractWatchChild(data.child)];
   }
+}
+
+/**
+ * Converts the output produced by the MI Output parser from the response to the
+ * -data-disassemble MI command into an array of objects that conform to the IAsmInstruction
+ * interface.
+ */
+function extractAsmInstructions(data: any[]): IAsmInstruction[] {
+  return data.map((asmInstruction: any): IAsmInstruction => {
+    return {
+      address: asmInstruction.address,
+      func: asmInstruction['func-name'],
+      offset: asmInstruction.offset,
+      inst: asmInstruction.inst,
+      opcodes: asmInstruction.opcodes,
+      size: parseInt(asmInstruction.size, 10)
+    };
+  });
+}
+
+/**
+ * Converts the output produced by the MI Output parser from the response to the
+ * -data-disassemble MI command into an array of objects that conform to the ISourceLineAsm
+ * interface.
+ */
+function extractAsmBySourceLine(data: any[]): ISourceLineAsm[] {
+  return data.map((sourceLine: any): ISourceLineAsm => {
+    return {
+      line: parseInt(sourceLine.line, 10),
+      file: sourceLine.file,
+      fullname: sourceLine.fullname,
+      instructions: extractAsmInstructions(sourceLine.line_asm_insn)
+    };
+  });
 }
 
 function setProcessEnvironment(): void {
