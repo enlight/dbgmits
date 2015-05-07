@@ -1090,10 +1090,10 @@ export class DebugSession extends events.EventEmitter {
       if (options.condition) {
         cmd = cmd + ' -c ' + options.condition;
       }
-      if (options.ignoreCount) {
+      if (options.ignoreCount !== undefined) {
         cmd = cmd + ' -i ' + options.ignoreCount;
       }
-      if (options.threadId) {
+      if (options.threadId !== undefined) {
         cmd = cmd + ' -p ' + options.threadId;
       }
     }
@@ -1342,10 +1342,10 @@ export class DebugSession extends events.EventEmitter {
     options?: { threadId?: number; maxDepth?: number }, token?: string): Promise<number> {
     var fullCmd: string = 'stack-info-depth';
     if (options) {
-      if (options.threadId) {
+      if (options.threadId !== undefined) {
         fullCmd = fullCmd + ' --thread ' + options.threadId;
       }
-      if (options.maxDepth) {
+      if (options.maxDepth !== undefined) {
         fullCmd = fullCmd + ' ' + options.maxDepth;
       }
     }
@@ -1376,7 +1376,7 @@ export class DebugSession extends events.EventEmitter {
     token?: string) : Promise<IStackFrameInfo[]> {
     var fullCmd: string = 'stack-list-frames';
     if (options) {
-      if (options.threadId) {
+      if (options.threadId !== undefined) {
         fullCmd = fullCmd + ' --thread' + options.threadId;
       }
       if (options.noFrameFilters === true) {
@@ -1425,10 +1425,10 @@ export class DebugSession extends events.EventEmitter {
   ): Promise<IVariableInfo[]> {
     var fullCmd: string = 'stack-list-locals';
     if (options) {
-      if (options.threadId) {
+      if (options.threadId !== undefined) {
         fullCmd = fullCmd + ' --thread ' + options.threadId;
       }
-      if (options.frameLevel) {
+      if (options.frameLevel !== undefined) {
         fullCmd = fullCmd + ' --frame ' + options.frameLevel;
       }
       if (options.noFrameFilters === true) {
@@ -1490,7 +1490,7 @@ export class DebugSession extends events.EventEmitter {
   ): Promise<IStackFrameArgsInfo[]> {
     var fullCmd: string = 'stack-list-arguments';
     if (options) {
-      if (options.threadId) {
+      if (options.threadId !== undefined) {
         fullCmd = fullCmd + ' --thread ' + options.threadId;
       }
       if (options.noFrameFilters === true) {
@@ -1582,13 +1582,13 @@ export class DebugSession extends events.EventEmitter {
       if (options.id) {
         id = options.id;
       }
-      if (options.threadId) {
+      if (options.threadId !== undefined) {
         fullCmd = fullCmd + ' --thread ' + options.threadId;
       }
       if (options.threadGroup) {
         fullCmd = fullCmd + ' --thread-group ' + options.threadGroup;
       }
-      if (options.frameLevel) {
+      if (options.frameLevel !== undefined) {
         fullCmd = fullCmd + ' --frame ' + options.frameLevel;
       }
       if (options.isFloating === true) {
@@ -1687,10 +1687,8 @@ export class DebugSession extends events.EventEmitter {
       fullCmd = fullCmd + ' ' + options.detail;
     }
     fullCmd = fullCmd + ' ' + id;
-    if (options) {
-      if (options.from && options.to) {
+    if (options && (options.from !== undefined) && (options.to !== undefined)) {
         fullCmd = fullCmd + ' ' + options.from + ' ' + options.to;
-      }
     }
 
     return this.getCommandOutput(fullCmd, null, (output: any) => {
@@ -1816,10 +1814,10 @@ export class DebugSession extends events.EventEmitter {
     expression: string, options?: { threadId?: number; frameLevel?: number }): Promise<string> {
     var fullCmd = 'data-evaluate-expression';
     if (options) {
-      if (options.threadId) {
+      if (options.threadId !== undefined) {
         fullCmd = fullCmd + ' --thread ' + options.threadId;
       }
-      if (options.frameLevel) {
+      if (options.frameLevel !== undefined) {
         fullCmd = fullCmd + ' --frame ' + options.frameLevel;
       }
     }
@@ -2008,7 +2006,7 @@ function appendExecCmdOptions(
   input: string, options: { threadId?: number; reverse?: boolean }): string {
   var cmd: string = input;
   if (options) {
-    if (options.threadId) {
+    if (options.threadId !== undefined) {
       cmd = cmd + ' --thread ' + options.threadId;
     }
     if (options.reverse) {

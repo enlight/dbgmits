@@ -181,6 +181,22 @@ describe("Watch Manipulation", () => {
     });
   });
 
+  // FIXME: LLDB-MI doesn't support subsets yet, re-enable when that's fixed
+  it.skip("gets a subset of members of a struct variable under watch", () => {
+    return runToFuncAndStepOut(debugSession, 'funcWithMoreVariablesToWatch_Inner', () => {
+      return debugSession.addWatch('e')
+      .then((watch: IWatchInfo) => {
+        return debugSession.getWatchChildren(
+          watch.id, { detail: dbgmits.VariableDetailLevel.None, from: 0, to: 1 });
+      })
+      .then((children: dbgmits.IWatchChildInfo[]) => {
+        // watches on variables of aggregate types should have one or more children
+        expect(children.length).to.equal(1);
+        expect(children[0].expressionType).to.equal('float');
+      });
+    });
+  });
+
   it("sets the format specifier for a watch", () => {
     return runToFuncAndStepOut(debugSession, 'funcWithMoreVariablesToWatch', () => {
       var watchId;
