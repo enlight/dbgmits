@@ -126,6 +126,43 @@ describe("Data Inspection and Manipulation", () => {
     });
   });
 
+  it("gets register values", () => {
+    var onBreakpointGetRegisterValues = new Promise<void>((resolve, reject) => {
+      debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
+        (breakNotify: dbgmits.BreakpointHitNotify) => {
+          debugSession.getRegisterValues(dbgmits.RegisterValueFormatSpec.Hexadecimal)
+          .then((registerValues: Map<number, string>) => {
+            expect(registerValues.size).to.be.greaterThan(0);
+            /* FIXME: LLDB-MI produces some malformed values, needs to be fixed.
+            var hexRe = /^0x[0-9a-f]+$/i;
+            registerValues.forEach((value) => {
+              expect(value).to.match(hexRe);
+            });
+            */
+          })
+          .then(() => {
+            return debugSession.getRegisterValues(
+              dbgmits.RegisterValueFormatSpec.Hexadecimal, { registers: [1, 2, 3] }
+            );
+          })
+          .then((registerValues: Map<number, string>) => {
+            expect(registerValues.size).to.equal(3);
+          })
+          .then(resolve)
+          .catch(reject);
+        }
+      );
+    });
+    // add breakpoint to get to the starting point of the test
+    return debugSession.addBreakpoint('main')
+    .then(() => {
+      return Promise.all([
+        onBreakpointGetRegisterValues,
+        debugSession.startTarget()
+      ])
+    });
+  });
+
   it("disassembles an address range", () => {
     var onBreakpointDisassemble = new Promise<void>((resolve, reject) => {
       debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,

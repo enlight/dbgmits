@@ -424,6 +424,19 @@ export interface ISourceLineAsm {
   instructions: IAsmInstruction[];
 }
 
+/** Output format specifiers for register values. */
+export enum RegisterValueFormatSpec {
+  Binary,
+  Decimal,
+  Hexadecimal,
+  Octal,
+  Raw,
+  /** 
+   * This specifier is used to indicate that one of the other ones should be automatically chosen.
+   */
+  Default
+}
+
 /**
  * A debug session provides two-way communication with a debugger process via the GDB/LLDB 
  * machine interface.
@@ -698,6 +711,7 @@ export class DebugSession extends events.EventEmitter {
         break;
 
       case 'stopped':
+        console.log(data);
         var standardNotify: TargetStoppedNotify = {
           reason: parseTargetStopReason(data.reason),
           threadId: parseInt(data['thread-id'], 10),
@@ -1864,14 +1878,14 @@ export class DebugSession extends events.EventEmitter {
   /**
    * Retrieves a list of register names for the current target.
    *
-   * @param registerNumbers List of numbers corresponding to the register names to be retrieved.
-   *                        If this argument is omitted all register names will be retrieved.
+   * @param registers List of numbers corresponding to the register names to be retrieved.
+   *                  If this argument is omitted all register names will be retrieved.
    * @returns A promise that will be resolved with a list of register names.
    */
-  getRegisterNames(registerNumbers?: number[]): Promise<string[]> {
+  getRegisterNames(registers?: number[]): Promise<string[]> {
     var fullCmd = 'data-list-register-names';
-    if (registerNumbers && (registerNumbers.length > 0)) {
-      fullCmd = fullCmd + ' ' + registerNumbers.join(' ');
+    if (registers && (registers.length > 0)) {
+      fullCmd = fullCmd + ' ' + registers.join(' ');
     }
 
     return this.getCommandOutput(fullCmd, null, (output: any) => {
@@ -1879,6 +1893,63 @@ export class DebugSession extends events.EventEmitter {
         return output['register-names'];
       }
       throw new MalformedResponseError('Expected to find "register-names".', output, fullCmd);
+    });
+  }
+
+  /**
+   * Retrieves the values of registers.
+   *
+   * @param formatSpec Specifies how the register values should be formatted.
+   * @param options.registers Register numbers of the registers for which values should be retrieved.
+   *                          If this option is omitted the values of all registers will be retrieved.
+   * @param options.skipUnavailable *(GDB specific)* If `true` only values of available registers
+   *                                will be retrieved.
+   * @param options.threadId Identifier of the thread from which register values should be retrieved.
+   *                         If this option is omitted it will default to the currently selected thread.
+   *                         NOTE: This option is not currently supported by LLDB-MI.
+   * @param options.frameLevel Index of the frame from which register values should be retrieved.
+   *                           This is a zero-based index, zero corresponds to the innermost frame
+   *                           on the stack. If this option is omitted it will default to the
+   *                           currently selected frame.
+   *                           NOTE: This option is not currently supported by LLDB-MI.
+   * @returns A promise that will be resolved with a map of register numbers to register values.
+   */
+  getRegisterValues(
+    formatSpec: RegisterValueFormatSpec,
+    options?: {
+      registers?: number[];
+      skipUnavailable?: boolean;
+      threadId?: number;
+      frameLevel?: number
+    }
+  ): Promise<Map<number, string>> {
+    var fullCmd = 'data-list-register-values';
+    if (options) {
+      if (options.threadId !== undefined) {
+        fullCmd = fullCmd + ' --thread ' + options.threadId;
+      }
+      if (options.frameLevel !== undefined) {
+        fullCmd = fullCmd + ' --frame ' + options.frameLevel;
+      }
+      if (options.skipUnavailable) {
+        fullCmd = fullCmd + ' --skip-unavailable';
+      }
+    }
+    fullCmd = fullCmd + ' ' + registerValueFormatSpecToCodeMap.get(formatSpec);
+    if (options && options.registers && (options.registers.length > 0)) {
+      fullCmd = fullCmd + ' ' + options.registers.join(' ');
+    }
+
+    return this.getCommandOutput(fullCmd, null, (output: any) => {
+      var registers: { number: string; value: string }[] = output['register-values'];
+      var registerMap = new Map<number, string>();
+      if (registers) {
+        registers.forEach((register) => {
+          registerMap.set(parseInt(register.number), register.value); 
+        });
+        return registerMap;
+      }
+      throw new MalformedResponseError('Expected to find "register-values".', output, fullCmd);
     });
   }
 
@@ -2243,3 +2314,12 @@ var watchFormatSpecToStringMap = new Map<WatchFormatSpec, string>()
 var stringToWatchAttributeMap = new Map<string, WatchAttribute>()
   .set('editable', WatchAttribute.Editable)
   .set('noneditable', WatchAttribute.NonEditable);
+
+// maps RegisterValueFormatSpec enum members to the corresponding MI code
+var registerValueFormatSpecToCodeMap = new Map<RegisterValueFormatSpec, string>()
+  .set(RegisterValueFormatSpec.Binary, 't')
+  .set(RegisterValueFormatSpec.Decimal, 'd')
+  .set(RegisterValueFormatSpec.Hexadecimal, 'x')
+  .set(RegisterValueFormatSpec.Octal, 'o')
+  .set(RegisterValueFormatSpec.Raw, 'r')
+  .set(RegisterValueFormatSpec.Default, 'N');
