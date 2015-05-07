@@ -2126,7 +2126,7 @@ function extractAsmInstructions(data: any[]): IAsmInstruction[] {
     return {
       address: asmInstruction.address,
       func: asmInstruction['func-name'],
-      offset: asmInstruction.offset,
+      offset: parseInt(asmInstruction.offset),
       inst: asmInstruction.inst,
       opcodes: asmInstruction.opcodes,
       size: parseInt(asmInstruction.size, 10)
