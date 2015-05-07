@@ -2102,9 +2102,7 @@ function extractWatchChildren(data: any | any[]): IWatchChildInfo[] {
     };
   }
 
-  // FIXME: the data shouldn't actually ever be the string '[]', but LLDB-MI has this quirk,
-  // hopefully it'll be fixed in the near future and the string comparison can be removed
-  if ((data === undefined) || Array.isArray(data) || (data === '[]')) {
+  if ((data === undefined) || Array.isArray(data)) {
     // data will only be an array if the array is empty
     return [];
   } else if (Array.isArray(data.child)) {
