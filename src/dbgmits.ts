@@ -1861,11 +1861,7 @@ export class DebugSession extends events.EventEmitter {
     if (options && options.byteOffset) {
       fullCmd = fullCmd + ' -o ' + options.byteOffset;
     }
-    // FIXME: LLDB-MI doesn't bother evaluating the address as an expression, so it has to be
-    // a literal until that's fixed, and it can't be quoted either (which is important in case
-    // the expression contains spaces).
-    fullCmd = fullCmd + ` ${address} ${numBytesToRead}`;
-    //fullCmd = fullCmd + ` "${address}" ${numBytesToRead}`;
+    fullCmd = fullCmd + ` "${address}" ${numBytesToRead}`;
 
     return this.getCommandOutput(fullCmd, null, (output: any) => {
       if (output.memory) {

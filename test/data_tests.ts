@@ -76,8 +76,7 @@ describe("Data Inspection and Manipulation", () => {
     });
   });
 
-  // FIXME: re-enable when LLDB-MI is fixed to accept expressions for -data-read-memory-bytes
-  it.skip("reads memory at an address obtained from an expression", () => {
+  it("reads memory at an address obtained from an expression", () => {
     return runToFuncAndStepOut(debugSession, 'memoryAccessBreakpoint', () => {
       return debugSession.readMemory('&array', 4)
       .then((blocks: dbgmits.IMemoryBlock[]) => {
@@ -87,8 +86,7 @@ describe("Data Inspection and Manipulation", () => {
     });
   });
 
-  // FIXME: re-enable when LLDB-MI is fixed to use the offset for -data-read-memory-bytes
-  it.skip("reads memory at an address with an offset", () => {
+  it("reads memory at an address with an offset", () => {
     return runToFuncAndStepOut(debugSession, 'memoryAccessBreakpoint', () => {
       var theAddr;
       return debugSession.evaluateExpression('&array')
