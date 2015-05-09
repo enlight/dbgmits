@@ -1187,17 +1187,19 @@ export class DebugSession extends events.EventEmitter {
   }
 
   /**
-   * Executes the target from the beginning until it exits, execution may stop prematurely due
-   * to a number of reasons, for example a breakpoint being hit.
+   * Executes an inferior from the beginning until it exits.
+   *
+   * Execution may stop before the inferior finishes running due to a number of reasons, 
+   * for example a breakpoint being hit.
    * [[EVENT_TARGET_STOPPED]] will be emitted when execution stops.
    *
-   * @param options.threadGroup *(GDB specific)* If **"all"** then all inferiors will be started. 
-   *                            Otherwise it should be the identifier of the thread group to start.
-   * @param options.stopAtStart *(GDB specific)* If **true** then execution will stop at the start 
+   * @param options.threadGroup *(GDB specific)* The identifier of the thread group to start,
+   *                            if omitted the currently selected inferior will be started.
+   * @param options.stopAtStart *(GDB specific)* If `true` then execution will stop at the start 
    *                            of the main function.
    */
-  startTarget(
-    options?: { threadGroup?: string; stopAtStart?: boolean}, token?: string): Promise<void> {
+  startInferior(
+    options?: { threadGroup?: string; stopAtStart?: boolean}): Promise<void> {
     var fullCmd: string = 'exec-run';
     if (options) {
       if (options.threadGroup) {
@@ -1208,27 +1210,46 @@ export class DebugSession extends events.EventEmitter {
       }
     }
 
-    return this.executeCommand(fullCmd, token);
+    return this.executeCommand(fullCmd, null);
   }
 
   /**
-   * Kills the target process.
+   * Executes all inferiors from the beginning until they exit.
+   *
+   * Execution may stop before an inferior finishes running due to a number of reasons, 
+   * for example a breakpoint being hit.
+   * [[EVENT_TARGET_STOPPED]] will be emitted when execution stops.
+   *
+   * @param stopAtStart *(GDB specific)* If `true` then execution will stop at the start 
+   *                    of the main function.
    */
-  abortTarget(token?: string): Promise<void> {
+  startAllInferiors(stopAtStart?: boolean): Promise<void> {
+    var fullCmd: string = 'exec-run --all';
+    if (stopAtStart) {
+      fullCmd = fullCmd + ' --start';
+    }
+
+    return this.executeCommand(fullCmd, null);
+  }
+
+  /**
+   * Kills the currently selected inferior.
+   */
+  abortInferior(token?: string): Promise<void> {
     return this.executeCommand('exec-abort', token);
   }
 
   /**
-   * Executes the target from the beginning until it exits, execution may stop at any time due
-   * to a number of reasons, for example a breakpoint being hit.
+   * Resumes execution of an inferior, execution may stop at any time due to a number of reasons,
+   * for example a breakpoint being hit.
    * [[EVENT_TARGET_STOPPED]] will be emitted when execution stops.
    *
-   * @param options.threadGroup *(GDB specific)* If **"all"** then all inferiors will be resumed. 
-   *                            Otherwise it should be the identifier of the thread group to resume.
-   * @param options.reverse *(GDB specific)* If **true** the target is executed in reverse.
+   * @param options.threadGroup *(GDB specific)* Identifier of the thread group to resume,
+   *                            if omitted the currently selected inferior is resumed.
+   * @param options.reverse *(GDB specific)* If **true** the inferior is executed in reverse.
    */
-  resumeTarget(
-    options?: { threadGroup: string; reverse: boolean }, token?: string): Promise<void> {
+  resumeInferior(
+    options?: { threadGroup?: string; reverse?: boolean }): Promise<void> {
     var fullCmd: string = 'exec-continue';
     if (options) {
       if (options.threadGroup) {
@@ -1239,23 +1260,46 @@ export class DebugSession extends events.EventEmitter {
       }
     }
 
-    return this.executeCommand(fullCmd, token);
+    return this.executeCommand(fullCmd, null);
   }
 
   /**
-   * Pauses execution of the target.
+   * Resumes execution of all inferiors.
+   *
+   * @param reverse *(GDB specific)* If `true` the inferiors are executed in reverse.
+   */
+  resumeAllInferiors(reverse?: boolean): Promise<void> {
+    var fullCmd: string = 'exec-continue --all';
+    if (reverse) {
+      fullCmd = fullCmd + ' --reverse';
+    }
+    
+    return this.executeCommand(fullCmd, null);
+  }
+
+  /**
+   * Interrupts execution of an inferior.
    * [[EVENT_TARGET_STOPPED]] will be emitted when execution stops.
    *
-   * @param threadGroup *(GDB specific)* If **"all"** then all inferiors will be paused. 
-   *                    Otherwise it should be the identifier of the thread group to pause.
+   * @param options.threadGroup The identifier of the thread group to interrupt, if omitted the
+   *                            currently selected inferior will be interrupted.
    */
-  pauseTarget(threadGroup?: string, token?: string): Promise<void> {
+  interruptInferior(threadGroup?: string): Promise<void> {
     var fullCmd: string = 'exec-interrupt';
     if (threadGroup) {
       fullCmd = fullCmd + ' --thread-group ' + threadGroup;
     }
     
-    return this.executeCommand(fullCmd, token);
+    return this.executeCommand(fullCmd, null);
+  }
+
+  /**
+   * Interrupts execution of all threads in all inferiors.
+   *
+   * [[EVENT_TARGET_STOPPED]] will be emitted when execution stops.
+   */
+  interruptAllInferiors(): Promise<void> {
+    return this.executeCommand('exec-interrupt --all', null);
   }
 
   /**

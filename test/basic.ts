@@ -437,7 +437,7 @@ describe("Debug Session", () => {
     });
 
     it("starts the target process", () => {
-      return debugSession.startTarget();
+      return debugSession.startInferior();
     });
 
     it("aborts the target process", () => {
@@ -466,7 +466,7 @@ describe("Debug Session", () => {
       var onBreakpointAbortTarget = new Promise<void>((resolve, reject) => {
         debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
           (breakNotify: dbgmits.BreakpointHitNotify) => {
-            Promise.all([verifyTargetExited(), debugSession.abortTarget()])
+            Promise.all([verifyTargetExited(), debugSession.abortInferior()])
             .then(() => { resolve() }, reject);
           }
         );
@@ -476,7 +476,7 @@ describe("Debug Session", () => {
       .then(() => {
         return Promise.all([
           onBreakpointAbortTarget,
-          debugSession.startTarget()
+          debugSession.startInferior()
         ]);
       });
     });
@@ -509,7 +509,7 @@ describe("Debug Session", () => {
           return Promise.all([
             onBreakpointStepIntoLine,
             onStepFinishedCheckFrame,
-            debugSession.startTarget()
+            debugSession.startInferior()
           ]);
       });
     });
@@ -542,7 +542,7 @@ describe("Debug Session", () => {
         return Promise.all([
           onBreakpointStepIntoInstruction,
           onStepFinishedCheckFrame,
-          debugSession.startTarget()
+          debugSession.startInferior()
         ]);
       });
     });
@@ -575,7 +575,7 @@ describe("Debug Session", () => {
         return Promise.all([
           onBreakpointStepOverLine,
           onStepFinishedCheckFrame,
-          debugSession.startTarget()
+          debugSession.startInferior()
         ]);
       });
     });
@@ -608,7 +608,7 @@ describe("Debug Session", () => {
         return Promise.all([
           onBreakpointStepOverInstruction,
           onStepFinishedCheckFrame,
-          debugSession.startTarget()
+          debugSession.startInferior()
         ]);
       });
     });
@@ -641,7 +641,7 @@ describe("Debug Session", () => {
         return Promise.all([
           onBreakpointStepOut,
           onStepFinishedCheckFrame,
-          debugSession.startTarget()
+          debugSession.startInferior()
         ]);
       });
     });
@@ -678,7 +678,7 @@ describe("Debug Session", () => {
       .then(() => {
         return Promise.all([
           onBreakpointGetFrameInfo,
-          debugSession.startTarget()
+          debugSession.startInferior()
         ])
       });
     });
@@ -696,7 +696,7 @@ describe("Debug Session", () => {
                 debugSession.getStackDepth()
                 .then((stackDepth: number) => { initialStackDepth = stackDepth; })
                 .then(() => { return debugSession.addBreakpoint('getNextInt'); })
-                .then(() => { return debugSession.resumeTarget(); })
+                .then(() => { return debugSession.resumeInferior(); })
                 .catch(reject);
                 break;
 
@@ -718,7 +718,7 @@ describe("Debug Session", () => {
       .then(() => {
         return Promise.all([
           onBreakpointCheckStackDepth,
-          debugSession.startTarget()
+          debugSession.startInferior()
         ])
       });
     });
@@ -750,7 +750,7 @@ describe("Debug Session", () => {
       .then(() => {
         return Promise.all([
           onBreakpointGetFrameList,
-          debugSession.startTarget()
+          debugSession.startInferior()
         ])
       });
     });
@@ -778,7 +778,7 @@ describe("Debug Session", () => {
       .then(() => {
         return Promise.all([
           onBreakpointGetFrameList,
-          debugSession.startTarget()
+          debugSession.startInferior()
         ])
       });
     });
@@ -803,7 +803,7 @@ describe("Debug Session", () => {
         .then(() => {
         return Promise.all([
           onBreakpointGetFrameList,
-          debugSession.startTarget()
+          debugSession.startInferior()
         ])
       });
     });
@@ -830,7 +830,7 @@ describe("Debug Session", () => {
         .then(() => {
         return Promise.all([
           onBreakpointGetLocals,
-          debugSession.startTarget()
+          debugSession.startInferior()
         ])
       });
     });
@@ -859,7 +859,7 @@ describe("Debug Session", () => {
         .then(() => {
         return Promise.all([
           onBreakpointGetLocals,
-          debugSession.startTarget()
+          debugSession.startInferior()
         ])
       });
     });
@@ -889,7 +889,7 @@ describe("Debug Session", () => {
         .then(() => {
         return Promise.all([
           onBreakpointGetLocals,
-          debugSession.startTarget()
+          debugSession.startInferior()
         ])
       });
     });
@@ -923,7 +923,7 @@ describe("Debug Session", () => {
         .then(() => {
         return Promise.all([
           onBreakpointGetLocals,
-          debugSession.startTarget()
+          debugSession.startInferior()
         ])
       });
     });
@@ -963,7 +963,7 @@ describe("Debug Session", () => {
         .then(() => {
         return Promise.all([
           onBreakpointGetLocals,
-          debugSession.startTarget()
+          debugSession.startInferior()
         ])
       });
     });
@@ -1005,7 +1005,7 @@ describe("Debug Session", () => {
         .then(() => {
         return Promise.all([
           onBreakpointGetLocals,
-          debugSession.startTarget()
+          debugSession.startInferior()
         ])
       });
     });
@@ -1030,7 +1030,7 @@ describe("Debug Session", () => {
         .then(() => {
         return Promise.all([
           onBreakpointGetArgs,
-          debugSession.startTarget()
+          debugSession.startInferior()
         ])
       });
     });
@@ -1061,7 +1061,7 @@ describe("Debug Session", () => {
         .then(() => {
         return Promise.all([
           onBreakpointGetArgs,
-          debugSession.startTarget()
+          debugSession.startInferior()
         ])
       });
     });
@@ -1095,7 +1095,7 @@ describe("Debug Session", () => {
         .then(() => {
         return Promise.all([
           onBreakpointGetArgs,
-          debugSession.startTarget()
+          debugSession.startInferior()
         ])
       });
     });
@@ -1132,7 +1132,7 @@ describe("Debug Session", () => {
         .then(() => {
         return Promise.all([
           onBreakpointGetArgs,
-          debugSession.startTarget()
+          debugSession.startInferior()
         ])
       });
     });

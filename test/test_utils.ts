@@ -46,7 +46,7 @@ export function runToFuncAndStepOut(
   .then(() => {
     return Promise.all([
       onBreakpointStepOut,
-      debugSession.startTarget()
+      debugSession.startInferior()
     ])
   });
 }

@@ -60,7 +60,7 @@ describe("Watch Manipulation", () => {
     .then(() => {
       return Promise.all([
         onBreakpointCreateWatch,
-        debugSession.startTarget()
+        debugSession.startInferior()
       ])
     });
   });
@@ -99,7 +99,7 @@ describe("Watch Manipulation", () => {
     .then(() => {
       return Promise.all([
         onBreakpointCreateAndDestroyWatch,
-        debugSession.startTarget()
+        debugSession.startInferior()
       ])
     });
   });

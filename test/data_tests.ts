@@ -119,7 +119,7 @@ describe("Data Inspection and Manipulation", () => {
     .then(() => {
       return Promise.all([
         onBreakpointGetRegisterNames,
-        debugSession.startTarget()
+        debugSession.startInferior()
       ])
     });
   });
@@ -156,7 +156,7 @@ describe("Data Inspection and Manipulation", () => {
     .then(() => {
       return Promise.all([
         onBreakpointGetRegisterValues,
-        debugSession.startTarget()
+        debugSession.startInferior()
       ])
     });
   });
@@ -189,7 +189,7 @@ describe("Data Inspection and Manipulation", () => {
     .then(() => {
       return Promise.all([
         onBreakpointDisassemble,
-        debugSession.startTarget()
+        debugSession.startInferior()
       ])
     });
   });
@@ -220,7 +220,7 @@ describe("Data Inspection and Manipulation", () => {
     .then(() => {
       return Promise.all([
         onBreakpointDisassemble,
-        debugSession.startTarget()
+        debugSession.startInferior()
       ])
     });
   });
@@ -245,7 +245,7 @@ describe("Data Inspection and Manipulation", () => {
     .then(() => {
       return Promise.all([
         onBreakpointDisassemble,
-        debugSession.startTarget()
+        debugSession.startInferior()
       ])
     });
   });
@@ -272,7 +272,7 @@ describe("Data Inspection and Manipulation", () => {
     .then(() => {
       return Promise.all([
         onBreakpointDisassemble,
-        debugSession.startTarget()
+        debugSession.startInferior()
       ])
     });
   });
