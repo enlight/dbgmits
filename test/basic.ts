@@ -9,12 +9,14 @@ import chai = require('chai');
 import chaiAsPromised = require('chai-as-promised');
 import stream = require('stream');
 import dbgmits = require('../src/dbgmits');
+import testUtils = require('../test/test_utils');
 
 chai.use(chaiAsPromised);
 
 // aliases
 import expect = chai.expect;
 import DebugSession = dbgmits.DebugSession;
+import startDebugSession = testUtils.startDebugSession;
 import IWatchInfo = dbgmits.IWatchInfo;
 
 // the directory in which Gruntfile.js resides is also Mocha's working directory,
@@ -58,7 +60,7 @@ describe("Debug Session", () => {
     var debugSession: DebugSession;
 
     before(() => {
-      debugSession = dbgmits.startDebugSession();
+      debugSession = startDebugSession();
     });
 
     it("should start", () => {
@@ -355,7 +357,7 @@ describe("Debug Session", () => {
     var debugSession: DebugSession;
 
     before(() => {
-      debugSession = dbgmits.startDebugSession();
+      debugSession = startDebugSession();
       return debugSession.setExecutableFile(hostExecutable);
     });
 
@@ -373,7 +375,7 @@ describe("Debug Session", () => {
     var debugSession: DebugSession;
 
     beforeEach(() => {
-      debugSession = dbgmits.startDebugSession();
+      debugSession = startDebugSession();
       return debugSession.setExecutableFile(localTargetExe);
     });
 
@@ -428,7 +430,7 @@ describe("Debug Session", () => {
     var debugSession: DebugSession;
 
     beforeEach(() => {
-      debugSession = dbgmits.startDebugSession();
+      debugSession = startDebugSession();
       return debugSession.setExecutableFile(localTargetExe);
     });
 
@@ -651,7 +653,7 @@ describe("Debug Session", () => {
     var debugSession: DebugSession;
 
     beforeEach(() => {
-      debugSession = dbgmits.startDebugSession();
+      debugSession = startDebugSession();
       return debugSession.setExecutableFile(localTargetExe);
     });
 

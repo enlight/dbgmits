@@ -15,6 +15,7 @@ chai.use(chaiAsPromised);
 // aliases
 import expect = chai.expect;
 import DebugSession = dbgmits.DebugSession;
+import startDebugSession = testUtils.startDebugSession;
 import IWatchInfo = dbgmits.IWatchInfo;
 import runToFuncAndStepOut = testUtils.runToFuncAndStepOut;
 
@@ -26,7 +27,7 @@ describe("Watch Manipulation", () => {
   var debugSession: DebugSession;
 
   beforeEach(() => {
-    debugSession = dbgmits.startDebugSession();
+    debugSession = startDebugSession();
     return debugSession.setExecutableFile(localTargetExe);
   });
 

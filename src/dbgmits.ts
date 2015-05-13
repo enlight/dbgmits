@@ -873,10 +873,10 @@ export class DebugSession extends events.EventEmitter {
    * Parse a single line containing a response to a MI command or some sort of async notification.
    */
   private parseDebbugerOutput(line: string): void {
-    // '(gdb)' is used to indicate the end of a set of output lines from the debugger,
-    // but since we process each line individually as it comes in this particular marker
-    // is of no use
-    if ((line === '(gdb)') || (line === '')) {
+    // '(gdb)' (or '(gdb) ' in some cases) is used to indicate the end of a set of output lines 
+    // from the debugger, but since we process each line individually as it comes in this 
+    // particular marker is of no use
+    if (line.match(/^\(gdb\)\s*/) || (line === '')) {
       return;
     }
     
@@ -2292,13 +2292,33 @@ function setProcessEnvironment(): void {
  * Once the debug session has outlived its usefulness call [[DebugSession.end]] to ensure proper
  * cleanup.
  *
- * @returns A new debug session.
+ * @returns A new debug session, or null if a new session couldn't be started.
  */
-export function startDebugSession(): DebugSession {
+export function startDebugSession(debuggerName: string): DebugSession {
+  var debuggerFilename: string;
+  var debuggerArgs: string[];
+
+  switch (debuggerName) {
+    case 'lldb':
+    case 'lldb-mi':
+      setProcessEnvironment();
+      // lldb-mi.exe should be on the PATH
+      debuggerFilename = 'lldb-mi';
+      debuggerArgs = ['--interpreter'];
+      break;
+
+    case 'gdb':
+      debuggerFilename = 'gdb';
+      debuggerArgs = ['--interpreter', 'mi'];
+      break;
+
+    default:
+      throw new Error('Unknown debugger: ' + debuggerName);
+      break;
+  }
+  
+  var debuggerProcess: ChildProcess = spawn(debuggerFilename, debuggerArgs);
   var debugSession: DebugSession = null;
-  setProcessEnvironment();
-  // lldb-mi.exe should be on the PATH
-  var debuggerProcess = spawn('lldb-mi', ['--interpreter']);
   if (debuggerProcess) {
     debugSession = new DebugSession(debuggerProcess.stdout, debuggerProcess.stdin);
     if (debugSession) {

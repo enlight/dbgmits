@@ -6,6 +6,10 @@ import dbgmits = require('../src/dbgmits');
 // aliases
 import DebugSession = dbgmits.DebugSession;
 
+export function startDebugSession(): DebugSession {
+  return dbgmits.startDebugSession(process.env['DBGMITS_DEBUGGER']);
+}
+
 /**
  * This function performs the following tasks asynchronously (but sequentially):
  * 1. Adds a breakpoint on the given function.

@@ -15,6 +15,7 @@ chai.use(chaiAsPromised);
 // aliases
 import expect = chai.expect;
 import DebugSession = dbgmits.DebugSession;
+import startDebugSession = testUtils.startDebugSession;
 import runToFuncAndStepOut = testUtils.runToFuncAndStepOut;
 
 // the directory in which Gruntfile.js resides is also Mocha's working directory,
@@ -27,7 +28,7 @@ describe("Data Inspection and Manipulation", () => {
   var debugSession: DebugSession;
 
   beforeEach(() => {
-    debugSession = dbgmits.startDebugSession();
+    debugSession = startDebugSession();
     return debugSession.setExecutableFile(localTargetExe);
   });
 

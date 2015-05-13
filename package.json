@@ -19,6 +19,7 @@
     "grunt": "^0.4.5",
     "grunt-contrib-jshint": "^0.11.0",
     "grunt-contrib-watch": "^0.6.1",
+    "grunt-env": "^0.4.4",
     "grunt-mocha-test": "^0.12.7",
     "grunt-node-gyp": "^1.0.0",
     "grunt-peg": "^1.5.0",

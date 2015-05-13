@@ -1,6 +1,14 @@
 module.exports = function(grunt) {
   grunt.initConfig({
     'pkg': grunt.file.readJSON('package.json'),
+    'env': {
+      testWithGDB: {
+        DBGMITS_DEBUGGER: 'gdb'
+      },
+      testWithLLDB: {
+        DBGMITS_DEBUGGER: 'lldb'
+      }
+    },
     'jshint': {
       files: ['Gruntfile.js'],
       options: {
@@ -132,6 +140,7 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-typescript');
   grunt.loadNpmTasks('grunt-peg');
   grunt.loadNpmTasks('grunt-node-gyp');
+  grunt.loadNpmTasks('grunt-env');
 
   grunt.registerTask('docs', ['typedoc']);
 
@@ -141,7 +150,9 @@ module.exports = function(grunt) {
   
   grunt.registerTask('configure-tests', ['gyp:rebuild']);
 
-  grunt.registerTask('run-tests', ['mochaTest']);
+  grunt.registerTask('run-gdb-tests', ['env:testWithGDB', 'mochaTest']);
+  
+  grunt.registerTask('run-lldb-tests', ['env:testWithLLDB', 'mochaTest']);
 
   grunt.registerTask('test', ['tslint', 'build', 'run-tests']);
 
