@@ -141,12 +141,17 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-peg');
   grunt.loadNpmTasks('grunt-node-gyp');
   grunt.loadNpmTasks('grunt-env');
+  
+  grunt.registerTask('copy-peg-output', 'Copy generated MI Output parser to ./lib', function () {
+    grunt.config.requires('peg.mi_output_parser.dest')
+    grunt.file.copy(grunt.config('peg.mi_output_parser.dest'), './lib/mi_output_parser.js');
+  });
 
   grunt.registerTask('docs', ['typedoc']);
 
   grunt.registerTask('lint', ['jshint', 'tslint']);
   
-  grunt.registerTask('build', ['peg', 'typescript']);
+  grunt.registerTask('build', ['peg', 'copy-peg-output', 'typescript']);
   
   grunt.registerTask('configure-tests', ['gyp:rebuild']);
 
