@@ -11,6 +11,7 @@ import events = require('events');
 import stream = require('stream');
 import parser = require('./mi_output_parser');
 import mioutput = require('./mi_output');
+import pty = require('pty.js');
 
 // aliases
 import spawn = child_process.spawn;
@@ -1025,6 +1026,16 @@ export class DebugSession extends events.EventEmitter {
     // executable and symbol files to be specified separately the LLDB MI driver
     // currently (30-Mar-2015) only supports this one command.
     return this.executeCommand(`file-exec-and-symbols ${file}`, token);
+  }
+
+  /**
+   * Sets the terminal to be used by the next inferior that's launched.
+   *
+   * @param slaveName Name of the slave end of a pseudoterminal that should be associated with
+   *                  the inferior, see `man pty` for an overview of pseudoterminals.
+   */
+  setInferiorTerminal(slaveName: string): Promise<void> {
+    return this.executeCommand('inferior-tty-set ' + slaveName);
   }
 
   /**
@@ -2287,6 +2298,59 @@ function setProcessEnvironment(): void {
 }
 
 /**
+ * Uses a pseudo-terminal to forward target stdout when doing local debugging.
+ *
+ * GDB only forwards stdout from the target via async notifications when remote debugging,
+ * when doing local debugging it expects the front-end to read the target stdout via a
+ * pseudo-terminal. This distinction between remote/local debugging seems annoying, so when 
+ * debugging a local target this class automatically creates a pseudo-terminal, reads the target 
+ * stdout, and emits the text via [[EVENT_TARGET_OUTPUT]]. In this way the front-end using this
+ * library doesn't have to bother creating pseudo-terminals when debugging local targets.
+ */
+class GDBDebugSession extends DebugSession {
+  /** `true` if this is a remote debugging session. */
+  private isRemote: boolean = false;
+  /** Pseudo-terminal used in a local debugging session, not available if [[isRemote]] is `false`. */
+  private terminal: pty.Terminal;
+
+  end(notifyDebugger: boolean = true): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      if (this.terminal) {
+        this.terminal.destroy();
+        this.terminal = null;
+      }
+      resolve();
+    })
+    .then(() => super.end(notifyDebugger));
+  }
+
+  connectToRemoteTarget(host: string, port: number, token?: string): Promise<void> {
+    return super.connectToRemoteTarget(host, port, token)
+    .then(() => { this.isRemote = true; });
+  }
+
+  startInferior(options?: { threadGroup?: string; stopAtStart?: boolean }): Promise<void> {
+    if (this.isRemote) {
+      return super.startInferior(options);
+    } else {
+      return new Promise<void>((resolve, reject) => {
+        if (this.terminal) {
+          this.terminal.destroy();
+          this.terminal = null;
+        }
+        this.terminal = pty.open();
+        this.terminal.on('data', (data: string) => {
+          this.emit(DebugSession.EVENT_TARGET_OUTPUT, data);
+        });
+        resolve();
+      })
+      .then(() => this.setInferiorTerminal(this.terminal.pty))
+      .then(() => super.startInferior(options));
+    }
+  }
+}
+
+/**
  * Starts a new debugging session and spawns the debbuger process.
  *
  * Once the debug session has outlived its usefulness call [[DebugSession.end]] to ensure proper
@@ -2320,7 +2384,11 @@ export function startDebugSession(debuggerName: string): DebugSession {
   var debuggerProcess: ChildProcess = spawn(debuggerFilename, debuggerArgs);
   var debugSession: DebugSession = null;
   if (debuggerProcess) {
-    debugSession = new DebugSession(debuggerProcess.stdout, debuggerProcess.stdin);
+    if (debuggerName === 'gdb') {
+      debugSession = new GDBDebugSession(debuggerProcess.stdout, debuggerProcess.stdin);
+    } else {
+      debugSession = new DebugSession(debuggerProcess.stdout, debuggerProcess.stdin);
+    }
     if (debugSession) {
       debuggerProcess.once('exit',
         (code: number, signal: string) => { debugSession.end(false); }

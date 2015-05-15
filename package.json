@@ -32,5 +32,8 @@
     "tslint": "^2.1.1",
     "typedoc": "^0.3.2",
     "typescript": "^1.4.1"
+  },
+  "optionalDependencies": {
+    "pty.js": "^0.2.7-1"
   }
 }
