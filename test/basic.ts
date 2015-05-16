@@ -390,7 +390,9 @@ describe("Debug Session", () => {
         expect(info).to.have.property('id');
         expect(info).to.have.property('breakpointType', 'breakpoint');
         expect(info).to.have.property('isEnabled', true);
-        expect(info).to.have.property('func', funcName);
+        expect(info).to.have.property('func');
+        // FIXME: convoluted way to do startsWith(), replace after switching to ES6
+        expect(info.func.indexOf(funcName)).to.equal(0);
       });
     });
 
@@ -402,7 +404,9 @@ describe("Debug Session", () => {
           expect(info).to.have.property('id');
           expect(info).to.have.property('breakpointType', 'breakpoint');
           expect(info).to.have.property('isEnabled', true);
-          expect(info).to.have.property('filename', filename);
+          expect(info).to.have.property('filename');
+          // FIXME: convoluted way to do endsWith(), replace after switching to ES6
+          expect(info.filename.lastIndexOf(filename)).to.equal(info.filename.length - filename.length);
           expect(info).to.have.property('line', line);
       });
     });
