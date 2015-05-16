@@ -8,6 +8,7 @@ via TypeScript or JavaScript. Currently both [GDB](https://www.gnu.org/s/gdb/) a
 Prerequisites
 =============
 [Node.js](https://nodejs.org/) **v0.12+**
+[TypeScript](http://www.typescriptlang.org/) **1.4+** (only for development)
 
 Install
 =======
@@ -49,10 +50,7 @@ Now you're ready to build the target executable, to do so run:
 grunt configure-tests
 ```
 
-Finally, to run the tests:
-```
-grunt run-tests
-```
+Finally, you can run the tests with GDB via `grunt run-gdb-tests`, or LLDB via `grunt run-lldb-tests`.
 
 License
 =======
