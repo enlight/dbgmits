@@ -22,11 +22,25 @@ module.exports = function(grunt) {
       }
     },
     'mochaTest': {
-      test: {
+      testGDB: {
         options: {
           reporter: 'spec',
           quiet: false,
-          clearRequireCache: true
+          clearRequireCache: true,
+          // skip any tests tagged with @skipOnGDB
+          grep: '@skipOnGDB',
+          invert: true
+        },
+        src: ['test/**/*.js']
+      },
+      testLLDB: {
+        options: {
+          reporter: 'spec',
+          quiet: false,
+          clearRequireCache: true,
+          // skip any tests tagged with @skipOnLLDB
+          grep: '@skipOnLLDB',
+          invert: true
         },
         src: ['test/**/*.js']
       }
@@ -155,9 +169,9 @@ module.exports = function(grunt) {
   
   grunt.registerTask('configure-tests', ['gyp:rebuild']);
 
-  grunt.registerTask('run-gdb-tests', ['env:testWithGDB', 'mochaTest']);
+  grunt.registerTask('run-gdb-tests', ['env:testWithGDB', 'mochaTest:testGDB']);
   
-  grunt.registerTask('run-lldb-tests', ['env:testWithLLDB', 'mochaTest']);
+  grunt.registerTask('run-lldb-tests', ['env:testWithLLDB', 'mochaTest:testLLDB']);
 
   grunt.registerTask('test', ['tslint', 'build', 'run-tests']);
 

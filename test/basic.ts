@@ -446,7 +446,9 @@ describe("Debug Session", () => {
       return debugSession.startInferior();
     });
 
-    it("aborts the target process", () => {
+    // FIXME: This tests is skipped on GDB because this MI command is not supported even though
+    // it was documented in the GDB/MI spec.
+    it("aborts the target process @skipOnGDB", () => {
       var verifyTargetExited = () => {
         // Promises get executed when they're created, wrapping the promise creation in
         // a function makes it possible to delay execution u
