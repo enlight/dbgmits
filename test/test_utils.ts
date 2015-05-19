@@ -1,7 +1,7 @@
 ﻿// Copyright (c) 2015 Vadim Macagon
 // MIT License, see LICENSE file for full terms.
 
-import dbgmits = require('../src/dbgmits');
+import * as dbgmits from '../src/dbgmits';
 
 // aliases
 import DebugSession = dbgmits.DebugSession;

@@ -5,13 +5,12 @@
 
 require('source-map-support').install();
 
-import chai = require('chai');
-import parser = require('../src/mi_output_parser');
-import mioutput = require('../src/mi_output');
+import * as chai from 'chai';
+import * as parser from '../src/mi_output_parser';
+import { RecordType } from '../src/mi_output';
 
 // aliases
 import expect = chai.expect;
-import RecordType = mioutput.RecordType;
 
 describe("MI Output Parser", () => {
   describe("Result Records", () => {

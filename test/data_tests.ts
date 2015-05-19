@@ -5,18 +5,16 @@
 
 require('source-map-support').install();
 
-import chai = require('chai');
+import * as chai from 'chai';
 import chaiAsPromised = require('chai-as-promised');
-import dbgmits = require('../src/dbgmits');
-import testUtils = require('../test/test_utils');
+import * as dbgmits from '../src/dbgmits';
+import { startDebugSession, runToFuncAndStepOut } from '../test/test_utils';
 
 chai.use(chaiAsPromised);
 
 // aliases
 import expect = chai.expect;
 import DebugSession = dbgmits.DebugSession;
-import startDebugSession = testUtils.startDebugSession;
-import runToFuncAndStepOut = testUtils.runToFuncAndStepOut;
 
 // the directory in which Gruntfile.js resides is also Mocha's working directory,
 // so any relative paths will be relative to that directory

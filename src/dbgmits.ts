@@ -3,22 +3,19 @@
 
 /// <reference path="../typings/lib/tsd.d.ts" />
 
-import child_process = require('child_process');
-import readline = require('readline');
-import os = require('os');
-import path = require('path');
-import events = require('events');
-import stream = require('stream');
-import parser = require('./mi_output_parser');
-import mioutput = require('./mi_output');
-import pty = require('pty.js');
+import { spawn, ChildProcess } from 'child_process';
+import * as readline from 'readline';
+import * as os from 'os';
+import * as path from 'path';
+import * as events from 'events';
+import * as stream from 'stream';
+import * as parser from './mi_output_parser';
+import { RecordType } from './mi_output';
+import * as pty from 'pty.js';
 
 // aliases
-import spawn = child_process.spawn;
-type ChildProcess = child_process.ChildProcess;
 type ReadLine = readline.ReadLine;
 type ErrDataCallback = (err: Error, data: any) => void;
-import RecordType = mioutput.RecordType;
 
 class DebugCommand {
   /** 

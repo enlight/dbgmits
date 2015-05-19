@@ -4,13 +4,13 @@
 // Type definitions for the generated MI output parser.
 // NOTE: This is an external module in TypeScript parlance.
 
-import mioutput = require('./mi_output');
+import { RecordType } from './mi_output';
 
 declare module MIOutputParser {
 
   export interface Record {
     token?: string;
-    recordType: mioutput.RecordType;
+    recordType: RecordType;
     data: any;
   }
 
