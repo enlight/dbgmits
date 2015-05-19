@@ -208,6 +208,8 @@ export enum TargetStopReason {
   BreakpointHit,
   /** A step instruction finished. */
   EndSteppingRange,
+  /** A step-out instruction finished. */
+  FunctionFinished,
   /** The target finished executing and terminated normally. */
   ExitedNormally,
   /** The target was signalled. */
@@ -238,6 +240,12 @@ export interface BreakpointHitNotify extends TargetStoppedNotify {
 
 export interface StepFinishedNotify extends TargetStoppedNotify {
   frame: IFrameInfo;
+}
+
+export interface StepOutFinishedNotify extends TargetStoppedNotify {
+  frame: IFrameInfo;
+  resultVar?: string;
+  returnValue?: string;
 }
 
 export interface SignalReceivedNotify extends TargetStoppedNotify {
@@ -628,6 +636,20 @@ export class DebugSession extends events.EventEmitter {
   static EVENT_STEP_FINISHED: string = 'endstep';
 
   /**
+   * Emitted when the target stops due to a step-out operation finishing.
+   *
+   * NOTE: Currently this event will not be emitted by LLDB-MI, it will only be emitted by GDB-MI,
+   * so for the time being use [[EVENT_STEP_FINISHED]] with LLDB-MI.
+   *
+   * Listener function should have the signature:
+   * ~~~
+   * (notification: [[StepOutFinishedNotify]]) => void
+   * ~~~
+   * @event
+   */
+  static EVENT_FUNCTION_FINISHED: string = 'endfunc';
+
+  /**
    * Emitted when the target stops running because it received a signal.
    *
    * Listener function should have the signature:
@@ -683,13 +705,13 @@ export class DebugSession extends events.EventEmitter {
   }
 
   /**
- * Ends the debugging session.
- *
- * @param notifyDebugger If **false** the session is cleaned up immediately without waiting for 
- *                       the debugger to respond (useful in cases where the debugger terminates
- *                       unexpectedly). If **true** the debugger is asked to exit, and once the
- *                       request is acknowldeged the session is cleaned up.
- */
+   * Ends the debugging session.
+   *
+   * @param notifyDebugger If **false** the session is cleaned up immediately without waiting for 
+   *                       the debugger to respond (useful in cases where the debugger terminates
+   *                       unexpectedly). If **true** the debugger is asked to exit, and once the
+   *                       request is acknowldeged the session is cleaned up.
+   */
   end(notifyDebugger: boolean = true): Promise<void> {
     return new Promise<void>((resolve, reject) => {
       var cleanup = (err: Error, data: any) => {
@@ -703,6 +725,16 @@ export class DebugSession extends events.EventEmitter {
           : cleanup(null, null);
       };
     });
+  }
+
+  /**
+   * Returns `true` if [[EVENT_FUNCTION_FINISHED]] can be emitted during this debugging session.
+   *
+   * LLDB-MI currently doesn't emit [[EVENT_FUNCTION_FINISHED]] after stepping out of a function, 
+   * instead it emits [[EVENT_STEP_FINISHED]] just like it does for any other stepping operation.
+   */
+  canEmitFunctionFinishedNotification(): boolean {
+    return false;
   }
 
   private emitExecNotification(name: string, data: any) {
@@ -744,6 +776,19 @@ export class DebugSession extends events.EventEmitter {
               frame: extractFrameInfo(data.frame)
             };
             this.emit(DebugSession.EVENT_STEP_FINISHED, stepNotify);
+            break;
+
+          case TargetStopReason.FunctionFinished:
+            var stepOutNotify: StepOutFinishedNotify = {
+              reason: standardNotify.reason,
+              threadId: standardNotify.threadId,
+              stoppedThreads: standardNotify.stoppedThreads,
+              processorCore: standardNotify.processorCore,
+              frame: extractFrameInfo(data.frame),
+              resultVar: data['gdb-result-var'],
+              returnValue: data['return-value']
+            };
+            this.emit(DebugSession.EVENT_FUNCTION_FINISHED, stepOutNotify);
             break;
 
           case TargetStopReason.SignalReceived:
@@ -2324,6 +2369,10 @@ class GDBDebugSession extends DebugSession {
     .then(() => super.end(notifyDebugger));
   }
 
+  canEmitFunctionFinishedNotification(): boolean {
+    return true;
+  }
+
   connectToRemoteTarget(host: string, port: number, token?: string): Promise<void> {
     return super.connectToRemoteTarget(host, port, token)
     .then(() => { this.isRemote = true; });
@@ -2403,6 +2452,7 @@ export function startDebugSession(debuggerName: string): DebugSession {
 var targetStopReasonMap = new Map<string, TargetStopReason>()
   .set('breakpoint-hit', TargetStopReason.BreakpointHit)
   .set('end-stepping-range', TargetStopReason.EndSteppingRange)
+  .set('function-finished', TargetStopReason.FunctionFinished)
   .set('exited-normally', TargetStopReason.ExitedNormally)
   .set('signal-received', TargetStopReason.SignalReceived)
   .set('exception-received', TargetStopReason.ExceptionReceived);

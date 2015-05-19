@@ -66,13 +66,31 @@ describe("Watch Manipulation", () => {
     });
   });
 
-  it("adds a new fixed watch for a simple local variable in the current frame", () => {
+  it("adds a new fixed watch for a local variable in the current frame @skipOnGDB", () => {
     return runToFuncAndStepOut(debugSession, 'funcWithMoreVariablesToWatch_Inner', () => {
       // add a new watch for a local variable in funcWithMoreVariablesToWatch()
       return debugSession.addWatch('e')
       .then((watch: IWatchInfo) => {
         expect(watch.id).not.to.be.empty;
         expect(watch.childCount).to.equal(2);
+        expect(watch.expressionType).to.equal('Point');
+        expect(watch.threadId).to.equal(1);
+        expect(watch.isDynamic).to.be.false;
+        expect(watch.hasMoreChildren).to.be.false;
+        expect(watch.displayHint).to.be.undefined;
+      });
+    });
+  });
+
+  // GDB groups C++ struct/class members under private/public/protected pseudo-members,
+  // so we need a separate test just for GDB
+  it("adds a new fixed watch for a local variable in the current frame @skipOnLLDB", () => {
+    return runToFuncAndStepOut(debugSession, 'funcWithMoreVariablesToWatch_Inner', () => {
+      // add a new watch for a local variable in funcWithMoreVariablesToWatch()
+      return debugSession.addWatch('e')
+      .then((watch: IWatchInfo) => {
+        expect(watch.id).not.to.be.empty;
+        expect(watch.childCount).to.equal(1);
         expect(watch.expressionType).to.equal('Point');
         expect(watch.threadId).to.equal(1);
         expect(watch.isDynamic).to.be.false;
@@ -167,7 +185,7 @@ describe("Watch Manipulation", () => {
     });
   });
 
-  it("gets a list of members of a struct variable under watch", () => {
+  it("gets a list of members of a struct variable under watch @skipOnGDB", () => {
     return runToFuncAndStepOut(debugSession, 'funcWithMoreVariablesToWatch_Inner', () => {
       return debugSession.addWatch('e')
       .then((watch: IWatchInfo) => {
@@ -182,13 +200,60 @@ describe("Watch Manipulation", () => {
     });
   });
 
-  // FIXME: LLDB-MI doesn't support subsets yet, re-enable when that's fixed
+  // GDB groups C++ struct/class members under private/public/protected pseudo-members,
+  // so we need a separate test just for GDB
+  it("gets a list of members of a struct variable under watch @skipOnLLDB", () => {
+    return runToFuncAndStepOut(debugSession, 'funcWithMoreVariablesToWatch_Inner', () => {
+      return debugSession.addWatch('e')
+      .then((watch: IWatchInfo) => {
+        return debugSession.getWatchChildren(watch.id);
+      })
+      .then((children: dbgmits.IWatchChildInfo[]) => {
+        // should be just one child named 'public'
+        expect(children.length).to.equal(1);
+        return debugSession.getWatchChildren(
+          children[0].id, { detail: dbgmits.VariableDetailLevel.None }
+        );
+      })
+      .then((children: dbgmits.IWatchChildInfo[]) => {
+        // watches on variables of aggregate types should have one or more children
+        expect(children.length).to.equal(2);
+        expect(children[0].expressionType).to.equal('float');
+        expect(children[1].expressionType).to.equal('float');
+      });
+    });
+  });
+
+  // FIXME: re-enable this test on LLDB when LLDB-MI adds support for child subsets
   it.skip("gets a subset of members of a struct variable under watch", () => {
     return runToFuncAndStepOut(debugSession, 'funcWithMoreVariablesToWatch_Inner', () => {
       return debugSession.addWatch('e')
       .then((watch: IWatchInfo) => {
         return debugSession.getWatchChildren(
           watch.id, { detail: dbgmits.VariableDetailLevel.None, from: 0, to: 1 });
+      })
+      .then((children: dbgmits.IWatchChildInfo[]) => {
+        // watches on variables of aggregate types should have one or more children
+        expect(children.length).to.equal(1);
+        expect(children[0].expressionType).to.equal('float');
+      });
+    });
+  });
+
+  // GDB groups C++ struct/class members under private/public/protected pseudo-members,
+  // so we need a separate test just for GDB
+  it("gets a subset of members of a struct variable under watch @skipOnLLDB", () => {
+    return runToFuncAndStepOut(debugSession, 'funcWithMoreVariablesToWatch_Inner', () => {
+      return debugSession.addWatch('e')
+      .then((watch: IWatchInfo) => {
+        return debugSession.getWatchChildren(watch.id);
+      })
+      .then((children: dbgmits.IWatchChildInfo[]) => {
+        // should be just one child named 'public'
+        expect(children.length).to.equal(1);
+        return debugSession.getWatchChildren(
+          children[0].id, { detail: dbgmits.VariableDetailLevel.None, from: 0, to: 1 }
+        );
       })
       .then((children: dbgmits.IWatchChildInfo[]) => {
         // watches on variables of aggregate types should have one or more children
@@ -207,8 +272,8 @@ describe("Watch Manipulation", () => {
         watchId = watch.id;
         return debugSession.setWatchValueFormat(watchId, dbgmits.WatchFormatSpec.Binary);
       })
-      // FIXME: binary values are formatted differently between LLDB and GDB, this will fail on GDB
-      .then((value: string) => { expect(value).to.equal('0b101'); })
+      // FIXME: binary values are formatted differently between LLDB-MI and GDB-MI
+      .then((value: string) => { expect(value).to.match(/(0b)?101/); })
       .then(() => {
         return debugSession.setWatchValueFormat(watchId, dbgmits.WatchFormatSpec.Decimal);
       })
@@ -266,8 +331,9 @@ describe("Watch Manipulation", () => {
     });
   });
   
-  // FIXME: re-enable this when LLDB-MI starts returning 'noneditable' attributes like it should
-  it.skip("gets the attributes for a watch on a variable of an aggregate type", () => {
+  // FIXME: re-enable this test for LLDB when LLDB-MI starts returning 'noneditable' attributes
+  // like it should
+  it("gets the attributes for a watch on a variable of an aggregate type @skipOnLLDB", () => {
     return runToFuncAndStepOut(debugSession, 'funcWithMoreVariablesToWatch_Inner', () => {
       return debugSession.addWatch('e')
       .then((watch: IWatchInfo) => {

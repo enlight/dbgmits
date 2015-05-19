@@ -24,13 +24,25 @@ export function runToFuncAndStepOut(
   debugSession: DebugSession, funcName: string, afterStepOut: () => Promise<any>): Promise<any> {
   var onStepOutRunTest = () => {
     return new Promise<void>((resolve, reject) => {
-      debugSession.once(DebugSession.EVENT_STEP_FINISHED,
-        (stepNotify: dbgmits.StepFinishedNotify) => {
-          afterStepOut()
-          .then(resolve)
-          .catch(reject);
-        }
-      );
+      if (debugSession.canEmitFunctionFinishedNotification()) {
+        debugSession.once(DebugSession.EVENT_FUNCTION_FINISHED,
+          (stepNotify: dbgmits.StepOutFinishedNotify) => {
+            afterStepOut()
+            .then(resolve)
+            .catch(reject);
+          }
+        );
+      } else {
+        // FIXME: LLDB-MI currently doesn't emit a distinct notification for step-out so we have
+        // to listen to the generic step-finished one.
+        debugSession.once(DebugSession.EVENT_STEP_FINISHED,
+          (stepNotify: dbgmits.StepFinishedNotify) => {
+            afterStepOut()
+            .then(resolve)
+            .catch(reject);
+          }
+        );
+      }
     });
   }
   var onBreakpointStepOut = new Promise<void>((resolve, reject) => {

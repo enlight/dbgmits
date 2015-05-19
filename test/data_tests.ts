@@ -61,19 +61,18 @@ describe("Data Inspection and Manipulation", () => {
 
   it("reads memory at an address specified as a hex literal", () => {
     return runToFuncAndStepOut(debugSession, 'memoryAccessBreakpoint', () => {
-      var theAddr;
       return debugSession.evaluateExpression('&array')
       .then((address: string) => {
-        theAddr = address;
-        return debugSession.readMemory(address, 4);
+        return debugSession.readMemory(address, 4)
+        .then((blocks: dbgmits.IMemoryBlock[]) => {
+          expect(blocks.length).to.equal(1);
+          expect(blocks[0]).to.have.property('begin');
+          expect(parseInt(blocks[0].begin, 16)).to.equal(parseInt(address, 16));
+          expect(blocks[0]).to.have.property('end');
+          expect(blocks[0]).to.have.property('offset');
+          expect(blocks[0]).to.have.property('contents', '01020304');
+        });
       })
-      .then((blocks: dbgmits.IMemoryBlock[]) => {
-        expect(blocks.length).to.equal(1);
-        expect(blocks[0]).to.have.property('begin', theAddr);
-        expect(blocks[0]).to.have.property('end');
-        expect(blocks[0]).to.have.property('offset');
-        expect(blocks[0]).to.have.property('contents', '01020304');
-      });
     });
   });
 
