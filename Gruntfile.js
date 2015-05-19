@@ -97,7 +97,6 @@ module.exports = function(grunt) {
          src: ['src/**/*.ts'],
          dest: 'lib',
          options: {
-           basePath: 'src',
            module: 'commonjs',
            noImplicitAny: true,
            sourceMap: true,

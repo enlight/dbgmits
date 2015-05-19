@@ -24,14 +24,14 @@
     "grunt-node-gyp": "^1.0.0",
     "grunt-peg": "^1.5.0",
     "grunt-tsd": "^0.2.0-beta.1",
-    "grunt-tslint": "^2.0.0",
+    "grunt-tslint": "^2.2.0-beta",
     "grunt-typedoc": "^0.2.2",
     "grunt-typescript": "^0.6.1",
     "mocha": "^2.2.1",
     "source-map-support": "^0.2.10",
-    "tslint": "^2.1.1",
-    "typedoc": "^0.3.2",
-    "typescript": "^1.4.1"
+    "tslint": "^2.2.0-beta",
+    "typedoc": "^0.3.4",
+    "typescript": "^1.5.0-beta"
   },
   "optionalDependencies": {
     "pty.js": "^0.2.7-1"
