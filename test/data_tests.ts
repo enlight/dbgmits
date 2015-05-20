@@ -193,16 +193,16 @@ describe("Data Inspection and Manipulation", () => {
   });
 
   // FIXME: LLDB-MI doesn't format the output correctly in mixed mode, re-enable when it does
-  it.skip("disassembles an address range line by line", () => {
+  it("disassembles an address range line by line @skipOnLLDB", () => {
     var onBreakpointDisassemble = new Promise<void>((resolve, reject) => {
       debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
         (breakNotify: dbgmits.BreakpointHitNotify) => {
           debugSession.evaluateExpression('&main')
           .then((value: string) => {
-            var matches = /^0x[0-9a-f]/i.exec(value);
+            var matches = /^0x[0-9a-f]+/i.exec(value);
             expect(matches).not.null;
             var end = parseInt(matches[0], 16) + 10;
-            return debugSession.disassembleAddressRangeByLine(matches[0], end.toString(16));
+            return debugSession.disassembleAddressRangeByLine(matches[0], '0x' + end.toString(16));
           })
           .then((lines: dbgmits.ISourceLineAsm[]) => {
             expect(lines.length).to.be.greaterThan(0);
@@ -224,7 +224,7 @@ describe("Data Inspection and Manipulation", () => {
   });
 
   // FIXME: LLDB-MI doesn't support file/line arguments yet, re-enable when it does
-  it.skip("disassembles a file", () => {
+  it("disassembles a file @skipOnLLDB", () => {
     var onBreakpointDisassemble = new Promise<void>((resolve, reject) => {
       debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
         (breakNotify: dbgmits.BreakpointHitNotify) => {
@@ -250,7 +250,7 @@ describe("Data Inspection and Manipulation", () => {
 
   // FIXME: LLDB-MI doesn't support file/line arguments yet, and it doesn't format output correctly
   // in mixed mode, re-enable when it does both of those things properly
-  it.skip("disassembles a file line by line", () => {
+  it("disassembles a file line by line @skipOnLLDB", () => {
     var onBreakpointDisassemble = new Promise<void>((resolve, reject) => {
       debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
         (breakNotify: dbgmits.BreakpointHitNotify) => {

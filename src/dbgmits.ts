@@ -2299,15 +2299,26 @@ function extractAsmInstructions(data: any[]): IAsmInstruction[] {
  * -data-disassemble MI command into an array of objects that conform to the ISourceLineAsm
  * interface.
  */
-function extractAsmBySourceLine(data: any[]): ISourceLineAsm[] {
-  return data.map((sourceLine: any): ISourceLineAsm => {
+function extractAsmBySourceLine(data: any | any[]): ISourceLineAsm[] {
+  let extractSrcAsmLine = (data: any): ISourceLineAsm => {
     return {
-      line: parseInt(sourceLine.line, 10),
-      file: sourceLine.file,
-      fullname: sourceLine.fullname,
-      instructions: extractAsmInstructions(sourceLine.line_asm_insn)
+      line: parseInt(data.line, 10),
+      file: data.file,
+      fullname: data.fullname,
+      instructions: extractAsmInstructions(data.line_asm_insn)
     };
-  });
+  };
+
+  if ((data === undefined) || Array.isArray(data)) {
+    // data will only be an array if the array is empty
+    return [];
+  } else if (Array.isArray(data.src_and_asm_line)) {
+    // data is in the form:  { src_and_asm_line: [{ line: "45", ... }, { line: "46", ... }, ...] }
+    return data.src_and_asm_line.map(extractSrcAsmLine);
+  } else {
+    // data is in the form: { src_and_asm_line: { line: "45", ... } }
+    return [extractSrcAsmLine(data.src_and_asm_line)];
+  }
 }
 
 function setProcessEnvironment(): void {
