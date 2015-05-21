@@ -179,10 +179,19 @@ export interface ThreadSelectedNotify {
   id: string;
 }
 
+/** Notification sent whenever a library is loaded or unloaded by an inferior. */
 interface LibNotify {
   id: string;
-  targetName: string; // file being debugged on the remote system
-  hostName: string; // copy of the file being debugged on the host
+  /** Name of the library file on the target system. */
+  targetName: string;
+  /** 
+   * Name of the library file on the host system.
+   * When debugging locally this should be the same as `targetName`.
+   */
+  hostName: string;
+  /**
+   * Optional identifier of the thread group within which the library was loaded.
+   */
   threadGroup: string;
   /**
    * Optional load address.
@@ -194,7 +203,7 @@ interface LibNotify {
    * This field is not part of the GDB MI spec. and is only set by LLDB MI driver.
    * The LLDB MI driver gets the value for this field from SBModule::GetSymbolFileSpec().
    */
-  symbolPath: string;
+  symbolsPath: string;
 }
 
 export interface LibLoadedNotify extends LibNotify { }
@@ -863,7 +872,9 @@ export class DebugSession extends events.EventEmitter {
           id: data.id,
           targetName: data['target-name'],
           hostName: data['host-name'],
-          threadGroup: data['thread-group']
+          threadGroup: data['thread-group'],
+          symbolsPath: data['symbols-path'],
+          loadAddress: data.loaded_addr
         });
         break;
 
@@ -872,37 +883,9 @@ export class DebugSession extends events.EventEmitter {
           id: data.id,
           targetName: data['target-name'],
           hostName: data['host-name'],
-          threadGroup: data['thread-group']
-        });
-        break;
-
-      // shlibs-added is a non-standard notifications sent by LLDB MI driver,
-      // it correspond to the standard library-loaded notification from the GDB MI spec. 
-      // but contain somewhat different data
-      case 'shlibs-added':
-        shlibInfo = data['shlib-info'];
-        this.emit(DebugSession.EVENT_LIB_LOADED, {
-          id: shlibInfo.num,
-          targetName: shlibInfo.path,
-          hostName: shlibInfo.name,
-          threadGroup: null,
-          loadAddress: shlibInfo.loaded_addr,
-          symbolPath: shlibInfo['dsym-objpath']
-        });
-        break;
-
-      // shlibs-removed is a non-standard notifications sent by LLDB MI driver,
-      // it correspond to the standard library-unloaded notification from the GDB MI spec.
-      // but contain somewhat different data
-      case 'shlibs-removed':
-        shlibInfo = data['shlib-info'];
-        this.emit(DebugSession.EVENT_LIB_UNLOADED, {
-          id: shlibInfo.num,
-          targetName: shlibInfo.path,
-          hostName: shlibInfo.name,
-          threadGroup: null,
-          loadAddress: shlibInfo.loaded_addr,
-          symbolPath: shlibInfo['dsym-objpath']
+          threadGroup: data['thread-group'],
+          symbolsPath: data['symbols-path'],
+          loadAddress: data.loaded_addr
         });
         break;
 

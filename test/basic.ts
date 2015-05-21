@@ -204,44 +204,6 @@ describe("Debug Session", () => {
       );
     });
 
-    it("emits EVENT_LIB_LOADED (LLDB variant)", (done: MochaDone) => {
-      var num: string = '1';
-      var name: string = 'somelib';
-      var path: string = 'C:/Projects/MyProject/somelib';
-      var loadAddr: string = '-';
-      emitEventForDebuggerOutput(
-        `=shlibs-added,shlib-info=[num="${num}",name="${name}",dyld-addr="${loadAddr}",` +
-        `reason="dyld",path="${path}",loaded_addr="${loadAddr}"]\n`,
-        DebugSession.EVENT_LIB_LOADED,
-        (data: any) => {
-          expect(data).to.have.property('id', num);
-          expect(data).to.have.property('targetName', path);
-          expect(data).to.have.property('hostName', name);
-          expect(data).to.have.property('loadAddress', loadAddr);
-          done();
-        }
-      );
-    });
-
-    it("emits EVENT_LIB_UNLOADED (LLDB variant)", (done: MochaDone) => {
-      var num: string = '1';
-      var name: string = 'somelib';
-      var path: string = 'C:/Projects/MyProject/somelib';
-      var loadAddr: string = '-';
-      emitEventForDebuggerOutput(
-        `=shlibs-removed,shlib-info=[num="${num}",name="${name}",dyld-addr="${loadAddr}",` +
-        `reason="dyld",path="${path}",loaded_addr="${loadAddr}"]\n`,
-        DebugSession.EVENT_LIB_UNLOADED,
-        (data: any) => {
-          expect(data).to.have.property('id', num);
-          expect(data).to.have.property('targetName', path);
-          expect(data).to.have.property('hostName', name);
-          expect(data).to.have.property('loadAddress', loadAddr);
-          done();
-        }
-      );
-    });
-
     it("emits EVENT_DBG_CONSOLE_OUTPUT", (done: MochaDone) => {
       var testStr: string = 'This is a line of text.';
       emitEventForDebuggerOutput(
