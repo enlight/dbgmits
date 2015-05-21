@@ -281,6 +281,12 @@ export interface IStackFrameArgsInfo {
   args: IVariableInfo[];
 }
 
+/** Contains information about the arguments and locals of a stack frame. */
+export interface IStackFrameVariablesInfo {
+  args: IVariableInfo[];
+  locals: IVariableInfo[];
+}
+
 /** Indicates how much information should be retrieved when calling 
  *  [[DebugSession.getLocalVariables]].
  */
@@ -1624,6 +1630,62 @@ export class DebugSession extends events.EventEmitter {
           args: Array.isArray(data.frame.args) ? data.frame.args : [data.frame.args]
         }];
       }
+    });
+  }
+
+  /**
+   * Retrieves a list of all arguments and local variables in the specified frame.
+   *
+   * @param detail Specifies what information to retrieve for each argument or local variable.
+   * @param options.threadId The thread for which variables should be retrieved,
+   *                         defaults to the currently selected thread if not specified.
+   * @param options.frameLevel Stack index of the frame for which to retrieve locals, 
+   *                           zero for the innermost frame, one for the frame from which the call
+   *                           to the innermost frame originated, etc. Defaults to the currently
+   *                           selected frame if not specified.
+   * @param options.noFrameFilters *(GDB specific)* If `true` then Python frame filters will not be
+   *                               executed.
+   * @param options.skipUnavailable If `true` information about variables that are not available 
+   *                                will not be retrieved.
+   */
+  getStackFrameVariables(
+    detail: VariableDetailLevel,
+    options?: {
+      threadId?: number;
+      frameLevel: number;
+      noFrameFilters?: boolean;
+      skipUnavailable?: boolean;
+    }
+  ): Promise<IStackFrameVariablesInfo> {
+    let fullCmd: string = 'stack-list-variables';
+    if (options) {
+      if (options.threadId !== undefined) {
+        fullCmd = fullCmd + ' --thread ' + options.threadId;
+      }
+      if (options.frameLevel !== undefined) {
+        fullCmd = fullCmd + ' --frame ' + options.frameLevel;
+      }
+      if (options.noFrameFilters === true) {
+        fullCmd = fullCmd + ' --no-frame-filters';
+      }
+      if (options.skipUnavailable === true) {
+        fullCmd = fullCmd + ' --skip-unavailable';
+      }
+    }
+    fullCmd = fullCmd + ' ' + detail;
+
+    return this.getCommandOutput(fullCmd, null, (output: any) => {
+      let args: IVariableInfo[] = [];
+      let locals: IVariableInfo[] = [];
+
+      output.variables.forEach((varInfo: any) => {
+        if (varInfo.arg === '1') {
+          args.push({ name: varInfo.name, value: varInfo.value, type: varInfo.type });
+        } else {
+          locals.push({ name: varInfo.name, value: varInfo.value, type: varInfo.type });
+        }
+      });
+      return { args: args, locals: locals };
     });
   }
 

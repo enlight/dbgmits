@@ -372,7 +372,7 @@ describe("Debug Session", () => {
               expect(locals[2]).to.have.property('name', 'g');
               expect(locals[2]).to.have.property('value', '300');
               // FIXME: LLDB MI currently does not provide the type, contrary to the spec.
-              //expect(locals[1]).to.have.property('type', 'long');
+              //expect(locals[2]).to.have.property('type', 'long');
             })
             .then(resolve)
             .catch(reject);
@@ -513,6 +513,428 @@ describe("Debug Session", () => {
           onBreakpointGetArgs,
           debugSession.startInferior()
         ])
+      });
+    });
+
+    describe("#getStackFrameVariables", () => {
+      it("gets a single simple local variable (name only) for a frame", () => {
+        const onBreakpointGetLocals = new Promise<void>((resolve, reject) => {
+          debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
+            (breakNotify: dbgmits.BreakpointHitNotify) => {
+              // get the variables for the previous frame
+              return debugSession.getStackFrameVariables(
+                dbgmits.VariableDetailLevel.None, { threadId: 1, frameLevel: 1 }
+              )
+              .then((variables: dbgmits.IStackFrameVariablesInfo) => {
+                const locals = variables.locals;
+                expect(locals.length).to.equal(1);
+                expect(locals[0]).to.have.property('name', 'a');
+                expect(locals[0]).to.have.property('value').that.is.undefined;
+                expect(locals[0]).to.have.property('type').that.is.undefined;
+              })
+              .then(resolve)
+              .catch(reject);
+            }
+          );
+        });
+        // break at the start of funcWithOneSimpleLocalVariable_Inner()
+        return debugSession.addBreakpoint('funcWithOneSimpleLocalVariable_Inner')
+        .then(() => {
+          return Promise.all([
+            onBreakpointGetLocals,
+            debugSession.startInferior()
+          ])
+        });
+      });
+
+      // FIXME: re-enable on LLDB when it correctly supports 'simple' mode (as in outputs types)
+      it("gets a single simple local variable (name, value, and type) for a frame @skipOnLLDB", () => {
+        const onBreakpointGetLocals = new Promise<void>((resolve, reject) => {
+          debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
+            (breakNotify: dbgmits.BreakpointHitNotify) => {
+              // get the locals for the previous frame
+              return debugSession.getStackFrameVariables(
+                dbgmits.VariableDetailLevel.Simple, { threadId: 1, frameLevel: 1 }
+              )
+              .then((variables: dbgmits.IStackFrameVariablesInfo) => {
+                const locals = variables.locals;
+                expect(locals.length).to.equal(1);
+                expect(locals[0]).to.have.property('name', 'a');
+                expect(locals[0]).to.have.property('value', '5');
+                expect(locals[0]).to.have.property('type', 'int');
+              })
+              .then(resolve)
+              .catch(reject);
+            }
+          );
+        });
+        // break at the start of funcWithOneSimpleLocalVariable_Inner()
+        return debugSession.addBreakpoint('funcWithOneSimpleLocalVariable_Inner')
+        .then(() => {
+          return Promise.all([
+            onBreakpointGetLocals,
+            debugSession.startInferior()
+          ])
+        });
+      });
+
+      it("gets a single simple local variable (name and value) for a frame", () => {
+        const onBreakpointGetLocals = new Promise<void>((resolve, reject) => {
+          debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
+            (breakNotify: dbgmits.BreakpointHitNotify) => {
+              // get the locals for the previous frame
+              return debugSession.getStackFrameVariables(
+                dbgmits.VariableDetailLevel.All, { threadId: 1, frameLevel: 1 }
+              )
+              .then((variables: dbgmits.IStackFrameVariablesInfo) => {
+                const locals = variables.locals;
+                expect(locals.length).to.equal(1);
+                expect(locals[0]).to.have.property('name', 'a');
+                expect(locals[0]).to.have.property('value', '5');
+                expect(locals[0]).to.have.property('type').that.is.undefined;
+              })
+              .then(resolve)
+              .catch(reject);
+            }
+          );
+        });
+        // break at the start of funcWithOneSimpleLocalVariable_Inner()
+        return debugSession.addBreakpoint('funcWithOneSimpleLocalVariable_Inner')
+        .then(() => {
+          return Promise.all([
+            onBreakpointGetLocals,
+            debugSession.startInferior()
+          ])
+        });
+      });
+
+      // FIXME: re-enable on LLDB when it correctly supports 'simple' mode (as in outputs types)
+      it("gets a single complex local variable (name and type) for the current frame @skipOnLLDB", () => {
+        const onBreakpointGetLocals = new Promise<void>((resolve, reject) => {
+          debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
+            (breakNotify: dbgmits.BreakpointHitNotify) => {
+              // get the locals for the current frame
+              return debugSession.getStackFrameVariables(
+                dbgmits.VariableDetailLevel.Simple, { threadId: 1, frameLevel: 1 }
+              )
+              .then((variables: dbgmits.IStackFrameVariablesInfo) => {
+                const locals = variables.locals;
+                expect(locals.length).to.equal(1);
+                expect(locals[0]).to.have.property('name', 'b');
+                expect(locals[0]).to.have.property('value').that.is.undefined;
+                expect(locals[0]).to.have.property('type', 'int [3]');
+              })
+              .then(resolve)
+              .catch(reject);
+            }
+          );
+        });
+        // break at the start of funcWithOneComplexLocalVariable_Inner()
+        return debugSession.addBreakpoint('funcWithOneComplexLocalVariable_Inner')
+        .then(() => {
+          return Promise.all([
+            onBreakpointGetLocals,
+            debugSession.startInferior()
+          ])
+        });
+      });
+
+      // FIXME: re-enable on LLDB when it correctly supports 'simple' mode (as in outputs types)
+      it("gets two local variables (name, value, and type) for a frame @skipOnLLDB", () => {
+        const onBreakpointGetLocals = new Promise<void>((resolve, reject) => {
+          debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
+            (breakNotify: dbgmits.BreakpointHitNotify) => {
+              // get the locals for the current frame
+              return debugSession.getStackFrameVariables(
+                dbgmits.VariableDetailLevel.Simple, { threadId: 1, frameLevel: 1 }
+              )
+              .then((variables: dbgmits.IStackFrameVariablesInfo) => {
+                const locals = variables.locals;
+                expect(locals.length).to.equal(2);
+
+                expect(locals[0]).to.have.property('name', 'c');
+                expect(locals[0]).to.have.property('value', 'true');
+                expect(locals[0]).to.have.property('type', 'bool');
+              
+                expect(locals[1]).to.have.property('name', 'd');
+                expect(locals[1]).to.have.property('value').that.is.undefined;
+                expect(locals[1]).to.have.property('type', 'const char *[3]');
+              })
+              .then(resolve)
+              .catch(reject);
+            }
+          );
+        });
+        // break at the start of funcWithTwoLocalVariables_Inner()
+        return debugSession.addBreakpoint('funcWithTwoLocalVariables_Inner')
+        .then(() => {
+          return Promise.all([
+            onBreakpointGetLocals,
+            debugSession.startInferior()
+          ])
+        });
+      });
+
+      it("gets two local variables (name and value) for a frame", () => {
+        const onBreakpointGetLocals = new Promise<void>((resolve, reject) => {
+          debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
+            (breakNotify: dbgmits.BreakpointHitNotify) => {
+              // get the locals for the current frame
+              return debugSession.getStackFrameVariables(
+                dbgmits.VariableDetailLevel.All, { threadId: 1, frameLevel: 1 }
+              )
+              .then((variables: dbgmits.IStackFrameVariablesInfo) => {
+                const locals = variables.locals;
+                expect(locals.length).to.equal(2);
+
+                expect(locals[0]).to.have.property('name', 'c');
+                expect(locals[0]).to.have.property('value', 'true');
+                expect(locals[0]).to.have.property('type').that.is.undefined;
+              
+                expect(locals[1]).to.have.property('name', 'd');
+                expect(locals[1]).to.have.property('value');
+                expect(locals[1]).to.have.property('type').that.is.undefined;
+              })
+              .then(resolve)
+              .catch(reject);
+            }
+          );
+        });
+        // break at the start of funcWithTwoLocalVariables_Inner()
+        return debugSession.addBreakpoint('funcWithTwoLocalVariables_Inner')
+        .then(() => {
+          return Promise.all([
+            onBreakpointGetLocals,
+            debugSession.startInferior()
+          ])
+        });
+      });
+
+      // FIXME: re-enable on LLDB when it correctly supports 'simple' mode (as in outputs types)
+      it("gets three local variables (name, value, and type) for a frame @skipOnLLDB", () => {
+        const onBreakpointGetLocals = new Promise<void>((resolve, reject) => {
+          debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
+            (breakNotify: dbgmits.BreakpointHitNotify) => {
+              // get the locals for the current frame
+              return debugSession.getStackFrameVariables(
+                dbgmits.VariableDetailLevel.Simple, { threadId: 1, frameLevel: 1 }
+              )
+              .then((variables: dbgmits.IStackFrameVariablesInfo) => {
+                const locals = variables.locals;
+                expect(locals.length).to.equal(3);
+
+                expect(locals[0]).to.have.property('name', 'e');
+                expect(locals[0]).to.have.property('value');
+                expect(locals[0]).to.have.property('type', 'Point');
+              
+                expect(locals[1]).to.have.property('name', 'f');
+                expect(locals[1]).to.have.property('value', '9.5');
+                expect(locals[1]).to.have.property('type', 'float');
+
+                expect(locals[2]).to.have.property('name', 'g');
+                expect(locals[2]).to.have.property('value', '300');
+                expect(locals[2]).to.have.property('type', 'long');
+              })
+              .then(resolve)
+              .catch(reject);
+            }
+          );
+        });
+        // break at the start of funcWithThreeLocalVariables_Inner()
+        return debugSession.addBreakpoint('funcWithThreeLocalVariables_Inner')
+        .then(() => {
+          return Promise.all([
+            onBreakpointGetLocals,
+            debugSession.startInferior()
+          ])
+        });
+      });
+
+      it("gets three local variables (name and value) for a frame", () => {
+        const onBreakpointGetLocals = new Promise<void>((resolve, reject) => {
+          debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
+            (breakNotify: dbgmits.BreakpointHitNotify) => {
+              // get the locals for the current frame
+              return debugSession.getStackFrameVariables(
+                dbgmits.VariableDetailLevel.All, { threadId: 1, frameLevel: 1 }
+              )
+              .then((variables: dbgmits.IStackFrameVariablesInfo) => {
+                const locals = variables.locals;
+                expect(locals.length).to.equal(3);
+
+                expect(locals[0]).to.have.property('name', 'e');
+                expect(locals[0]).to.have.property('value');
+                expect(locals[0]).to.have.property('type').that.is.undefined;
+              
+                expect(locals[1]).to.have.property('name', 'f');
+                expect(locals[1]).to.have.property('value', '9.5');
+                expect(locals[1]).to.have.property('type').that.is.undefined;
+
+                expect(locals[2]).to.have.property('name', 'g');
+                expect(locals[2]).to.have.property('value', '300');
+                expect(locals[2]).to.have.property('type').that.is.undefined;
+              })
+              .then(resolve)
+              .catch(reject);
+            }
+          );
+        });
+        // break at the start of funcWithThreeLocalVariables_Inner()
+        return debugSession.addBreakpoint('funcWithThreeLocalVariables_Inner')
+        .then(() => {
+          return Promise.all([
+            onBreakpointGetLocals,
+            debugSession.startInferior()
+          ])
+        });
+      });
+
+      it("gets no frame arguments for a function with no arguments", () => {
+        const onBreakpointGetArgs = new Promise<void>((resolve, reject) => {
+          debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
+            (breakNotify: dbgmits.BreakpointHitNotify) => {
+              return debugSession.getStackFrameVariables(dbgmits.VariableDetailLevel.None)
+              .then((variables: dbgmits.IStackFrameVariablesInfo) => {
+                const args = variables.args;
+                expect(args.length).to.equal(0);
+              })
+              .then(resolve)
+              .catch(reject);
+            }
+          );
+        });
+        // break at the start of funcWithNoArgs()
+        return debugSession.addBreakpoint('funcWithNoArgs')
+        .then(() => {
+          return Promise.all([
+            onBreakpointGetArgs,
+            debugSession.startInferior()
+          ])
+        });
+      });
+
+      // FIXME: re-enable on LLDB when it correctly supports 'simple' mode (as in outputs types)
+      it("gets one simple function argument (name, value, and type) @skipOnLLDB", () => {
+        const onBreakpointGetArgs = new Promise<void>((resolve, reject) => {
+          debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
+            (breakNotify: dbgmits.BreakpointHitNotify) => {
+              return debugSession.getStackFrameVariables(dbgmits.VariableDetailLevel.Simple)
+              .then((variables: dbgmits.IStackFrameVariablesInfo) => {
+                const args = variables.args;
+                expect(args.length).to.equal(1);
+                expect(args[0]).to.have.property('name', 'a');
+                expect(args[0]).to.have.property('value', '5');
+                expect(args[0]).to.have.property('type', 'int');
+              })
+              .then(resolve)
+              .catch(reject);
+            }
+          );
+        });
+        // break at the start of funcWithOneSimpleArg()
+        return debugSession.addBreakpoint('funcWithOneSimpleArg')
+        .then(() => {
+          return Promise.all([
+            onBreakpointGetArgs,
+            debugSession.startInferior()
+          ])
+        });
+      });
+
+      it("gets one simple function argument (name and value)", () => {
+        const onBreakpointGetArgs = new Promise<void>((resolve, reject) => {
+          debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
+            (breakNotify: dbgmits.BreakpointHitNotify) => {
+              return debugSession.getStackFrameVariables(dbgmits.VariableDetailLevel.All)
+              .then((variables: dbgmits.IStackFrameVariablesInfo) => {
+                const args = variables.args;
+                expect(args.length).to.equal(1);
+                expect(args[0]).to.have.property('name', 'a');
+                expect(args[0]).to.have.property('value', '5');
+                expect(args[0]).to.have.property('type').that.is.undefined;
+              })
+              .then(resolve)
+              .catch(reject);
+            }
+          );
+        });
+        // break at the start of funcWithOneSimpleArg()
+        return debugSession.addBreakpoint('funcWithOneSimpleArg')
+        .then(() => {
+          return Promise.all([
+            onBreakpointGetArgs,
+            debugSession.startInferior()
+          ])
+        });
+      });
+
+      // FIXME: re-enable on LLDB when it correctly supports 'simple' mode (as in outputs types)
+      it("gets two function arguments (name, value, and type) @skipOnLLDB", () => {
+        const onBreakpointGetArgs = new Promise<void>((resolve, reject) => {
+          debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
+            (breakNotify: dbgmits.BreakpointHitNotify) => {
+              return debugSession.getStackFrameVariables(dbgmits.VariableDetailLevel.Simple)
+              .then((variables: dbgmits.IStackFrameVariablesInfo) => {
+                const args = variables.args;
+                expect(args.length).to.equal(2);
+              
+                expect(args[0]).to.have.property('name', 'b');
+                expect(args[0]).to.have.property('value', '7');
+                expect(args[0]).to.have.property('type', 'float');
+
+                expect(args[1]).to.have.property('name', 'c');
+                expect(args[1]).to.have.property('value').that.is.undefined;
+                expect(args[1]).to.have.property('type', 'Point');
+              })
+              .then(resolve)
+              .catch(reject);
+            }
+          );
+        });
+        // break at the start of funcWithNoArgsfuncWithTwoArgs()
+        return debugSession.addBreakpoint('funcWithTwoArgs')
+        .then(() => {
+          return Promise.all([
+            onBreakpointGetArgs,
+            debugSession.startInferior()
+          ])
+        });
+      });
+
+      // FIXME: re-enable on LLDB when it correctly supports 'simple' mode (as in outputs types)
+      it("gets three function arguments (name, value, and type) @skipOnLLDB", () => {
+        const onBreakpointGetArgs = new Promise<void>((resolve, reject) => {
+          debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
+            (breakNotify: dbgmits.BreakpointHitNotify) => {
+              return debugSession.getStackFrameVariables(dbgmits.VariableDetailLevel.Simple)
+              .then((variables: dbgmits.IStackFrameVariablesInfo) => {
+                const args = variables.args;
+                expect(args.length).to.equal(3);
+              
+                expect(args[0]).to.have.property('name', 'd');
+                expect(args[0]).to.have.property('value', '300');
+                expect(args[0]).to.have.property('type', 'long');
+
+                expect(args[1]).to.have.property('name', 'e');
+                expect(args[1]).to.have.property('value');
+                expect(args[1]).to.have.property('type', 'const char *');
+
+                expect(args[2]).to.have.property('name', 'f');
+                expect(args[2]).to.have.property('type', 'int *');
+              })
+              .then(resolve)
+              .catch(reject);
+            }
+          );
+        });
+        // break at the start of funcWithThreeArgs()
+        return debugSession.addBreakpoint('funcWithThreeArgs')
+        .then(() => {
+          return Promise.all([
+            onBreakpointGetArgs,
+            debugSession.startInferior()
+          ])
+        });
       });
     });
   });
