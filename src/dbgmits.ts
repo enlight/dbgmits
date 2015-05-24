@@ -1502,62 +1502,6 @@ export class DebugSession extends events.EventEmitter {
   }
 
   /**
-   * Retrieves a list of all the local variables for the specified frame.
-   *
-   * @param detail Specifies what information should be retrieved for each local variable.
-   * @param options.threadId The thread for which local variables should be retrieved,
-   *                         defaults to the currently selected thread if not specified.
-   * @param options.frameLevel Stack index of the frame for which to retrieve locals, 
-   *                           zero for the innermost frame, one for the frame from which the call
-   *                           to the innermost frame originated, etc. Defaults to the currently
-   *                           selected frame if not specified.
-   * @param options.noFrameFilters *(GDB specific)* If `true` then Python frame filters will not be
-   *                               executed.
-   * @param options.skipUnavailable If `true` information about local variables that are not 
-   *                                available will not be retrieved.
-   */
-  getStackFrameLocals(
-    detail: VariableDetailLevel,
-    options?: {
-      threadId?: number; frameLevel?: number; noFrameFilters?: boolean; skipUnavailable?: boolean
-    },
-    token?: string
-  ): Promise<IVariableInfo[]> {
-    var fullCmd: string = 'stack-list-locals';
-    if (options) {
-      if (options.threadId !== undefined) {
-        fullCmd = fullCmd + ' --thread ' + options.threadId;
-      }
-      if (options.frameLevel !== undefined) {
-        fullCmd = fullCmd + ' --frame ' + options.frameLevel;
-      }
-      if (options.noFrameFilters === true) {
-        fullCmd = fullCmd + ' --no-frame-filters';
-      }
-      if (options.skipUnavailable === true) {
-        fullCmd = fullCmd + ' --skip-unavailable';
-      }
-    }
-    fullCmd = fullCmd + ' ' + detail;
-
-    return this.getCommandOutput(fullCmd, token, (output: any) => {
-      var data = output.locals;
-      if ('name' in data) {
-        if (Array.isArray(data.name)) {
-          // data is in the form: { name: [varName1, varName2, ...] }
-          return data.name.map((varName: string): IVariableInfo => { return { name: varName }; });
-        } else {
-          // data is in the form: { name: varName }
-          return [{ name: data.name }];
-        }
-      } else {
-        // data is already in the correct form
-        return data;
-      }
-    });
-  }
-
-  /**
    * Retrieves a list of all the arguments for the specified frame(s).
    *
    * The `lowFrame` and `highFrame` options can be used to limit the frames for which arguments
