@@ -8,7 +8,7 @@ require('source-map-support').install();
 import * as chai from 'chai';
 import chaiAsPromised = require('chai-as-promised');
 import * as dbgmits from '../src/dbgmits';
-import { startDebugSession } from '../test/test_utils';
+import { startDebugSession, runToFunc } from '../test/test_utils';
 
 chai.use(chaiAsPromised);
 
@@ -33,30 +33,29 @@ describe("Debug Session", () => {
       return debugSession.end();
     });
 
-    it("#getStackFrame", () => {
-      // verify we can retrieve the frame for printNextInt()
-      var onBreakpointGetFrameInfo = new Promise<void>((resolve, reject) => {
-        debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
-          (breakNotify: dbgmits.BreakpointHitNotify) => {
-            debugSession.getStackFrame()
-            .then((info: dbgmits.IStackFrameInfo) => {
-              expect(info).to.have.property('func');
-              expect(info.func.indexOf('printNextInt')).to.equal(0);
-            })
-            .then(resolve, reject);
-          }
-        );
+    describe("#getStackFrame", () => {
+      it("gets the current stack frame", () => {
+        return runToFunc(debugSession, 'funcAtFrameLevel0', () => {
+          return debugSession.getStackFrame()
+          .then((info: dbgmits.IStackFrameInfo) => {
+            expect(info).to.have.property('func');
+            expect(info.func).match(/^funcAtFrameLevel0/);
+          })
+        });
       });
-      // break at start of printNextInt()
-      return debugSession.addBreakpoint('printNextInt')
-      .then(() => {
-        return Promise.all([
-          onBreakpointGetFrameInfo,
-          debugSession.startInferior()
-        ])
+
+      // FIXME: re-enable on LLDB when it's fixed to handle --thread and --frame arguments
+      it("gets an outer stack frame @skipOnLLDB", () => {
+        return runToFunc(debugSession, 'funcAtFrameLevel0', () => {
+          return debugSession.getStackFrame({ threadId: 1, frameLevel: 1 })
+          .then((info: dbgmits.IStackFrameInfo) => {
+            expect(info).to.have.property('func');
+            expect(info.func).match(/^funcAtFrameLevel1/);
+          })
+        });
       });
     }); // #getStackFrame
-
+    
     it("#getStackDepth", () => {
       var initialStackDepth = -1;
       // GDB and LLDB report stack depth a bit differently, LLDB adds a couple of frames from 
@@ -69,16 +68,16 @@ describe("Debug Session", () => {
               case 1: // breakpoint in main()
                 debugSession.getStackDepth()
                 .then((stackDepth: number) => { initialStackDepth = stackDepth; })
-                .then(() => { return debugSession.addBreakpoint('getNextInt'); })
+                .then(() => { return debugSession.addBreakpoint('funcAtFrameLevel0'); })
                 .then(() => { return debugSession.resumeInferior(); })
                 .catch(reject);
                 break;
 
-              case 2: // breakpoint in getNextInt()
+              case 2: // breakpoint in funcAtFrameLevel0()
                 debugSession.getStackDepth()
                 .then((stackDepth: number) => {
                   // the stack should be 2 levels deep counting from main(): 
-                  // printNextInt()->getNextInt()
+                  // funcAtFrameLevel1()->funcAtFrameLevel0()
                   expect(stackDepth - initialStackDepth).to.equal(2);
                 })
                 .then(resolve)
@@ -111,17 +110,17 @@ describe("Debug Session", () => {
                 for (var i = 0; i < frames.length; ++i) {
                   expect(frames[i].level).to.equal(i);
                 }
-                expect(frames[0].func.indexOf('getNextInt')).to.equal(0);
-                expect(frames[1].func.indexOf('printNextInt')).to.equal(0);
-                expect(frames[2].func.indexOf('main')).to.equal(0);
+                expect(frames[0].func).match(/^funcAtFrameLevel0/);
+                expect(frames[1].func).match(/^funcAtFrameLevel1/);
+                expect(frames[2].func).match(/^main/);
               })
               .then(resolve)
               .catch(reject);
             }
           );
         });
-        // break at the start of getNextInt()
-        return debugSession.addBreakpoint('getNextInt')
+        // break at the start of funcAtFrameLevel0()
+        return debugSession.addBreakpoint('funcAtFrameLevel0')
         .then(() => {
           return Promise.all([
             onBreakpointGetFrameList,
@@ -140,16 +139,16 @@ describe("Debug Session", () => {
                 for (var i = 0; i < frames.length; ++i) {
                   expect(frames[i].level).to.equal(i);
                 }
-                expect(frames[0].func.indexOf('getNextInt')).to.equal(0);
-                expect(frames[1].func.indexOf('printNextInt')).to.equal(0);
+                expect(frames[0].func).match(/^funcAtFrameLevel0/);
+                expect(frames[1].func).match(/^funcAtFrameLevel1/);
               })
               .then(resolve)
               .catch(reject);
             }
           );
         });
-        // break at the start of getNextInt()
-        return debugSession.addBreakpoint('getNextInt')
+        // break at the start of funcAtFrameLevel0()
+        return debugSession.addBreakpoint('funcAtFrameLevel0')
         .then(() => {
           return Promise.all([
             onBreakpointGetFrameList,
@@ -163,18 +162,18 @@ describe("Debug Session", () => {
           debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
             (breakNotify: dbgmits.BreakpointHitNotify) => {
               return debugSession.getStackFrames({ highFrame: 1 })
-                .then((frames: dbgmits.IStackFrameInfo[]) => {
+              .then((frames: dbgmits.IStackFrameInfo[]) => {
                 expect(frames.length).to.equal(1);
                 expect(frames[0].level).to.equal(1);
-                expect(frames[0].func.indexOf('printNextInt')).to.equal(0);
+                expect(frames[0].func).match(/^funcAtFrameLevel1/);
               })
               .then(resolve)
               .catch(reject);
             }
           );
         });
-        // break at the start of getNextInt()
-        return debugSession.addBreakpoint('getNextInt')
+        // break at the start of funcAtFrameLevel0()
+        return debugSession.addBreakpoint('funcAtFrameLevel0')
           .then(() => {
           return Promise.all([
             onBreakpointGetFrameList,
@@ -183,17 +182,42 @@ describe("Debug Session", () => {
         });
       });
     }); // #getStackFrames
-
+    
     describe("#getStackFrameArgs", () => {
-      it("gets frame arguments for a function with no arguments", () => {
+      it("gets frame arguments for a number of frames", () => {
         var onBreakpointGetArgs = new Promise<void>((resolve, reject) => {
           debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
             (breakNotify: dbgmits.BreakpointHitNotify) => {
-              return debugSession.getStackFrameArgs(dbgmits.VariableDetailLevel.None, { lowFrame: 0 })
+              // FIXME: should switch to simple detail level so we get type information,
+              //        but the LLDB MI driver needs to be fixed to support that detail level
+              //        first
+              return debugSession.getStackFrameArgs(dbgmits.VariableDetailLevel.All, { lowFrame: 0, highFrame: 3 })
               .then((frames: dbgmits.IStackFrameArgsInfo[]) => {
-                expect(frames.length).to.equal(1);
-                expect(frames[0].level).to.equal(0);
-                expect(frames[0].args.length).to.equal(0);
+                expect(frames).to.have.property('length', 4);
+                
+                expect(frames[0]).to.have.property('level', 0);
+                expect(frames[0]).to.have.property('args').that.has.property('length', 0);
+
+                expect(frames[1]).to.have.property('level', 1);
+                expect(frames[1]).to.have.property('args').that.has.property('length', 1);
+                expect(frames[1].args[0]).to.have.property('name', 'a');
+                expect(frames[1].args[0]).to.have.property('value', '5');
+
+                expect(frames[2].level).to.equal(2);
+                expect(frames[2].args.length).to.equal(2);
+                expect(frames[2].args[0].name).to.equal('b');
+                expect(frames[2].args[0].value).to.equal('7');
+                expect(frames[2].args[1].name).to.equal('c');
+                expect(frames[2].args[1]).to.have.property('value');
+
+                expect(frames[3].level).to.equal(3);
+                expect(frames[3].args.length).to.equal(3);
+                expect(frames[3].args[0].name).to.equal('d');
+                expect(frames[3].args[0].value).to.equal('300');
+                expect(frames[3].args[1].name).to.equal('e');
+                expect(frames[3].args[1]).to.have.property('value');
+                expect(frames[3].args[2].name).to.equal('f');
+                expect(frames[3].args[2]).to.have.property('value');
               })
               .then(resolve)
               .catch(reject);
@@ -202,108 +226,6 @@ describe("Debug Session", () => {
         });
         // break at the start of funcWithNoArgs()
         return debugSession.addBreakpoint('funcWithNoArgs')
-          .then(() => {
-          return Promise.all([
-            onBreakpointGetArgs,
-            debugSession.startInferior()
-          ])
-        });
-      });
-
-      it("gets frame arguments for a function with one simple argument", () => {
-        var onBreakpointGetArgs = new Promise<void>((resolve, reject) => {
-          debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
-            (breakNotify: dbgmits.BreakpointHitNotify) => {
-              // FIXME: should switch to simple detail level so we get type information,
-              //        but the LLDB MI driver needs to be fixed to support that detail level
-              //        first
-              return debugSession.getStackFrameArgs(dbgmits.VariableDetailLevel.All, { lowFrame: 0 })
-              .then((frames: dbgmits.IStackFrameArgsInfo[]) => {
-                expect(frames.length).to.equal(1);
-                expect(frames[0].level).to.equal(0);
-                expect(frames[0].args.length).to.equal(1);
-
-                expect(frames[0].args[0]).to.have.property('name', 'a');
-                expect(frames[0].args[0]).to.have.property('value', '5');
-              })
-              .then(resolve)
-              .catch(reject);
-            }
-          );
-        });
-        // break at the start of funcWithOneSimpleArg()
-        return debugSession.addBreakpoint('funcWithOneSimpleArg')
-          .then(() => {
-          return Promise.all([
-            onBreakpointGetArgs,
-            debugSession.startInferior()
-          ])
-        });
-      });
-
-      it("gets frame arguments for a function with two arguments", () => {
-        var onBreakpointGetArgs = new Promise<void>((resolve, reject) => {
-          debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
-            (breakNotify: dbgmits.BreakpointHitNotify) => {
-              // FIXME: should switch to simple detail level so we get type information,
-              //        but the LLDB MI driver needs to be fixed to support that detail level
-              //        first
-              return debugSession.getStackFrameArgs(dbgmits.VariableDetailLevel.All, { lowFrame: 0 })
-              .then((frames: dbgmits.IStackFrameArgsInfo[]) => {
-                expect(frames.length).to.equal(1);
-                expect(frames[0].level).to.equal(0);
-                expect(frames[0].args.length).to.equal(2);
-
-                expect(frames[0].args[0].name).to.equal('b');
-                expect(frames[0].args[0].value).to.equal('7');
-
-                expect(frames[0].args[1].name).to.equal('c');
-                expect(frames[0].args[1]).to.have.property('value');
-              })
-              .then(resolve)
-              .catch(reject);
-            }
-          );
-        });
-        // break at the start of funcWithNoArgsfuncWithTwoArgs()
-        return debugSession.addBreakpoint('funcWithTwoArgs')
-          .then(() => {
-          return Promise.all([
-            onBreakpointGetArgs,
-            debugSession.startInferior()
-          ])
-        });
-      });
-
-      it("gets frame arguments for a function with three arguments", () => {
-        var onBreakpointGetArgs = new Promise<void>((resolve, reject) => {
-          debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
-            (breakNotify: dbgmits.BreakpointHitNotify) => {
-              // FIXME: should switch to simple detail level so we get type information,
-              //        but the LLDB MI driver needs to be fixed to support that detail level
-              //        first
-              return debugSession.getStackFrameArgs(dbgmits.VariableDetailLevel.All, { lowFrame: 0 })
-              .then((frames: dbgmits.IStackFrameArgsInfo[]) => {
-                expect(frames.length).to.equal(1);
-                expect(frames[0].level).to.equal(0);
-                expect(frames[0].args.length).to.equal(3);
-
-                expect(frames[0].args[0].name).to.equal('d');
-                expect(frames[0].args[0].value).to.equal('300');
-
-                expect(frames[0].args[1].name).to.equal('e');
-                expect(frames[0].args[1]).to.have.property('value');
-
-                expect(frames[0].args[2].name).to.equal('f');
-                expect(frames[0].args[2]).to.have.property('value');
-              })
-              .then(resolve)
-              .catch(reject);
-            }
-          );
-        });
-        // break at the start of funcWithThreeArgs()
-        return debugSession.addBreakpoint('funcWithThreeArgs')
           .then(() => {
           return Promise.all([
             onBreakpointGetArgs,

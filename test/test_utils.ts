@@ -14,6 +14,36 @@ export function startDebugSession(): DebugSession {
  * This function performs the following tasks asynchronously (but sequentially):
  * 1. Adds a breakpoint on the given function.
  * 2. Runs the target until the breakpoint is hit.
+ * 3. Invokes a callback.
+ *
+ * @param onBreakHit Callback to invoke after the specified function is reached.
+ */
+export function runToFunc(
+  debugSession: DebugSession, funcName: string, onBreakHit: () => Promise<any>)
+  : Promise<any> {
+  var onBreakpointHit = new Promise<void>((resolve, reject) => {
+    debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
+      (breakNotify: dbgmits.BreakpointHitNotify) => {
+        onBreakHit()
+        .then(resolve)
+        .catch(reject);
+      }
+    );
+  });
+  // add breakpoint to get to the starting point
+  return debugSession.addBreakpoint(funcName)
+    .then(() => {
+    return Promise.all([
+      onBreakpointHit,
+      debugSession.startInferior()
+    ])
+  });
+}
+
+/**
+ * This function performs the following tasks asynchronously (but sequentially):
+ * 1. Adds a breakpoint on the given function.
+ * 2. Runs the target until the breakpoint is hit.
  * 3. Steps out of the function within which the breakpoint was hit.
  * 4. Invokes a callback.
  *

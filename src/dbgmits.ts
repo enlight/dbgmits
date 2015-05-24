@@ -1424,8 +1424,18 @@ export class DebugSession extends events.EventEmitter {
    *                           option then `threadId` must be specified as well.
    */
   getStackFrame(
-    options?: { threadId?: number; frameLevel?: number }, token?: string): Promise<IStackFrameInfo> {
-    return this.getCommandOutput('stack-info-frame', token, (output: any) => {
+    options?: { threadId?: number; frameLevel?: number }): Promise<IStackFrameInfo> {
+    let fullCmd = 'stack-info-frame';
+    if (options) {
+      if (options.threadId !== undefined) {
+        fullCmd = fullCmd + ' --thread ' + options.threadId;
+      }
+      if (options.frameLevel !== undefined) {
+        fullCmd = fullCmd + ' --frame ' + options.frameLevel;
+      }
+    }
+
+    return this.getCommandOutput(fullCmd, null, (output: any) => {
       return extractStackFrameInfo(output.frame);
     });
   }
@@ -1502,13 +1512,15 @@ export class DebugSession extends events.EventEmitter {
   }
 
   /**
-   * Retrieves a list of all the arguments for the specified frame(s).
+   * Retrieves a list of all the arguments for the specified frames.
    *
    * The `lowFrame` and `highFrame` options can be used to limit the frames for which arguments
    * are retrieved. If both are supplied only the frames with levels in that range (inclusive) are
    * taken into account, if both are omitted the arguments of all frames currently on the stack
-   * will be retrieved. If either one is omitted (but not both) then only the arguments for the
-   * specified frame are retrieved.
+   * will be retrieved.
+   *
+   * Note that while it's possible to specify a frame range of one frame in order to retrieve the
+   * arguments of a single frame it's better to just use [[getStackFrameVariables]] instead.
    *
    * @param detail Specifies what information should be retrieved for each argument.
    * @param options.threadId The thread for which arguments should be retrieved,
@@ -1529,8 +1541,7 @@ export class DebugSession extends events.EventEmitter {
       skipUnavailable?: boolean;
       lowFrame?: number;
       highFrame?: number;
-    },
-    token?: string
+    }
   ): Promise<IStackFrameArgsInfo[]> {
     var fullCmd: string = 'stack-list-arguments';
     if (options) {
@@ -1550,27 +1561,27 @@ export class DebugSession extends events.EventEmitter {
     if (options) {
       if ((options.lowFrame !== undefined) && (options.highFrame !== undefined)) {
         fullCmd = fullCmd + ` ${options.lowFrame} ${options.highFrame}`;
-      } else if (options.lowFrame !== undefined) {
-        fullCmd = fullCmd + ` ${options.lowFrame} ${options.lowFrame}`;
-      } else if (options.highFrame !== undefined) {
-        fullCmd = fullCmd + ` ${options.highFrame} ${options.highFrame}`;
+      } else if ((options.lowFrame !== undefined) && (options.highFrame === undefined)) {
+        throw new Error("highFrame option must be provided to getStackFrameArgs() if lowFrame option is used.");
+      } else if ((options.lowFrame === undefined) && (options.highFrame !== undefined)) {
+        throw new Error("lowFrame option must be provided to getStackFrameArgs() if highFrame option is used.");
       }
     }
 
-    return this.getCommandOutput(fullCmd, token, (output: any) => {
+    return this.getCommandOutput(fullCmd, null, (output: any) => {
       var data = output['stack-args'];
       if (Array.isArray(data.frame)) {
         // data is in the form: { frame: [{ level: 0, args: [...] }, { level: 1, args: arg1 }, ...]
-        data.frame.map((frame: any): IStackFrameArgsInfo => {
+        return data.frame.map((frame: any): IStackFrameArgsInfo => {
           return {
-            level: parseInt(frame.level),
+            level: parseInt(frame.level, 10),
             args: Array.isArray(frame.args) ? frame.args : [frame.args]
           };
         });
       } else {
         // data is in the form: { frame: { level: 0, args: [...] }
         return [{
-          level: parseInt(data.frame.level),
+          level: parseInt(data.frame.level, 10),
           args: Array.isArray(data.frame.args) ? data.frame.args : [data.frame.args]
         }];
       }
