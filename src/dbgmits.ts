@@ -1050,13 +1050,12 @@ export class DebugSession extends events.EventEmitter {
    *
    * @param file This would normally be a full path to the host's copy of the executable to be 
    *             debugged.
-   * @param token Token (digits only) that can be used to match up the command with a response.
    */
-  setExecutableFile(file: string, token?: string): Promise<void> {
+  setExecutableFile(file: string): Promise<void> {
     // NOTE: While the GDB/MI spec. contains multiple -file-XXX commands that allow the
     // executable and symbol files to be specified separately the LLDB MI driver
     // currently (30-Mar-2015) only supports this one command.
-    return this.executeCommand(`file-exec-and-symbols ${file}`, token);
+    return this.executeCommand(`file-exec-and-symbols ${file}`);
   }
 
   /**
@@ -1074,10 +1073,9 @@ export class DebugSession extends events.EventEmitter {
    *
    * @param host
    * @param port
-   * @param token Token (digits only) that can be used to match up the command with a response.
    */
-  connectToRemoteTarget(host: string, port: number, token?: string): Promise<void> {
-    return this.executeCommand(`target-select remote ${host}:${port}`, token);
+  connectToRemoteTarget(host: string, port: number): Promise<void> {
+    return this.executeCommand(`target-select remote ${host}:${port}`);
   }
 
   //
@@ -1110,7 +1108,6 @@ export class DebugSession extends events.EventEmitter {
    *                            effect, zero (the default) means the breakpoint will stop the 
    *                            program every time it's hit.
    * @param options.threadId Restricts the new breakpoint to the given thread.
-   * @token Token (digits only) that can be used to match up the command with a response.
    */
   addBreakpoint(
     location: string,
@@ -1123,8 +1120,7 @@ export class DebugSession extends events.EventEmitter {
       condition?: string;
       ignoreCount?: number;
       threadId?: number;
-    },
-    token?: string
+    }
   ): Promise<IBreakpointInfo> {
     var cmd: string = 'break-insert';
     if (options) {
@@ -1154,7 +1150,7 @@ export class DebugSession extends events.EventEmitter {
       }
     }
     
-    return this.getCommandOutput<IBreakpointInfo>(cmd + ' ' + location, token, (output: any) => {
+    return this.getCommandOutput<IBreakpointInfo>(cmd + ' ' + location, null, (output: any) => {
       return extractBreakpointInfo(output);
     });
   }
@@ -1162,31 +1158,31 @@ export class DebugSession extends events.EventEmitter {
   /**
    * Removes a breakpoint.
    */
-  removeBreakpoint(breakId: number, token?: string): Promise<void> {
-    return this.executeCommand('break-delete ' + breakId, token);
+  removeBreakpoint(breakId: number): Promise<void> {
+    return this.executeCommand('break-delete ' + breakId);
   }
 
   /**
    * Removes multiple breakpoints.
    */
-  removeBreakpoints(breakIds: number[], token?: string): Promise<void> {
+  removeBreakpoints(breakIds: number[]): Promise<void> {
     // FIXME: LLDB MI driver only supports removing one breakpoint at a time,
     //        so multiple breakpoints need to be removed one by one.
-    return this.executeCommand('break-delete ' + breakIds.join(' '), token);
+    return this.executeCommand('break-delete ' + breakIds.join(' '));
   }
 
   /**
    * Enables a breakpoint.
    */
-  enableBreakpoint(breakId: number, token?: string): Promise<void> {
-    return this.executeCommand('break-enable ' + breakId, token);
+  enableBreakpoint(breakId: number): Promise<void> {
+    return this.executeCommand('break-enable ' + breakId);
   }
 
   /**
    * Disables a breakpoint.
    */
-  disableBreakpoint(breakId: number, token?: string): Promise<void> {
-    return this.executeCommand('break-disable ' + breakId, token);
+  disableBreakpoint(breakId: number): Promise<void> {
+    return this.executeCommand('break-disable ' + breakId);
   }
 
   /**
@@ -1197,8 +1193,8 @@ export class DebugSession extends events.EventEmitter {
    *                    zero means the breakpoint will stop the program every time it's hit.
    */
   ignoreBreakpoint(
-    breakId: number, ignoreCount: number, token?: string): Promise<IBreakpointInfo> {
-    return this.getCommandOutput<IBreakpointInfo>(`break-after ${breakId} ${ignoreCount}`, token,
+    breakId: number, ignoreCount: number): Promise<IBreakpointInfo> {
+    return this.getCommandOutput<IBreakpointInfo>(`break-after ${breakId} ${ignoreCount}`, null,
       (output: any) => { return extractBreakpointInfo(output); }
     );
   }
@@ -1212,8 +1208,8 @@ export class DebugSession extends events.EventEmitter {
    *                  will have no effect.
    */
   setBreakpointCondition(
-    breakId: number, condition: string, token?: string): Promise<void> {
-    return this.executeCommand(`break-condition ${breakId} ${condition}`, token);
+    breakId: number, condition: string): Promise<void> {
+    return this.executeCommand(`break-condition ${breakId} ${condition}`);
   }
 
   //
@@ -1224,8 +1220,8 @@ export class DebugSession extends events.EventEmitter {
    * Sets the commandline arguments to be passed to the target process next time it is started
    * using [[startTarget]].
    */
-  setTargetArguments(args: string, token?: string): Promise<void> {
-    return this.executeCommand('exec-arguments ' + args, token);
+  setTargetArguments(args: string): Promise<void> {
+    return this.executeCommand('exec-arguments ' + args);
   }
 
   /**
@@ -1277,8 +1273,8 @@ export class DebugSession extends events.EventEmitter {
   /**
    * Kills the currently selected inferior.
    */
-  abortInferior(token?: string): Promise<void> {
-    return this.executeCommand('exec-abort', token);
+  abortInferior(): Promise<void> {
+    return this.executeCommand('exec-abort');
   }
 
   /**
@@ -1353,8 +1349,8 @@ export class DebugSession extends events.EventEmitter {
    * @param options.threadId Identifier of the thread to execute the command on. 
    * @param options.reverse *(GDB specific)* If **true** the target is executed in reverse.
    */
-  stepIntoLine(options?: { threadId?: number; reverse?: boolean }, token?: string): Promise<void> {
-    return this.executeCommand(appendExecCmdOptions('exec-step', options), token);
+  stepIntoLine(options?: { threadId?: number; reverse?: boolean }): Promise<void> {
+    return this.executeCommand(appendExecCmdOptions('exec-step', options));
   }
 
   /**
@@ -1365,8 +1361,8 @@ export class DebugSession extends events.EventEmitter {
    * @param options.reverse *(GDB specific)* If **true** the target is executed in reverse until 
    *                        the beginning of the previous source line is reached.
    */
-  stepOverLine(options?: { threadId?: number; reverse?: boolean }, token?: string): Promise<void> {
-    return this.executeCommand(appendExecCmdOptions('exec-next', options), token);
+  stepOverLine(options?: { threadId?: number; reverse?: boolean }): Promise<void> {
+    return this.executeCommand(appendExecCmdOptions('exec-next', options));
   }
 
   /**
@@ -1379,8 +1375,8 @@ export class DebugSession extends events.EventEmitter {
    *                        the previous instruction is reached.
    */
   stepIntoInstruction(
-    options?: { threadId?: number; reverse?: boolean }, token?: string): Promise<void> {
-    return this.executeCommand(appendExecCmdOptions('exec-step-instruction', options), token);
+    options?: { threadId?: number; reverse?: boolean }): Promise<void> {
+    return this.executeCommand(appendExecCmdOptions('exec-step-instruction', options));
   }
 
   /**
@@ -1393,8 +1389,8 @@ export class DebugSession extends events.EventEmitter {
    *                        the previous instruction is reached.
    */
   stepOverInstruction(
-    options?: { threadId?: number; reverse?: boolean }, token?: string): Promise<void> {
-    return this.executeCommand(appendExecCmdOptions('exec-next-instruction', options), token);
+    options?: { threadId?: number; reverse?: boolean }): Promise<void> {
+    return this.executeCommand(appendExecCmdOptions('exec-next-instruction', options));
   }
 
   /**
@@ -1404,8 +1400,8 @@ export class DebugSession extends events.EventEmitter {
    * @param options.threadId Identifier of the thread to execute the command on.
    * @param options.reverse *(GDB specific)* If **true** the target is executed in reverse.
    */
-  stepOut(options?: { threadId?: number; reverse?: boolean }, token?: string): Promise<void> {
-    return this.executeCommand(appendExecCmdOptions('exec-finish', options), token);
+  stepOut(options?: { threadId?: number; reverse?: boolean }): Promise<void> {
+    return this.executeCommand(appendExecCmdOptions('exec-finish', options));
   }
 
   //
@@ -1449,7 +1445,7 @@ export class DebugSession extends events.EventEmitter {
    *                         this number.
    */
   getStackDepth(
-    options?: { threadId?: number; maxDepth?: number }, token?: string): Promise<number> {
+    options?: { threadId?: number; maxDepth?: number }): Promise<number> {
     var fullCmd: string = 'stack-info-depth';
     if (options) {
       if (options.threadId !== undefined) {
@@ -1460,7 +1456,7 @@ export class DebugSession extends events.EventEmitter {
       }
     }
     
-    return this.getCommandOutput(fullCmd, token, (output: any) => {
+    return this.getCommandOutput(fullCmd, null, (output: any) => {
       return parseInt(output.depth);
     });
   }
@@ -1482,8 +1478,8 @@ export class DebugSession extends events.EventEmitter {
    *                          case only the existing frames will be retrieved.
    */
   getStackFrames(
-    options?: { threadId?: number; lowFrame?: number; highFrame?: number; noFrameFilters?: boolean }, 
-    token?: string) : Promise<IStackFrameInfo[]> {
+    options?: { threadId?: number; lowFrame?: number; highFrame?: number; noFrameFilters?: boolean })
+    : Promise<IStackFrameInfo[]> {
     var fullCmd: string = 'stack-list-frames';
     if (options) {
       if (options.threadId !== undefined) {
@@ -1501,7 +1497,7 @@ export class DebugSession extends events.EventEmitter {
       }
     }
 
-    return this.getCommandOutput(fullCmd, token, (output: any) => {
+    return this.getCommandOutput(fullCmd, null, (output: any) => {
       var data = output.stack.frame;
       if (Array.isArray(data)) {
         return data.map((frame: any) => { return extractStackFrameInfo(frame); });
@@ -2381,8 +2377,8 @@ class GDBDebugSession extends DebugSession {
     return true;
   }
 
-  connectToRemoteTarget(host: string, port: number, token?: string): Promise<void> {
-    return super.connectToRemoteTarget(host, port, token)
+  connectToRemoteTarget(host: string, port: number): Promise<void> {
+    return super.connectToRemoteTarget(host, port)
     .then(() => { this.isRemote = true; });
   }
 
