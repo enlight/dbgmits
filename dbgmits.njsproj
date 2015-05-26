@@ -34,12 +34,26 @@
       <SubType>Code</SubType>
       <TestFramework>Mocha</TestFramework>
     </TypeScriptCompile>
+    <TypeScriptCompile Include="test\data_tests.ts">
+      <SubType>Code</SubType>
+      <TestFramework>ExportRunner</TestFramework>
+    </TypeScriptCompile>
     <TypeScriptCompile Include="test\mi_output_parser_tests.ts">
       <SubType>Code</SubType>
       <TestFramework>Mocha</TestFramework>
     </TypeScriptCompile>
-    <TypeScriptCompile Include="typings\lib\es6-promise\es6-promise.d.ts" />
+    <TypeScriptCompile Include="test\stack_tests.ts" />
+    <TypeScriptCompile Include="test\test_utils.ts">
+      <SubType>Code</SubType>
+      <TestFramework>ExportRunner</TestFramework>
+    </TypeScriptCompile>
+    <TypeScriptCompile Include="test\watch_tests.ts">
+      <SubType>Code</SubType>
+      <TestFramework>ExportRunner</TestFramework>
+    </TypeScriptCompile>
+    <TypeScriptCompile Include="typings\lib\lib.es6.d.ts" />
     <TypeScriptCompile Include="typings\lib\node\node.d.ts" />
+    <TypeScriptCompile Include="typings\lib\pty.js\pty.js.d.ts" />
     <TypeScriptCompile Include="typings\lib\tsd.d.ts" />
     <TypeScriptCompile Include="typings\test\chai-as-promised\chai-as-promised.d.ts" />
     <TypeScriptCompile Include="typings\test\tsd.d.ts" />
@@ -52,7 +66,7 @@
     <Folder Include="test\" />
     <Folder Include="typings" />
     <Folder Include="typings\lib\" />
-    <Folder Include="typings\lib\es6-promise\" />
+    <Folder Include="typings\lib\pty.js\" />
     <Folder Include="typings\lib\node\" />
     <Folder Include="typings\test" />
     <Folder Include="typings\test\chai" />
