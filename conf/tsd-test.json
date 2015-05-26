@@ -6,13 +6,13 @@
   "bundle": "../typings/test/tsd.d.ts",
   "installed": {
     "chai/chai.d.ts": {
-      "commit": "65ea56c919fd95dcd0ca3c59c9aa5eaa99c86885"
+      "commit": "da9a725d01fa39776a410ec5c518df10b5b3911e"
     },
     "mocha/mocha.d.ts": {
       "commit": "65ea56c919fd95dcd0ca3c59c9aa5eaa99c86885"
     },
     "chai-as-promised/chai-as-promised.d.ts": {
-      "commit": "65ea56c919fd95dcd0ca3c59c9aa5eaa99c86885"
+      "commit": "da9a725d01fa39776a410ec5c518df10b5b3911e"
     }
   }
 }

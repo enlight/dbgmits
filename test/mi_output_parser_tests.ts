@@ -10,7 +10,7 @@ import * as parser from '../src/mi_output_parser';
 import { RecordType } from '../src/mi_output';
 
 // aliases
-import expect = chai.expect;
+var expect = chai.expect;
 
 describe("MI Output Parser", () => {
   describe("Result Records", () => {

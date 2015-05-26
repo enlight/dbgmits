@@ -13,7 +13,7 @@ import { startDebugSession, runToFunc, runToFuncAndStepOut } from '../test/test_
 chai.use(chaiAsPromised);
 
 // aliases
-import expect = chai.expect;
+var expect = chai.expect;
 import DebugSession = dbgmits.DebugSession;
 import IWatchInfo = dbgmits.IWatchInfo;
 

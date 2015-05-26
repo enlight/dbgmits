@@ -13,7 +13,7 @@ import { startDebugSession, runToFunc, runToFuncAndStepOut } from '../test/test_
 chai.use(chaiAsPromised);
 
 // aliases
-import expect = chai.expect;
+var expect = chai.expect;
 import DebugSession = dbgmits.DebugSession;
 
 // the directory in which Gruntfile.js resides is also Mocha's working directory,
