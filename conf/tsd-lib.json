@@ -7,6 +7,9 @@
   "installed": {
     "node/node.d.ts": {
       "commit": "da9a725d01fa39776a410ec5c518df10b5b3911e"
+    },
+    "bunyan/bunyan.d.ts": {
+      "commit": "da9a725d01fa39776a410ec5c518df10b5b3911e"
     }
   }
 }

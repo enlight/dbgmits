@@ -7,8 +7,9 @@ require('source-map-support').install();
 
 import * as chai from 'chai';
 import chaiAsPromised = require('chai-as-promised');
+import * as bunyan from 'bunyan';
 import * as dbgmits from '../src/dbgmits';
-import { startDebugSession, runToFunc } from '../test/test_utils';
+import { beforeEachTestCreateLogger, startDebugSession, runToFunc } from '../test/test_utils';
 
 chai.use(chaiAsPromised);
 
@@ -24,8 +25,8 @@ describe("Debug Session", () => {
   describe("Stack Inspection", () => {
     var debugSession: DebugSession;
 
-    beforeEach(() => {
-      debugSession = startDebugSession();
+    beforeEachTestCreateLogger((logger: bunyan.Logger) => {
+      debugSession = startDebugSession(logger);
       return debugSession.setExecutableFile(localTargetExe);
     });
 

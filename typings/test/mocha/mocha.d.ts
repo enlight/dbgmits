@@ -50,7 +50,7 @@ interface MochaDone {
     (error?: Error): void;
 }
 
-declare var mocha: Mocha;
+//declare var mocha: Mocha;
 
 declare var describe : {
     (description: string, spec: () => void): void;
@@ -109,39 +109,60 @@ declare function suiteTeardown(action: () => void): void;
 
 declare function suiteTeardown(action: (done: MochaDone) => void): void;
 
-declare module "mocha" {
+declare module mocha {
+  class Mocha {
+    constructor(options?: {
+      grep?: RegExp;
+      ui?: string;
+      reporter?: string;
+      timeout?: number;
+      bail?: boolean;
+    });
 
-    class Mocha {
-        constructor(options?: {
-            grep?: RegExp;
-            ui?: string;
-            reporter?: string;
-            timeout?: number;
-            bail?: boolean;
-        });
+    bail(value?: boolean): Mocha;
+    addFile(file: string): Mocha;
+    reporter(value: string): Mocha;
+    ui(value: string): Mocha;
+    grep(value: string): Mocha;
+    grep(value: RegExp): Mocha;
+    invert(): Mocha;
+    ignoreLeaks(value: boolean): Mocha;
+    checkLeaks(): Mocha;
+    growl(): Mocha;
+    globals(value: string): Mocha;
+    globals(values: string[]): Mocha;
+    useColors(value: boolean): Mocha;
+    useInlineDiffs(value: boolean): Mocha;
+    timeout(value: number): Mocha;
+    slow(value: number): Mocha;
+    enableTimeouts(value: boolean): Mocha;
+    asyncOnly(value: boolean): Mocha;
+    noHighlighting(value: boolean): Mocha;
 
-        bail(value?: boolean): Mocha;
-        addFile(file: string): Mocha;
-        reporter(value: string): Mocha;
-        ui(value: string): Mocha;
-        grep(value: string): Mocha;
-        grep(value: RegExp): Mocha;
-        invert(): Mocha;
-        ignoreLeaks(value: boolean): Mocha;
-        checkLeaks(): Mocha;
-        growl(): Mocha;
-        globals(value: string): Mocha;
-        globals(values: string[]): Mocha;
-        useColors(value: boolean): Mocha;
-        useInlineDiffs(value: boolean): Mocha;
-        timeout(value: number): Mocha;
-        slow(value: number): Mocha;
-        enableTimeouts(value: boolean): Mocha;
-        asyncOnly(value: boolean): Mocha;
-        noHighlighting(value: boolean): Mocha;
+    run(onComplete?: (failures: number) => void): void;
+  }
 
-        run(onComplete?: (failures: number) => void): void;
+  export interface Runner extends NodeJS.EventEmitter {
+  }
+
+  export module reporters {
+    export class Base {
+      stats: { 
+        suites: number;
+        tests: number;
+        passes: number;
+        pending: number;
+        failures: number;
+      };
+
+      constructor(runner: Runner);
     }
+    export class Spec extends Base {
+      constructor(runner: Runner);
+    }
+  }
+}
 
-    export = Mocha;
+declare module "mocha" {
+    export = mocha;
 }

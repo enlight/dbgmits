@@ -6,13 +6,16 @@
   "bundle": "../typings/test/tsd.d.ts",
   "installed": {
     "chai/chai.d.ts": {
-      "commit": "da9a725d01fa39776a410ec5c518df10b5b3911e"
+      "commit": "36a4540d16548a6abbb8702612528729ab0e4175"
     },
     "mocha/mocha.d.ts": {
-      "commit": "65ea56c919fd95dcd0ca3c59c9aa5eaa99c86885"
+      "commit": "36a4540d16548a6abbb8702612528729ab0e4175"
     },
     "chai-as-promised/chai-as-promised.d.ts": {
-      "commit": "da9a725d01fa39776a410ec5c518df10b5b3911e"
+      "commit": "36a4540d16548a6abbb8702612528729ab0e4175"
+    },
+    "bunyan-prettystream/bunyan-prettystream.d.ts": {
+      "commit": "36a4540d16548a6abbb8702612528729ab0e4175"
     }
   }
 }

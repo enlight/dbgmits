@@ -8,8 +8,11 @@ require('source-map-support').install();
 import * as chai from 'chai';
 import chaiAsPromised = require('chai-as-promised');
 import * as stream from 'stream';
+import * as bunyan from 'bunyan';
 import * as dbgmits from '../src/dbgmits';
-import { startDebugSession, runToFuncAndStepOut } from '../test/test_utils';
+import {
+  beforeEachTestCreateLogger, startDebugSession, runToFuncAndStepOut
+} from '../test/test_utils';
 
 chai.use(chaiAsPromised);
 
@@ -335,8 +338,8 @@ describe("Debug Session", () => {
   describe("Breakpoints", () => {
     var debugSession: DebugSession;
 
-    beforeEach(() => {
-      debugSession = startDebugSession();
+    beforeEachTestCreateLogger((logger: bunyan.Logger) => {
+      debugSession = startDebugSession(logger);
       return debugSession.setExecutableFile(localTargetExe);
     });
 
@@ -394,8 +397,8 @@ describe("Debug Session", () => {
   describe("Program Execution", () => {
     var debugSession: DebugSession;
 
-    beforeEach(() => {
-      debugSession = startDebugSession();
+    beforeEachTestCreateLogger((logger: bunyan.Logger) => {
+      debugSession = startDebugSession(logger);
       return debugSession.setExecutableFile(localTargetExe);
     });
 

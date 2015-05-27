@@ -14,6 +14,7 @@
   "author": "Vadim Macagon",
   "license": "MIT",
   "devDependencies": {
+    "bunyan-prettystream": "^0.1.3",
     "chai": "^2.1.2",
     "chai-as-promised": "^4.3.0",
     "grunt": "^0.4.5",
@@ -35,5 +36,8 @@
   },
   "optionalDependencies": {
     "pty.js": "^0.2.7-1"
+  },
+  "dependencies": {
+    "bunyan": "^1.3.5"
   }
 }

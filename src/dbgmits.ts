@@ -12,6 +12,7 @@ import * as stream from 'stream';
 import * as parser from './mi_output_parser';
 import { RecordType } from './mi_output';
 import * as pty from 'pty.js';
+import * as bunyan from 'bunyan';
 
 // aliases
 type ReadLine = readline.ReadLine;
@@ -696,6 +697,15 @@ export class DebugSession extends events.EventEmitter {
   private cmdQueue: DebugCommand[];
   // used to to ensure session cleanup is only done once
   private cleanupWasCalled: boolean;
+  private _logger: bunyan.Logger;
+
+  get logger(): bunyan.Logger {
+    return this._logger;
+  }
+
+  set logger(logger: bunyan.Logger) {
+    this._logger = logger;
+  }
 
   /**
    * In most cases [[startDebugSession]] should be used to construct new instances.
@@ -756,7 +766,9 @@ export class DebugSession extends events.EventEmitter {
         break;
 
       case 'stopped':
-        console.log(data);
+        if (this.logger) {
+          this.logger.debug(data);
+        }
         var standardNotify: TargetStoppedNotify = {
           reason: parseTargetStopReason(data.reason),
           threadId: parseInt(data['thread-id'], 10),
@@ -916,7 +928,9 @@ export class DebugSession extends events.EventEmitter {
     try {
       var result = parser.parse(line);
     } catch (err) {
-      console.log('Attempted to parse: ->' + line + '<-');
+      if (this.logger) {
+        this.logger.error(err, 'Attempted to parse: ->' + line + '<-');
+      }
       throw err;
     }
 
@@ -979,9 +993,10 @@ export class DebugSession extends events.EventEmitter {
     } else {
       cmdStr = '-' + command.text;
     }
+    if (this.logger) {
+      this.logger.info(cmdStr);
+    }
     this.outStream.write(cmdStr + '\n');
-    // FIXME: remove this before release, it's here temporarily for debugging
-    console.log(cmdStr);
   }
 
   /**

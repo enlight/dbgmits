@@ -1,13 +1,23 @@
 ﻿// Copyright (c) 2015 Vadim Macagon
 // MIT License, see LICENSE file for full terms.
 
+require('source-map-support').install();
+
 import * as dbgmits from '../src/dbgmits';
+import * as bunyan from 'bunyan';
+import * as fs from 'fs';
+import * as path from 'path';
+import PrettyStream = require('bunyan-prettystream');
 
 // aliases
 import DebugSession = dbgmits.DebugSession;
 
-export function startDebugSession(): DebugSession {
-  return dbgmits.startDebugSession(process.env['DBGMITS_DEBUGGER']);
+export function startDebugSession(logger?: bunyan.Logger): DebugSession {
+  let debugSession: DebugSession = dbgmits.startDebugSession(process.env['DBGMITS_DEBUGGER']);
+  if (logger) {
+    debugSession.logger = logger;
+  }
+  return debugSession;
 }
 
 /**
@@ -95,4 +105,43 @@ export function runToFuncAndStepOut(
       debugSession.startInferior()
     ])
   });
+}
+
+/** Partial interface for mocha.Hook callback functions (with some customization) */
+interface IHookCallback {
+  /** Actual callback function to be passed to Mocha's beforeEach(). */
+  (): any;
+  /** Creates a new logger. This will be called by the custom Mocha reporter before each test. */
+  createLogger?: (testIndex: number, title: string) => void;
+  /** Logger instance created by [[createLogger]]. */
+  logger?: bunyan.Logger;
+};
+
+export function beforeEachTestCreateLogger(fn: (logger: bunyan.Logger) => any): void {
+  let cb: IHookCallback = () => {
+    // the custom reporter should've already called cb.createLogger() by this stage,
+    // so cb.logger can be passed to the hook's callback function
+    return fn(cb.logger);
+  };
+  cb.createLogger = (testIndex: number, title: string) => {
+    // TODO: Create a subdir hierarchy in the logs dir matching the suite hierarchy,
+    // suite titles will have to be stripped of any invalid characters first though.
+    try {
+      fs.mkdirSync('logs');
+    } catch (err) {
+      if (err.code != 'EEXIST') {
+        throw err;
+      }
+    }
+    let logPath = path.join('logs', 'Test' + testIndex + '.log');
+    let fileStream = fs.createWriteStream(logPath, { flags: 'w' });
+    let prettyStream = new PrettyStream({ useColor: false });
+    prettyStream.pipe(fileStream);
+    cb.logger = bunyan.createLogger({
+      name: 'Test ' + testIndex,
+      streams: [{ level: 'debug', type: 'raw', stream: prettyStream }]
+    });
+    cb.logger.info('====== TEST #%d: %s ======', testIndex, title);
+  }
+  beforeEach(cb);
 }
