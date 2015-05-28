@@ -111,37 +111,116 @@ export function runToFuncAndStepOut(
 interface IHookCallback {
   /** Actual callback function to be passed to Mocha's beforeEach(). */
   (): any;
-  /** Creates a new logger. This will be called by the custom Mocha reporter before each test. */
-  createLogger?: (testIndex: number, title: string) => void;
-  /** Logger instance created by [[createLogger]]. */
+  /** Called by the custom Mocha reporter before each test. */
+  setLogger?: (logger: bunyan.Logger) => void;
+  /** Logger instance to pass to the hook's callback function, set by [[setLogger]]. */
   logger?: bunyan.Logger;
 };
 
-export function beforeEachTestCreateLogger(fn: (logger: bunyan.Logger) => any): void {
+/**
+ * Wraps mocha's beforeEach() function so that a logger can be passed through to the callback
+ * function `fn`.
+ *
+ * The logger instance passed to the `fn` function is created by a custom mocha reporter,
+ * but only for tests that are in suites wrapped with [[logSuite]], or for tests wrapped with 
+ * [[logTest]].
+ *
+ * @param fn A function to execute before each test in the current suite.
+ */
+export function beforeEachTestWithLogger(fn: (logger: bunyan.Logger) => any): void {
+  // unfortunately mocha doesn't return the hook instance from beforeEach(), so it's not possible
+  // to add additional fields to the hook itself, instead we have to add the additional fields
+  // to the callback passed to beforeEach()
   let cb: IHookCallback = () => {
-    // the custom reporter should've already called cb.createLogger() by this stage,
-    // so cb.logger can be passed to the hook's callback function
+    // the custom reporter should've already called cb.setLogger() by this stage
     return fn(cb.logger);
   };
-  cb.createLogger = (testIndex: number, title: string) => {
-    // TODO: Create a subdir hierarchy in the logs dir matching the suite hierarchy,
-    // suite titles will have to be stripped of any invalid characters first though.
-    try {
-      fs.mkdirSync('logs');
-    } catch (err) {
-      if (err.code != 'EEXIST') {
-        throw err;
-      }
-    }
-    let logPath = path.join('logs', 'Test' + testIndex + '.log');
-    let fileStream = fs.createWriteStream(logPath, { flags: 'w' });
-    let prettyStream = new PrettyStream({ useColor: false });
-    prettyStream.pipe(fileStream);
-    cb.logger = bunyan.createLogger({
-      name: 'Test ' + testIndex,
-      streams: [{ level: 'debug', type: 'raw', stream: prettyStream }]
-    });
-    cb.logger.info('====== TEST #%d: %s ======', testIndex, title);
+  cb.setLogger = (logger: bunyan.Logger): void => {
+    cb.logger = logger;
   }
   beforeEach(cb);
+}
+
+/** 
+ * Creates a new logger for a test.
+ *
+ * The logger will create a log file in the `logs/tests` directory.
+ *
+ * @param testIndex Test identifier, should be unique for each test.
+ * @param title Test title.
+ * @return A new logger instance.
+ */
+function createLogger(testIndex: number, title: string): bunyan.Logger {
+  try {
+    fs.mkdirSync('logs/tests');
+  } catch (err) {
+    if (err.code != 'EEXIST') {
+      throw err;
+    }
+  }
+  // pad the test number with zeroes (e.g. 1 -> 001, 10 -> 010, 100 -> 100)
+  let pad = '000';
+  let testFilename = (pad + testIndex).slice(-pad.length) + '.log';
+  let logPath = path.join('logs/tests', testFilename);
+  let fileStream = fs.createWriteStream(logPath, { flags: 'w' });
+  let prettyStream = new PrettyStream({ useColor: false });
+  prettyStream.pipe(fileStream);
+  let logger = bunyan.createLogger({
+    name: 'Test ' + testIndex,
+    streams: [{ level: 'debug', type: 'raw', stream: prettyStream }]
+  });
+  logger.info('====== TEST #%d: %s ======', testIndex, title);
+  return logger;
+}
+
+export interface ITest {
+  /** Creates a new logger. */
+  createLogger?: (testIndex: number, title: string) => void;
+}
+
+/**
+ * Attaches a createLogger() function to a mocha.Test.
+ *
+ * For example:
+ * ```
+ * describe("Thingie", () => {
+ *   beforeEachTestWithLogger((logger: bunyan.Logger) => {
+ *     ...
+ *   });
+ *
+ *   logTest(it("Does something", () => {
+ *     ...
+ *   }));
+ * });
+ * ```
+ */
+export function logTest(test: ITest): ITest {
+  test.createLogger = createLogger;
+  return test;
+}
+
+export interface ISuite {
+  /** Creates a new logger. */
+  createLogger?: (testIndex: number, title: string) => bunyan.Logger;
+}
+
+/**
+ * Attaches a createLogger() function to a mocha.Suite.
+ *
+ * For example:
+ * ```
+ * logSuite(describe("Thingie", () => {
+ *   beforeEachTestWithLogger((logger: bunyan.Logger) => {
+ *     ...
+ *   });
+ *
+ *   it("Does something", () => {
+ *     ...
+ *   });
+ * }));
+ * ```
+ */
+export function logSuite(suite: ISuite): ISuite {
+  suite.createLogger = createLogger;
+  return suite;
 }

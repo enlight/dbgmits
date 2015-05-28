@@ -10,7 +10,8 @@ import chaiAsPromised = require('chai-as-promised');
 import * as bunyan from 'bunyan';
 import * as dbgmits from '../src/dbgmits';
 import {
-  beforeEachTestCreateLogger, startDebugSession, runToFunc, runToFuncAndStepOut
+  beforeEachTestWithLogger, logSuite as log, startDebugSession,
+  runToFunc, runToFuncAndStepOut
 } from '../test/test_utils';
 
 chai.use(chaiAsPromised);
@@ -24,11 +25,11 @@ import IWatchInfo = dbgmits.IWatchInfo;
 // so any relative paths will be relative to that directory
 var localTargetExe: string = './build/Debug/watch_tests_target';
 
-describe("Debug Session", () => {
+log(describe("Debug Session", () => {
   describe("Watch Manipulation", () => {
     var debugSession: DebugSession;
 
-    beforeEachTestCreateLogger((logger: bunyan.Logger) => {
+    beforeEachTestWithLogger((logger: bunyan.Logger) => {
       debugSession = startDebugSession(logger);
       return debugSession.setExecutableFile(localTargetExe);
     });
@@ -339,4 +340,4 @@ describe("Debug Session", () => {
       });
     });
   });
-});
+}));

@@ -53,8 +53,8 @@ interface MochaDone {
 //declare var mocha: Mocha;
 
 declare var describe : {
-    (description: string, spec: () => void): void;
-    only(description: string, spec: () => void): void;
+    (description: string, spec: () => void): any /* mocha.Suite */;
+    only(description: string, spec: () => void): any /* mocha.Suite */;
     skip(description: string, spec: () => void): void;
     timeout(ms: number): void;
 }
@@ -68,10 +68,10 @@ declare var context : {
 }
 
 declare var it: {
-    (expectation: string, assertion?: () => void): void;
-    (expectation: string, assertion?: (done: MochaDone) => void): void;
-    only(expectation: string, assertion?: () => void): void;
-    only(expectation: string, assertion?: (done: MochaDone) => void): void;
+    (expectation: string, assertion?: () => void): any /* mocha.Test */;
+    (expectation: string, assertion?: (done: MochaDone) => void): any /* mocha.Test */;
+    only(expectation: string, assertion?: () => void): any /* mocha.Test */;
+    only(expectation: string, assertion?: (done: MochaDone) => void): any /* mocha.Test */;
     skip(expectation: string, assertion?: () => void): void;
     skip(expectation: string, assertion?: (done: MochaDone) => void): void;
     timeout(ms: number): void;

@@ -11,7 +11,7 @@ import * as stream from 'stream';
 import * as bunyan from 'bunyan';
 import * as dbgmits from '../src/dbgmits';
 import {
-  beforeEachTestCreateLogger, startDebugSession, runToFuncAndStepOut
+  beforeEachTestWithLogger, logSuite as log, startDebugSession, runToFuncAndStepOut
 } from '../test/test_utils';
 
 chai.use(chaiAsPromised);
@@ -335,10 +335,10 @@ describe("Debug Session", () => {
   });
 */
 
-  describe("Breakpoints", () => {
+  log(describe("Breakpoints", () => {
     var debugSession: DebugSession;
 
-    beforeEachTestCreateLogger((logger: bunyan.Logger) => {
+    beforeEachTestWithLogger((logger: bunyan.Logger) => {
       debugSession = startDebugSession(logger);
       return debugSession.setExecutableFile(localTargetExe);
     });
@@ -392,12 +392,12 @@ describe("Debug Session", () => {
       .then((data: dbgmits.IBreakpointInfo) => { return parseInt(data.id, 10); })
       .then((breakpointId: number) => { debugSession.disableBreakpoint(breakpointId); });
     });
-  });
+  }));
 
-  describe("Program Execution", () => {
+  log(describe("Program Execution", () => {
     var debugSession: DebugSession;
 
-    beforeEachTestCreateLogger((logger: bunyan.Logger) => {
+    beforeEachTestWithLogger((logger: bunyan.Logger) => {
       debugSession = startDebugSession(logger);
       return debugSession.setExecutableFile(localTargetExe);
     });
@@ -594,5 +594,5 @@ describe("Debug Session", () => {
         })
       });
     });
-  });
+  }));
 });

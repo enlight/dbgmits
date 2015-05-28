@@ -10,7 +10,8 @@ import chaiAsPromised = require('chai-as-promised');
 import * as bunyan from 'bunyan';
 import * as dbgmits from '../src/dbgmits';
 import {
-  beforeEachTestCreateLogger, startDebugSession, runToFunc, runToFuncAndStepOut
+  beforeEachTestWithLogger, logSuite as log, startDebugSession,
+  runToFunc, runToFuncAndStepOut
 } from '../test/test_utils';
 
 chai.use(chaiAsPromised);
@@ -25,11 +26,11 @@ var localTargetExe: string = './build/Debug/data_tests_target';
 // source line number of main() (must be updated if data_tests_target.cpp is modified!)
 var mainFuncLineNum = 44;
 
-describe("Debug Session", () => {
+log(describe("Debug Session", () => {
   describe("Data Inspection and Manipulation", () => {
     var debugSession: DebugSession;
 
-    beforeEachTestCreateLogger((logger: bunyan.Logger) => {
+    beforeEachTestWithLogger((logger: bunyan.Logger) => {
       debugSession = startDebugSession(logger);
       return debugSession.setExecutableFile(localTargetExe);
     });
@@ -195,4 +196,4 @@ describe("Debug Session", () => {
       });
     });
   });
-});
+}));

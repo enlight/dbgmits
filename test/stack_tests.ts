@@ -9,7 +9,9 @@ import * as chai from 'chai';
 import chaiAsPromised = require('chai-as-promised');
 import * as bunyan from 'bunyan';
 import * as dbgmits from '../src/dbgmits';
-import { beforeEachTestCreateLogger, startDebugSession, runToFunc } from '../test/test_utils';
+import {
+  beforeEachTestWithLogger, logSuite as log, startDebugSession, runToFunc
+} from '../test/test_utils';
 
 chai.use(chaiAsPromised);
 
@@ -21,11 +23,11 @@ import DebugSession = dbgmits.DebugSession;
 // so any relative paths will be relative to that directory
 var localTargetExe: string = './build/Debug/stack_tests_target';
 
-describe("Debug Session", () => {
+log(describe("Debug Session", () => {
   describe("Stack Inspection", () => {
     var debugSession: DebugSession;
 
-    beforeEachTestCreateLogger((logger: bunyan.Logger) => {
+    beforeEachTestWithLogger((logger: bunyan.Logger) => {
       debugSession = startDebugSession(logger);
       return debugSession.setExecutableFile(localTargetExe);
     });
@@ -420,4 +422,4 @@ describe("Debug Session", () => {
       });
     }); // #getStackFrameVariables
   });
-});
+}));
