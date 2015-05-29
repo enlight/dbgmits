@@ -2206,7 +2206,7 @@ function extractBreakpointInfo(data: any): IBreakpointInfo {
     func: data.bkpt.func,
     filename: data.bkpt.file || data.bkpt.filename, // LLDB MI uses non standard 'file'
     fullname: data.bkpt.fullname,
-    line: data.bkpt.line,
+    line: parseInt(data.bkpt.line, 10),
     at: data.bkpt.at,
     pending: data.bkpt.pending,
     evaluatedBy: data.bkpt['evaluated-by'],

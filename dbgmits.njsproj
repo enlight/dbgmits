@@ -34,10 +34,18 @@
       <SubType>Code</SubType>
       <TestFramework>Mocha</TestFramework>
     </TypeScriptCompile>
+    <TypeScriptCompile Include="test\break_tests.ts">
+      <SubType>Code</SubType>
+      <TestFramework>Mocha</TestFramework>
+    </TypeScriptCompile>
     <TypeScriptCompile Include="test\custom_reporter.ts" />
     <TypeScriptCompile Include="test\data_tests.ts">
       <SubType>Code</SubType>
       <TestFramework>ExportRunner</TestFramework>
+    </TypeScriptCompile>
+    <TypeScriptCompile Include="test\exec_tests.ts">
+      <SubType>Code</SubType>
+      <TestFramework>Mocha</TestFramework>
     </TypeScriptCompile>
     <TypeScriptCompile Include="test\mi_output_parser_tests.ts">
       <SubType>Code</SubType>
