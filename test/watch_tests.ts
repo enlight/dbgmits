@@ -203,8 +203,7 @@ log(describe("Debug Session", () => {
         });
       });
 
-      // FIXME: re-enable this test on LLDB when LLDB-MI adds support for child subsets
-      it.skip("gets a subset of members of a struct variable under watch", () => {
+      it("gets a subset of members of a struct variable under watch @skipOnGDB", () => {
         return runToFuncAndStepOut(debugSession, 'funcWithMoreVariablesToWatch_Inner', () => {
           return debugSession.addWatch('e')
           .then((watch: IWatchInfo) => {
