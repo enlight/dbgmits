@@ -5,6 +5,7 @@
   "description": "Provides the ability to control GDB and LLDB programmatically via GDB/MI.",
   "main": "lib/dbgmits.js",
   "scripts": {
+    "preinstall":  "",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
