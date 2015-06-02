@@ -16,6 +16,73 @@ export function startDebugSession(logger?: bunyan.Logger): DebugSession {
   let debugSession: DebugSession = dbgmits.startDebugSession(process.env['DBGMITS_DEBUGGER']);
   if (logger) {
     debugSession.logger = logger;
+    
+    // log event data emitted by DebugSession
+    let eventsToLog = [
+      DebugSession.EVENT_TARGET_RUNNING,
+      DebugSession.EVENT_TARGET_STOPPED,
+      DebugSession.EVENT_BREAKPOINT_HIT,
+      DebugSession.EVENT_STEP_FINISHED,
+      DebugSession.EVENT_FUNCTION_FINISHED,
+      DebugSession.EVENT_SIGNAL_RECEIVED,
+      DebugSession.EVENT_EXCEPTION_RECEIVED,
+      DebugSession.EVENT_THREAD_GROUP_ADDED,
+      DebugSession.EVENT_THREAD_GROUP_REMOVED,
+      DebugSession.EVENT_THREAD_GROUP_STARTED,
+      DebugSession.EVENT_THREAD_GROUP_EXITED,
+      DebugSession.EVENT_THREAD_CREATED,
+      DebugSession.EVENT_THREAD_EXITED,
+      DebugSession.EVENT_THREAD_SELECTED,
+      DebugSession.EVENT_LIB_LOADED,
+      DebugSession.EVENT_LIB_UNLOADED,
+    ];
+    eventsToLog.forEach((eventName: string) => {
+      debugSession.on(eventName, (data: any) => {
+        if (debugSession.logger) {
+          debugSession.logger.debug({ event: eventName, data: data });
+        }
+      });
+    });
+    
+    // monkey-patch DebugSession methods that return non-void promises and log the values
+    // the promises are resolved with
+    let functionsToLog: string[] = [
+      'addBreakpoint',
+      'ignoreBreakpoint',
+      'getStackFrame',
+      'getStackDepth',
+      'getStackFrames',
+      'getStackFrameArgs',
+      'getStackFrameVariables',
+      'addWatch',
+      'updateWatch',
+      'getWatchChildren',
+      'setWatchValueFormat',
+      'getWatchValue',
+      'setWatchValue',
+      'getWatchAttributes',
+      'getWatchExpression',
+      'evaluateExpression',
+      'readMemory',
+      'getRegisterNames',
+      'getRegisterValues',
+      'disassembleAddressRange',
+      'disassembleAddressRangeByLine',
+      'disassembleFile',
+      'disassembleFileByLine'
+    ];
+    functionsToLog.forEach((funcName: string) => {
+      let func: Function = debugSession[funcName];
+      debugSession[funcName] = function () {
+        return func.apply(this, arguments)
+        .then((result: any) => {
+          if (debugSession.logger) {
+            debugSession.logger.debug({ func: funcName, result: result });
+          }
+          return result;
+        });
+      };
+    });
   }
   return debugSession;
 }

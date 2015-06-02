@@ -481,7 +481,7 @@ export class DebugSession extends events.EventEmitter {
    * ~~~
    * @event
    */
-  static EVENT_THREAD_GROUP_ADDED: string = 'thdgrpa';
+  static EVENT_THREAD_GROUP_ADDED: string = 'thdgrpadd';
   /**
    * Emitted when a thread group is removed by the debugger.
    *
@@ -491,7 +491,7 @@ export class DebugSession extends events.EventEmitter {
    * ~~~
    * @event
    */
-  static EVENT_THREAD_GROUP_REMOVED: string = 'thdgrpr';
+  static EVENT_THREAD_GROUP_REMOVED: string = 'thdgrprem';
   /**
    * Emitted when a thread group is associated with a running program, 
    * either because the program was started or the debugger was attached to it.
@@ -502,7 +502,7 @@ export class DebugSession extends events.EventEmitter {
    * ~~~
    * @event
    */
-  static EVENT_THREAD_GROUP_STARTED: string = 'thdgrps';
+  static EVENT_THREAD_GROUP_STARTED: string = 'thdgrpstart';
   /**
    * Emitted when a thread group ceases to be associated with a running program,
    * either because the program terminated or the debugger was dettached from it.
@@ -513,7 +513,7 @@ export class DebugSession extends events.EventEmitter {
    * ~~~
    * @event
    */
-  static EVENT_THREAD_GROUP_EXITED: string = 'thdgrpe';
+  static EVENT_THREAD_GROUP_EXITED: string = 'thdgrpexit';
   /**
    * Emitted when a thread is created.
    *
@@ -523,7 +523,7 @@ export class DebugSession extends events.EventEmitter {
    * ~~~
    * @event
    */
-  static EVENT_THREAD_CREATED: string = 'thdc';
+  static EVENT_THREAD_CREATED: string = 'thdcreate';
   /**
    * Emitted when a thread exits.
    *
@@ -533,7 +533,7 @@ export class DebugSession extends events.EventEmitter {
    * ~~~
    * @event
    */
-  static EVENT_THREAD_EXITED: string = 'thde';
+  static EVENT_THREAD_EXITED: string = 'thdexit';
   /**
    * Emitted when the debugger changes the current thread selection.
    *
@@ -543,7 +543,7 @@ export class DebugSession extends events.EventEmitter {
    * ~~~
    * @event
    */
-  static EVENT_THREAD_SELECTED: string = 'thds';
+  static EVENT_THREAD_SELECTED: string = 'thdselect';
   /**
    * Emitted when a new library is loaded by the program being debugged.
    *
@@ -766,9 +766,9 @@ export class DebugSession extends events.EventEmitter {
         break;
 
       case 'stopped':
-        if (this.logger) {
-          this.logger.debug(data);
-        }
+        //if (this.logger) {
+        //  this.logger.debug(data);
+        //}
         var standardNotify: TargetStoppedNotify = {
           reason: parseTargetStopReason(data.reason),
           threadId: parseInt(data['thread-id'], 10),
