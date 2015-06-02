@@ -154,6 +154,7 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-peg');
   grunt.loadNpmTasks('grunt-node-gyp');
   grunt.loadNpmTasks('grunt-env');
+  grunt.loadNpmTasks('grunt-release');
   
   grunt.registerTask('copy-peg-output', 'Copy generated MI Output parser to ./lib', function () {
     grunt.config.requires('peg.mi_output_parser.dest')
