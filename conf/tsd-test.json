@@ -2,20 +2,23 @@
   "version": "v4",
   "repo": "borisyankov/DefinitelyTyped",
   "ref": "master",
-  "path": "../typings/test",
-  "bundle": "../typings/test/tsd.d.ts",
+  "path": "../typings",
+  "bundle": "../typings/test-tsd.d.ts",
   "installed": {
     "chai/chai.d.ts": {
-      "commit": "36a4540d16548a6abbb8702612528729ab0e4175"
+      "commit": "484544d14d400190b20f270341c97b16adc0f1ef"
     },
     "mocha/mocha.d.ts": {
-      "commit": "36a4540d16548a6abbb8702612528729ab0e4175"
+      "commit": "484544d14d400190b20f270341c97b16adc0f1ef"
     },
     "chai-as-promised/chai-as-promised.d.ts": {
-      "commit": "36a4540d16548a6abbb8702612528729ab0e4175"
+      "commit": "484544d14d400190b20f270341c97b16adc0f1ef"
     },
     "bunyan-prettystream/bunyan-prettystream.d.ts": {
-      "commit": "36a4540d16548a6abbb8702612528729ab0e4175"
+      "commit": "484544d14d400190b20f270341c97b16adc0f1ef"
+    },
+    "node/node.d.ts": {
+      "commit": "484544d14d400190b20f270341c97b16adc0f1ef"
     }
   }
 }

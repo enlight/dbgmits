@@ -1,7 +1,7 @@
 ﻿// Copyright (c) 2015 Vadim Macagon
 // MIT License, see LICENSE file for full terms.
 
-/// <reference path="../typings/lib/tsd.d.ts" />
+/// <reference path="../typings/lib-tsd.d.ts" />
 
 import { spawn, ChildProcess } from 'child_process';
 import * as readline from 'readline';

@@ -2,14 +2,14 @@
   "version": "v4",
   "repo": "borisyankov/DefinitelyTyped",
   "ref": "master",
-  "path": "../typings/lib",
-  "bundle": "../typings/lib/tsd.d.ts",
+  "path": "../typings",
+  "bundle": "../typings/lib-tsd.d.ts",
   "installed": {
     "node/node.d.ts": {
-      "commit": "da9a725d01fa39776a410ec5c518df10b5b3911e"
+      "commit": "484544d14d400190b20f270341c97b16adc0f1ef"
     },
     "bunyan/bunyan.d.ts": {
-      "commit": "da9a725d01fa39776a410ec5c518df10b5b3911e"
+      "commit": "484544d14d400190b20f270341c97b16adc0f1ef"
     }
   }
 }

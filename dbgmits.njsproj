@@ -20,6 +20,7 @@
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'" />
   <PropertyGroup Condition="'$(Configuration)' == 'Release'" />
   <ItemGroup>
+    <Content Include=".npmignore" />
     <Content Include="package.json" />
     <Content Include="README.md" />
     <Compile Include="Gruntfile.js" />
@@ -60,31 +61,14 @@
       <SubType>Code</SubType>
       <TestFramework>ExportRunner</TestFramework>
     </TypeScriptCompile>
-    <TypeScriptCompile Include="typings\lib\bunyan\bunyan.d.ts" />
-    <TypeScriptCompile Include="typings\lib\lib.es6.d.ts" />
-    <TypeScriptCompile Include="typings\lib\node\node.d.ts" />
-    <TypeScriptCompile Include="typings\lib\pty.js\pty.js.d.ts" />
-    <TypeScriptCompile Include="typings\lib\tsd.d.ts" />
-    <TypeScriptCompile Include="typings\test\bunyan-prettystream\bunyan-prettystream.d.ts" />
-    <TypeScriptCompile Include="typings\test\chai-as-promised\chai-as-promised.d.ts" />
-    <TypeScriptCompile Include="typings\test\tsd.d.ts" />
-    <TypeScriptCompile Include="typings\test\chai\chai.d.ts" />
-    <TypeScriptCompile Include="typings\test\mocha\mocha.d.ts" />
+    <TypeScriptCompile Include="typings\lib-tsd.d.ts" />
+    <TypeScriptCompile Include="typings\test-tsd.d.ts" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="conf" />
     <Folder Include="src\" />
     <Folder Include="test\" />
     <Folder Include="typings" />
-    <Folder Include="typings\lib\" />
-    <Folder Include="typings\lib\bunyan\" />
-    <Folder Include="typings\lib\pty.js\" />
-    <Folder Include="typings\lib\node\" />
-    <Folder Include="typings\test" />
-    <Folder Include="typings\test\bunyan-prettystream\" />
-    <Folder Include="typings\test\chai" />
-    <Folder Include="typings\test\chai-as-promised\" />
-    <Folder Include="typings\test\mocha" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.Common.targets" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <!--Do not delete the following Import Project.  While this appears to do nothing it is a marker for setting TypeScript properties before our import that depends on them.-->

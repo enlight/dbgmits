@@ -12,7 +12,6 @@ src/debug_command.ts
 src/watch.ts
 test/**
 TestResults/**
-typings/test/**
 .ntvs_analysis.dat
 *.ts_
 binding.gyp

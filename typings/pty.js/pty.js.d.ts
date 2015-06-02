@@ -6,14 +6,15 @@
 /// <reference path="../node/node.d.ts" />
 
 declare module 'pty.js' {
-    export interface TerminalOptions {
-      name?: string;
-      cols?: number;
-      rows?: number;
-      cwd?: string;
-      env?: any;
-      uid?: number;
-      gid?: number;
+    /** Options that can be used when creating a new pseudo-terminal. */
+    interface TerminalOptions {
+        name?: string;
+        cols?: number;
+        rows?: number;
+        cwd?: string;
+        env?: any;
+        uid?: number;
+        gid?: number;
     }
 
     import stream = require('stream');
@@ -59,7 +60,8 @@ declare module 'pty.js' {
         kill(signal?: string): void;
         redraw(): void;
     
-        // Node Socket-like interface (wrappers for this.socket)
+        // NodeJS Socket-like interface (wrappers for this.socket)
+        
         write(data: any): boolean;
         end(data: any): void;
         pause(): void;
@@ -71,11 +73,11 @@ declare module 'pty.js' {
          */
         destroy(): void;
 
-        // Node Stream interface
+        // NodeJS Stream interface
     
         pipe<T extends NodeJS.WritableStream>(destination: T, options?: { end?: boolean; }): T;
     
-        // Node EventEmitter interface
+        // NodeJS EventEmitter interface
     
         addListener(event: string, listener: Function): NodeJS.EventEmitter;
         on(event: string, listener: Function): NodeJS.EventEmitter;
@@ -93,9 +95,9 @@ declare module 'pty.js' {
      * end of the pseudo-terminal.
      */
     export function createTerminal(file?: string, args?: string[], opt?: TerminalOptions): Terminal;
-    /** Identical to [[createTerminal]]. */
+    /** Alias for [[createTerminal]]. */
     export function fork(file?: string, args?: string[], opt?: TerminalOptions): Terminal;
-    /** Identical to [[createTerminal]]. */
+    /** Alias for [[createTerminal]]. */
     export function spawn(file?: string, args?: string[], opt?: TerminalOptions): Terminal;
     /** 
      * Creates a new pseudo-terminal.
