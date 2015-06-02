@@ -7,6 +7,12 @@ logs/**
 obj/**
 src/*.js
 src/*.js.map
+lib/app.js
+lib/app.js.map
+lib/debug_command.js
+lib/debug_command.js.map
+lib/watch.js
+lib/watch.js.map
 src/app.ts
 src/debug_command.ts
 src/watch.ts
@@ -15,7 +21,7 @@ TestResults/**
 .ntvs_analysis.dat
 *.ts_
 binding.gyp
-*.nsproj
+*.njsproj
 *.sln
 *.suo
 Gruntfile.js
