@@ -141,6 +141,15 @@ module.exports = function(grunt) {
           debug: true
         }
       }
+    },
+    'release': {
+      options: {
+        github: {
+          repo: 'enlight/dbgmits',
+          usernameVar: 'GITHUB_TOKEN',
+          passwordVar: 'BLANK_PLACEHOLDER'
+        }
+      }
     }
   });
 
