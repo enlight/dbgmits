@@ -12,6 +12,17 @@ Prerequisites
 
 Install
 =======
+The latest release of this library can be installed via [NPM](https://www.npmjs.com/package/dbgmits):
+```
+npm install dbgmits --save
+```
+
+Development
+===========
+This section assumes you'll be working within a local checkout of this repository.
+
+Install
+-------
 If you don't already have the **grunt-cli** and **tsd** modules installed do so first:
 ```
 npm install -g grunt-cli
@@ -24,18 +35,18 @@ npm install
 ```
 
 Build
-=====
+-----
 To build the library just run:
 ```
 grunt build
 ```
 
 Test
-====
-Before running the tests for the first time you'll need to generate the target executable used by 
+----
+Before running the tests for the first time you'll need to generate the target executable used by
 the tests. Unfortunately, while the target executable can be built on Windows the current setup will
 build it with MSVC and the generated debug information will be unreadable by LLDB and GDB, which
-in turn means that most of the tests won't run properly. The target executable is built via the 
+in turn means that most of the tests won't run properly. The target executable is built via the
 node-gyp module, which currently expects to have access to the Node.js development headers, so if
 you haven't done so previously you can ask node-gyp to download and unpack the required files by running:
 ```
