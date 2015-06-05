@@ -3,7 +3,9 @@ dbgmits (WIP)
 This library can be used to programmatically control debuggers that implement the
 [GDB/**M**achine **I**nterface](https://sourceware.org/gdb/onlinedocs/gdb/GDB_002fMI.html#GDB_002fMI)
 via JavaScript. Currently both [GDB](https://www.gnu.org/s/gdb/) and [LLDB](http://lldb.llvm.org/)
-support this interface, though LLDB's implementation is incomplete (but getting there!).
+support this interface. Note that LLDB's implementation is incomplete, and is still
+under development, so if you want to use LLDB it's best to build it yourself from
+source instead of using a released version.
 
 Prerequisites
 =============
