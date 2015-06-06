@@ -216,40 +216,40 @@ export const EVENT_SIGNAL_RECEIVED: string = 'signal';
   */
 export const EVENT_EXCEPTION_RECEIVED: string = 'exception';
 
-export interface ThreadGroupAddedNotify {
+export interface IThreadGroupAddedEvent {
   id: string;
 }
 
-export interface ThreadGroupRemovedNotify {
+export interface IThreadGroupRemovedEvent {
   id: string;
 }
 
-export interface ThreadGroupStartedNotify {
+export interface IThreadGroupStartedEvent {
   id: string;
   pid: string;
 }
 
-export interface ThreadGroupExitedNotify {
+export interface IThreadGroupExitedEvent {
   id: string;
   exitCode: string;
 }
 
-export interface ThreadCreatedNotify {
+export interface IThreadCreatedEvent {
   id: string;
   groupId: string;
 }
 
-export interface ThreadExitedNotify {
+export interface IThreadExitedEvent {
   id: string;
   groupId: string;
 }
 
-export interface ThreadSelectedNotify {
+export interface IThreadSelectedEvent {
   id: string;
 }
 
 /** Notification sent whenever a library is loaded or unloaded by an inferior. */
-interface LibNotify {
+interface ILibEvent {
   id: string;
   /** Name of the library file on the target system. */
   targetName: string;
@@ -275,10 +275,10 @@ interface LibNotify {
   symbolsPath: string;
 }
 
-export interface LibLoadedNotify extends LibNotify { }
-export interface LibUnloadedNotify extends LibNotify { }
+export interface ILibLoadedEvent extends ILibEvent { }
+export interface ILibUnloadedEvent extends ILibEvent { }
 
-export interface TargetStoppedNotify {
+export interface ITargetStoppedEvent {
   reason: TargetStopReason;
   /** Identifier of the thread that caused the target to stop. */
   threadId: number;
@@ -291,28 +291,28 @@ export interface TargetStoppedNotify {
   processorCore?: string;
 }
 
-export interface BreakpointHitNotify extends TargetStoppedNotify {
+export interface IBreakpointHitEvent extends ITargetStoppedEvent {
   breakpointId: number;
   frame: IFrameInfo;
 }
 
-export interface StepFinishedNotify extends TargetStoppedNotify {
+export interface IStepFinishedEvent extends ITargetStoppedEvent {
   frame: IFrameInfo;
 }
 
-export interface StepOutFinishedNotify extends TargetStoppedNotify {
+export interface IStepOutFinishedEvent extends ITargetStoppedEvent {
   frame: IFrameInfo;
   resultVar?: string;
   returnValue?: string;
 }
 
-export interface SignalReceivedNotify extends TargetStoppedNotify {
+export interface ISignalReceivedEvent extends ITargetStoppedEvent {
   signalCode?: string;
   signalName?: string;
   signalMeaning?: string;
 }
 
-export interface ExceptionReceivedNotify extends TargetStoppedNotify {
+export interface IExceptionReceivedEvent extends ITargetStoppedEvent {
   exception: string;
 }
 
@@ -327,74 +327,74 @@ export function createEventsForExecNotification(notification: string, data: any)
       return [{ name: EVENT_TARGET_RUNNING, data: data['thread-id'] }];
 
     case 'stopped':
-      let standardNotify: TargetStoppedNotify = {
+      let stopEvent: ITargetStoppedEvent = {
         reason: parseTargetStopReason(data.reason),
         threadId: parseInt(data['thread-id'], 10),
         stoppedThreads: parseStoppedThreadsList(data['stopped-threads']),
         processCore: data.core
       };
-      let events = [{ name: EVENT_TARGET_STOPPED, data: standardNotify }];
+      let events = [{ name: EVENT_TARGET_STOPPED, data: stopEvent }];
 
       // emit a more specialized event for notifications that contain additional info
-      switch (standardNotify.reason) {
+      switch (stopEvent.reason) {
         case TargetStopReason.BreakpointHit:
-          let breakpointNotify: BreakpointHitNotify = {
-            reason: standardNotify.reason,
-            threadId: standardNotify.threadId,
-            stoppedThreads: standardNotify.stoppedThreads,
-            processorCore: standardNotify.processorCore,
+          let breakpointHitEvent: IBreakpointHitEvent = {
+            reason: stopEvent.reason,
+            threadId: stopEvent.threadId,
+            stoppedThreads: stopEvent.stoppedThreads,
+            processorCore: stopEvent.processorCore,
             breakpointId: parseInt(data.bkptno, 10),
             frame: extractFrameInfo(data.frame)
           };
-          events.push({ name: EVENT_BREAKPOINT_HIT, data: breakpointNotify });
+          events.push({ name: EVENT_BREAKPOINT_HIT, data: breakpointHitEvent });
           break;
 
         case TargetStopReason.EndSteppingRange:
-          var stepNotify: StepFinishedNotify = {
-            reason: standardNotify.reason,
-            threadId: standardNotify.threadId,
-            stoppedThreads: standardNotify.stoppedThreads,
-            processorCore: standardNotify.processorCore,
+          let stepFinishedEvent: IStepFinishedEvent = {
+            reason: stopEvent.reason,
+            threadId: stopEvent.threadId,
+            stoppedThreads: stopEvent.stoppedThreads,
+            processorCore: stopEvent.processorCore,
             frame: extractFrameInfo(data.frame)
           };
-          events.push({ name: EVENT_STEP_FINISHED, data: stepNotify });
+          events.push({ name: EVENT_STEP_FINISHED, data: stepFinishedEvent });
           break;
 
         case TargetStopReason.FunctionFinished:
-          var stepOutNotify: StepOutFinishedNotify = {
-            reason: standardNotify.reason,
-            threadId: standardNotify.threadId,
-            stoppedThreads: standardNotify.stoppedThreads,
-            processorCore: standardNotify.processorCore,
+          let stepOutEvent: IStepOutFinishedEvent = {
+            reason: stopEvent.reason,
+            threadId: stopEvent.threadId,
+            stoppedThreads: stopEvent.stoppedThreads,
+            processorCore: stopEvent.processorCore,
             frame: extractFrameInfo(data.frame),
             resultVar: data['gdb-result-var'],
             returnValue: data['return-value']
           };
-          events.push({ name: EVENT_FUNCTION_FINISHED, data: stepOutNotify });
+          events.push({ name: EVENT_FUNCTION_FINISHED, data: stepOutEvent });
           break;
 
         case TargetStopReason.SignalReceived:
-          var signalNotify: SignalReceivedNotify = {
-            reason: standardNotify.reason,
-            threadId: standardNotify.threadId,
-            stoppedThreads: standardNotify.stoppedThreads,
-            processorCore: standardNotify.processorCore,
+          let signalEvent: ISignalReceivedEvent = {
+            reason: stopEvent.reason,
+            threadId: stopEvent.threadId,
+            stoppedThreads: stopEvent.stoppedThreads,
+            processorCore: stopEvent.processorCore,
             signalCode: data.signal,
             signalName: data['signal-name'],
             signalMeaning: data['signal-meaning']
           };
-          events.push({ name: EVENT_SIGNAL_RECEIVED, data: signalNotify });
+          events.push({ name: EVENT_SIGNAL_RECEIVED, data: signalEvent });
           break;
 
         case TargetStopReason.ExceptionReceived:
-          var exceptionNotify: ExceptionReceivedNotify = {
-            reason: standardNotify.reason,
-            threadId: standardNotify.threadId,
-            stoppedThreads: standardNotify.stoppedThreads,
-            processorCore: standardNotify.processorCore,
+          let exceptionEvent: IExceptionReceivedEvent = {
+            reason: stopEvent.reason,
+            threadId: stopEvent.threadId,
+            stoppedThreads: stopEvent.stoppedThreads,
+            processorCore: stopEvent.processorCore,
             exception: data.exception
           };
-          events.push({ name: EVENT_EXCEPTION_RECEIVED, data: exceptionNotify });
+          events.push({ name: EVENT_EXCEPTION_RECEIVED, data: exceptionEvent });
           break;
       }
       return events;
@@ -417,45 +417,50 @@ export function createEventForAsyncNotification(notification: string, data: any)
       return { name: EVENT_THREAD_GROUP_STARTED, data: data };
 
     case 'thread-group-exited':
-      return { name: EVENT_THREAD_GROUP_EXITED, data: {
+      let groupExitedEvent: IThreadGroupExitedEvent = {
         id: data.id,
-        exitCode: data['exit-code'] }
+        exitCode: data['exit-code']
       };
+      return { name: EVENT_THREAD_GROUP_EXITED, data: groupExitedEvent };
 
     case 'thread-created':
-      return { name: EVENT_THREAD_CREATED, data: {
-        id: data.id, 
-        groupId: data['group-id'] }
-      };
-
-    case 'thread-exited':
-      return { name: EVENT_THREAD_EXITED, data: {
+      let threadCreatedEvent: IThreadCreatedEvent = {
         id: data.id,
         groupId: data['group-id']
-      }};
+      };
+      return { name: EVENT_THREAD_CREATED, data: threadCreatedEvent };
+
+    case 'thread-exited':
+      let threadExitedEvent: IThreadExitedEvent = {
+        id: data.id,
+        groupId: data['group-id']
+      };
+      return { name: EVENT_THREAD_EXITED, data: threadExitedEvent };
 
     case 'thread-selected':
       return { name: EVENT_THREAD_SELECTED, data: data };
 
     case 'library-loaded':
-      return { name: EVENT_LIB_LOADED, data: {
+      let libLoadedEvent: ILibLoadedEvent = {
         id: data.id,
         targetName: data['target-name'],
         hostName: data['host-name'],
         threadGroup: data['thread-group'],
         symbolsPath: data['symbols-path'],
         loadAddress: data.loaded_addr
-      }};
+      };
+      return { name: EVENT_LIB_LOADED, data: libLoadedEvent };
         
     case 'library-unloaded':
-      return { name: EVENT_LIB_UNLOADED, data: {
+      let libUnloadedEvent: ILibUnloadedEvent = {
         id: data.id,
         targetName: data['target-name'],
         hostName: data['host-name'],
         threadGroup: data['thread-group'],
         symbolsPath: data['symbols-path'],
         loadAddress: data.loaded_addr
-      }};
+      };
+      return { name: EVENT_LIB_UNLOADED, data: libUnloadedEvent };
 
     default:
       // TODO: log and keep on going

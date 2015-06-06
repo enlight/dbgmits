@@ -100,7 +100,7 @@ export function runToFunc(
   : Promise<any> {
   var onBreakpointHit = new Promise<void>((resolve, reject) => {
     debugSession.once(dbgmits.EVENT_BREAKPOINT_HIT,
-      (breakNotify: dbgmits.BreakpointHitNotify) => {
+      (breakNotify: dbgmits.IBreakpointHitEvent) => {
         onBreakHit()
         .then(resolve)
         .catch(reject);
@@ -133,7 +133,7 @@ export function runToFuncAndStepOut(
     return new Promise<void>((resolve, reject) => {
       if (debugSession.canEmitFunctionFinishedNotification()) {
         debugSession.once(dbgmits.EVENT_FUNCTION_FINISHED,
-          (stepNotify: dbgmits.StepOutFinishedNotify) => {
+          (stepNotify: dbgmits.IStepOutFinishedEvent) => {
             afterStepOut()
             .then(resolve)
             .catch(reject);
@@ -143,7 +143,7 @@ export function runToFuncAndStepOut(
         // FIXME: LLDB-MI currently doesn't emit a distinct notification for step-out so we have
         // to listen to the generic step-finished one.
         debugSession.once(dbgmits.EVENT_STEP_FINISHED,
-          (stepNotify: dbgmits.StepFinishedNotify) => {
+          (stepNotify: dbgmits.IStepFinishedEvent) => {
             afterStepOut()
             .then(resolve)
             .catch(reject);
@@ -154,7 +154,7 @@ export function runToFuncAndStepOut(
   }
   var onBreakpointStepOut = new Promise<void>((resolve, reject) => {
     debugSession.once(dbgmits.EVENT_BREAKPOINT_HIT,
-      (breakNotify: dbgmits.BreakpointHitNotify) => {
+      (breakNotify: dbgmits.IBreakpointHitEvent) => {
         Promise.all([
           onStepOutRunTest(),
           debugSession.stepOut()

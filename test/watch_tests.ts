@@ -105,7 +105,7 @@ log(describe("Debug Session", () => {
         var onStepOverUpdateWatch = (watch: IWatchInfo) => {
           return new Promise<void>((resolve, reject) => {
             debugSession.once(dbgmits.EVENT_STEP_FINISHED,
-              (stepNotify: dbgmits.StepFinishedNotify) => {
+              (stepNotify: dbgmits.IStepFinishedEvent) => {
                 debugSession.updateWatch(watch.id, dbgmits.VariableDetailLevel.All)
                 .then((changelist: dbgmits.IWatchUpdateInfo[]) => {
                   expect(changelist.length).to.be.equal(1);

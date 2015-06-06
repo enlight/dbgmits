@@ -252,7 +252,7 @@ describe("Debug Session", () => {
     it("emits EVENT_TARGET_STOPPED", (done: MochaDone) => {
       emitEventForDebuggerOutput(
         '*stopped,reason="exited-normally"\n', dbgmits.EVENT_TARGET_STOPPED,
-        (notification: dbgmits.TargetStoppedNotify) => {
+        (notification: dbgmits.ITargetStoppedEvent) => {
           expect(notification.reason).to.equal(dbgmits.TargetStopReason.ExitedNormally);
           done();
         }
@@ -266,7 +266,7 @@ describe("Debug Session", () => {
         `*stopped,reason="breakpoint-hit",bkptno="${bkptId}",frame={},thread-id="${threadId}",` +
         `stopped-threads="all"\n`,
         dbgmits.EVENT_BREAKPOINT_HIT,
-        (notification: dbgmits.BreakpointHitNotify) => {
+        (notification: dbgmits.IBreakpointHitEvent) => {
           expect(notification.reason).to.equal(dbgmits.TargetStopReason.BreakpointHit);
           expect(notification.threadId).to.equal(threadId);
           expect(notification.stoppedThreads.length).to.equal(0);
@@ -284,7 +284,7 @@ describe("Debug Session", () => {
         `*stopped,reason="signal-received",signal-name="${signalName}",` +
         `signal-meaning="${signalMeaning}",thread-id="${threadId}",frame={}\n`,
         dbgmits.EVENT_SIGNAL_RECEIVED,
-        (notification: dbgmits.SignalReceivedNotify) => {
+        (notification: dbgmits.ISignalReceivedEvent) => {
           expect(notification.reason).to.equal(dbgmits.TargetStopReason.SignalReceived);
           expect(notification.threadId).to.equal(threadId);
           expect(notification.signalName).to.equal(signalName);
@@ -301,7 +301,7 @@ describe("Debug Session", () => {
         `*stopped,reason="exception-received",exception="${msg}",thread-id="${threadId}",` +
         `stopped-threads="all"\n`,
         dbgmits.EVENT_EXCEPTION_RECEIVED,
-        (notification: dbgmits.ExceptionReceivedNotify) => {
+        (notification: dbgmits.IExceptionReceivedEvent) => {
           expect(notification.reason).to.equal(dbgmits.TargetStopReason.ExceptionReceived);
           expect(notification.threadId).to.equal(threadId);
           expect(notification.stoppedThreads.length).to.equal(0);

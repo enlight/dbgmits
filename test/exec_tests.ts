@@ -50,7 +50,7 @@ log(describe("Debug Session", () => {
         // a function makes it possible to delay execution u
         return new Promise<void>((resolve, reject) => {
           debugSession.once(dbgmits.EVENT_TARGET_STOPPED,
-            (stopNotify: dbgmits.TargetStoppedNotify) => {
+            (stopNotify: dbgmits.ITargetStoppedEvent) => {
               // This event listener function gets invoked outside of the promise, 
               // which means the promise doesn't trap any exception thrown here, 
               // so we have to trap any exceptions manually and then hand them over 
@@ -69,7 +69,7 @@ log(describe("Debug Session", () => {
       // a breakpoint will be set to get to the desired starting point in the target process
       var onBreakpointAbortTarget = new Promise<void>((resolve, reject) => {
         debugSession.once(dbgmits.EVENT_BREAKPOINT_HIT,
-          (breakNotify: dbgmits.BreakpointHitNotify) => {
+          (breakNotify: dbgmits.IBreakpointHitEvent) => {
             Promise.all([verifyTargetExited(), debugSession.abortInferior()])
             .then(() => { resolve() }, reject);
           }
@@ -89,7 +89,7 @@ log(describe("Debug Session", () => {
       // when the step is done check we're in printNextInt()
       var onStepFinishedCheckFrame = new Promise<void>((resolve, reject) => {
         debugSession.once(dbgmits.EVENT_STEP_FINISHED, 
-          (notification: dbgmits.StepFinishedNotify) => {
+          (notification: dbgmits.IStepFinishedEvent) => {
             debugSession.getStackFrame()
             .then((info: dbgmits.IStackFrameInfo) => {
               expect(info.func.indexOf('printNextInt')).to.equal(0);
@@ -101,7 +101,7 @@ log(describe("Debug Session", () => {
       // a breakpoint will be set to get to the desired starting point in the target process
       var onBreakpointStepIntoLine = new Promise<void>((resolve, reject) => {
         debugSession.once(dbgmits.EVENT_BREAKPOINT_HIT, 
-          (notify: dbgmits.BreakpointHitNotify) => {
+          (notify: dbgmits.IBreakpointHitEvent) => {
             // step into the printNextInt() call in main()
             resolve(debugSession.stepIntoLine());
           }
@@ -122,7 +122,7 @@ log(describe("Debug Session", () => {
       // when the step is done check we're in printNextInt()
       var onStepFinishedCheckFrame = new Promise<void>((resolve, reject) => {
         debugSession.once(dbgmits.EVENT_STEP_FINISHED, 
-          (notification: dbgmits.StepFinishedNotify) => {
+          (notification: dbgmits.IStepFinishedEvent) => {
             debugSession.getStackFrame()
             .then((info: dbgmits.IStackFrameInfo) => {
               expect(info.func.indexOf('printNextInt')).to.equal(0);
@@ -134,7 +134,7 @@ log(describe("Debug Session", () => {
       // a breakpoint will be set to get to the desired starting point in the target process
       var onBreakpointStepIntoInstruction = new Promise<void>((resolve, reject) => {
         debugSession.once(dbgmits.EVENT_BREAKPOINT_HIT, 
-          (notify: dbgmits.BreakpointHitNotify) => {
+          (notify: dbgmits.IBreakpointHitEvent) => {
             // step into the printNextInt() call in main()
             resolve(debugSession.stepIntoInstruction());
           }
@@ -155,7 +155,7 @@ log(describe("Debug Session", () => {
       // when the step is done check we're still in main() and haven't stepped into printNextInt()
       var onStepFinishedCheckFrame = new Promise<void>((resolve, reject) => {
         debugSession.once(dbgmits.EVENT_STEP_FINISHED, 
-          (notification: dbgmits.StepFinishedNotify) => {
+          (notification: dbgmits.IStepFinishedEvent) => {
             debugSession.getStackFrame()
             .then((info: dbgmits.IStackFrameInfo) => {
               expect(info).to.have.property('func', 'main');
@@ -167,7 +167,7 @@ log(describe("Debug Session", () => {
       // a breakpoint will be set to get to the desired starting point in the target process
       var onBreakpointStepOverLine = new Promise<void>((resolve, reject) => {
         debugSession.once(dbgmits.EVENT_BREAKPOINT_HIT,
-          (breakNotify: dbgmits.BreakpointHitNotify) => {
+          (breakNotify: dbgmits.IBreakpointHitEvent) => {
             // step over the printNextInt() call in main()
             resolve(debugSession.stepOverLine());
           }
@@ -188,7 +188,7 @@ log(describe("Debug Session", () => {
       // when the step is done check we're still in main() and haven't stepped into printNextInt()
       var onStepFinishedCheckFrame = new Promise<void>((resolve, reject) => {
         debugSession.once(dbgmits.EVENT_STEP_FINISHED, 
-          (notification: dbgmits.StepFinishedNotify) => {
+          (notification: dbgmits.IStepFinishedEvent) => {
             debugSession.getStackFrame()
             .then((info: dbgmits.IStackFrameInfo) => {
               expect(info).to.have.property('func', 'main');
@@ -200,7 +200,7 @@ log(describe("Debug Session", () => {
       // a breakpoint will be set to get to the desired starting point in the target process
       var onBreakpointStepOverInstruction = new Promise<void>((resolve, reject) => {
         debugSession.once(dbgmits.EVENT_BREAKPOINT_HIT,
-          (breakNotify: dbgmits.BreakpointHitNotify) => {
+          (breakNotify: dbgmits.IBreakpointHitEvent) => {
             // step over the printNextInt() call in main()
             resolve(debugSession.stepOverInstruction());
           }

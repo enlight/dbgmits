@@ -66,7 +66,7 @@ log(describe("Debug Session", () => {
       // we check the relative stack depth (starting from main()).
       var onBreakpointCheckStackDepth = new Promise<void>((resolve, reject) => {
         debugSession.on(dbgmits.EVENT_BREAKPOINT_HIT,
-          (breakNotify: dbgmits.BreakpointHitNotify) => {
+          (breakNotify: dbgmits.IBreakpointHitEvent) => {
             switch (breakNotify.breakpointId) {
               case 1: // breakpoint in main()
                 debugSession.getStackDepth()
