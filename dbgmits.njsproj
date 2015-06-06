@@ -28,6 +28,9 @@
     <Content Include="conf\tsd-test.json" />
     <Content Include="conf\tslint.json" />
     <Content Include="src\mi_output_grammar.pegjs" />
+    <TypeScriptCompile Include="src\debug_session.ts" />
+    <TypeScriptCompile Include="src\errors.ts" />
+    <TypeScriptCompile Include="src\gdb_debug_session.ts" />
     <TypeScriptCompile Include="src\index.ts" />
     <TypeScriptCompile Include="src\types.ts" />
     <TypeScriptCompile Include="src\dbgmits.ts" />
