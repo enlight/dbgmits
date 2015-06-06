@@ -9,7 +9,7 @@ import * as chai from 'chai';
 import chaiAsPromised = require('chai-as-promised');
 import * as stream from 'stream';
 import * as bunyan from 'bunyan';
-import * as dbgmits from '../src/dbgmits';
+import * as dbgmits from '../src/index';
 import { startDebugSession } from '../test/test_utils';
 
 chai.use(chaiAsPromised);
@@ -78,7 +78,7 @@ describe("Debug Session", () => {
       var id: string = 'i1';
       emitEventForDebuggerOutput(
         `=thread-group-added,id="${id}"\n`,
-        DebugSession.EVENT_THREAD_GROUP_ADDED,
+        dbgmits.EVENT_THREAD_GROUP_ADDED,
         (data: any) => {
           expect(data).to.have.property('id', id);
           done();
@@ -90,7 +90,7 @@ describe("Debug Session", () => {
       var id: string = 'i1';
       emitEventForDebuggerOutput(
         `=thread-group-removed,id="${id}"\n`,
-        DebugSession.EVENT_THREAD_GROUP_REMOVED,
+        dbgmits.EVENT_THREAD_GROUP_REMOVED,
         (data: any) => {
           expect(data).to.have.property('id', id);
           done();
@@ -103,7 +103,7 @@ describe("Debug Session", () => {
       var pid: string = '6550';
       emitEventForDebuggerOutput(
         `=thread-group-started,id="${id}",pid="${pid}"\n`,
-        DebugSession.EVENT_THREAD_GROUP_STARTED,
+        dbgmits.EVENT_THREAD_GROUP_STARTED,
         (data: any) => {
           expect(data).to.have.property('id', id);
           expect(data).to.have.property('pid', pid);
@@ -117,7 +117,7 @@ describe("Debug Session", () => {
       var exitCode: string = '3';
       emitEventForDebuggerOutput(
         `=thread-group-exited,id="${id}",exit-code="${exitCode}"\n`,
-        DebugSession.EVENT_THREAD_GROUP_EXITED,
+        dbgmits.EVENT_THREAD_GROUP_EXITED,
         (data: any) => {
           expect(data).to.have.property('id', id);
           expect(data).to.have.property('exitCode', exitCode);
@@ -131,7 +131,7 @@ describe("Debug Session", () => {
       var groupId: string = 'i1';
       emitEventForDebuggerOutput(
         `=thread-created,id="${id}",group-id="${groupId}"\n`,
-        DebugSession.EVENT_THREAD_CREATED,
+        dbgmits.EVENT_THREAD_CREATED,
         (data: any) => {
           expect(data).to.have.property('id', id);
           expect(data).to.have.property('groupId', groupId);
@@ -145,7 +145,7 @@ describe("Debug Session", () => {
       var groupId: string = 'i1';
       emitEventForDebuggerOutput(
         `=thread-exited,id="${id}",group-id="${groupId}"\n`,
-        DebugSession.EVENT_THREAD_EXITED,
+        dbgmits.EVENT_THREAD_EXITED,
         (data: any) => {
           expect(data).to.have.property('id', id);
           expect(data).to.have.property('groupId', groupId);
@@ -158,7 +158,7 @@ describe("Debug Session", () => {
       var id: string = '1';
       emitEventForDebuggerOutput(
         `=thread-selected,id="${id}"\n`,
-        DebugSession.EVENT_THREAD_SELECTED,
+        dbgmits.EVENT_THREAD_SELECTED,
         (data: any) => {
           expect(data).to.have.property('id', id);
           done();
@@ -173,7 +173,7 @@ describe("Debug Session", () => {
       var threadGroup: string = 'i1';
       emitEventForDebuggerOutput(
         `=library-loaded,id="${id}",target-name="${targetName}",host-name="${hostName}",thread-group="${threadGroup}"\n`,
-        DebugSession.EVENT_LIB_LOADED,
+        dbgmits.EVENT_LIB_LOADED,
         (data: any) => {
           expect(data).to.have.property('id', id);
           expect(data).to.have.property('targetName', targetName);
@@ -191,7 +191,7 @@ describe("Debug Session", () => {
       var threadGroup: string = 'i1';
       emitEventForDebuggerOutput(
         `=library-unloaded,id="${id}",target-name="${targetName}",host-name="${hostName}",thread-group="${threadGroup}"\n`,
-        DebugSession.EVENT_LIB_UNLOADED,
+        dbgmits.EVENT_LIB_UNLOADED,
         (data: any) => {
           expect(data).to.have.property('id', id);
           expect(data).to.have.property('targetName', targetName);
@@ -206,7 +206,7 @@ describe("Debug Session", () => {
       var testStr: string = 'This is a line of text.';
       emitEventForDebuggerOutput(
         '~"' + testStr + '"\n',
-        DebugSession.EVENT_DBG_CONSOLE_OUTPUT,
+        dbgmits.EVENT_DBG_CONSOLE_OUTPUT,
         (data: string) => {
           expect(data).to.equal(testStr);
           done();
@@ -218,7 +218,7 @@ describe("Debug Session", () => {
       var testStr: string = 'This is some target output.';
       emitEventForDebuggerOutput(
         '@"' + testStr + '"\n',
-        DebugSession.EVENT_TARGET_OUTPUT,
+        dbgmits.EVENT_TARGET_OUTPUT,
         (data: string) => {
           expect(data).to.equal(testStr);
           done();
@@ -230,7 +230,7 @@ describe("Debug Session", () => {
       var testStr: string = 'This is some debugger log output.';
       emitEventForDebuggerOutput(
         '&"' + testStr + '"\n',
-        DebugSession.EVENT_DBG_LOG_OUTPUT,
+        dbgmits.EVENT_DBG_LOG_OUTPUT,
         (data: string) => {
           expect(data).to.equal(testStr);
           done();
@@ -241,7 +241,7 @@ describe("Debug Session", () => {
     it("emits EVENT_TARGET_RUNNING", (done: MochaDone) => {
       var threadId: string = 'all';
       emitEventForDebuggerOutput(
-        '*running,thread-id="${threadId}"', DebugSession.EVENT_TARGET_RUNNING,
+        '*running,thread-id="${threadId}"', dbgmits.EVENT_TARGET_RUNNING,
         (threadId: string) => {
           expect(threadId).to.equal(threadId);
           done();
@@ -251,7 +251,7 @@ describe("Debug Session", () => {
 
     it("emits EVENT_TARGET_STOPPED", (done: MochaDone) => {
       emitEventForDebuggerOutput(
-        '*stopped,reason="exited-normally"\n', DebugSession.EVENT_TARGET_STOPPED,
+        '*stopped,reason="exited-normally"\n', dbgmits.EVENT_TARGET_STOPPED,
         (notification: dbgmits.TargetStoppedNotify) => {
           expect(notification.reason).to.equal(dbgmits.TargetStopReason.ExitedNormally);
           done();
@@ -265,7 +265,7 @@ describe("Debug Session", () => {
       emitEventForDebuggerOutput(
         `*stopped,reason="breakpoint-hit",bkptno="${bkptId}",frame={},thread-id="${threadId}",` +
         `stopped-threads="all"\n`,
-        DebugSession.EVENT_BREAKPOINT_HIT,
+        dbgmits.EVENT_BREAKPOINT_HIT,
         (notification: dbgmits.BreakpointHitNotify) => {
           expect(notification.reason).to.equal(dbgmits.TargetStopReason.BreakpointHit);
           expect(notification.threadId).to.equal(threadId);
@@ -283,7 +283,7 @@ describe("Debug Session", () => {
       emitEventForDebuggerOutput(
         `*stopped,reason="signal-received",signal-name="${signalName}",` +
         `signal-meaning="${signalMeaning}",thread-id="${threadId}",frame={}\n`,
-        DebugSession.EVENT_SIGNAL_RECEIVED,
+        dbgmits.EVENT_SIGNAL_RECEIVED,
         (notification: dbgmits.SignalReceivedNotify) => {
           expect(notification.reason).to.equal(dbgmits.TargetStopReason.SignalReceived);
           expect(notification.threadId).to.equal(threadId);
@@ -300,7 +300,7 @@ describe("Debug Session", () => {
       emitEventForDebuggerOutput(
         `*stopped,reason="exception-received",exception="${msg}",thread-id="${threadId}",` +
         `stopped-threads="all"\n`,
-        DebugSession.EVENT_EXCEPTION_RECEIVED,
+        dbgmits.EVENT_EXCEPTION_RECEIVED,
         (notification: dbgmits.ExceptionReceivedNotify) => {
           expect(notification.reason).to.equal(dbgmits.TargetStopReason.ExceptionReceived);
           expect(notification.threadId).to.equal(threadId);

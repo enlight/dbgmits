@@ -8,7 +8,7 @@ require('source-map-support').install();
 import * as chai from 'chai';
 import chaiAsPromised = require('chai-as-promised');
 import * as bunyan from 'bunyan';
-import * as dbgmits from '../src/dbgmits';
+import * as dbgmits from '../src/index';
 import {
   beforeEachTestWithLogger, logSuite as log, startDebugSession,
   runToFunc, runToFuncAndStepOut
@@ -104,7 +104,7 @@ log(describe("Debug Session", () => {
         // check the change in the value of the variable was detected by the watch
         var onStepOverUpdateWatch = (watch: IWatchInfo) => {
           return new Promise<void>((resolve, reject) => {
-            debugSession.once(DebugSession.EVENT_STEP_FINISHED,
+            debugSession.once(dbgmits.EVENT_STEP_FINISHED,
               (stepNotify: dbgmits.StepFinishedNotify) => {
                 debugSession.updateWatch(watch.id, dbgmits.VariableDetailLevel.All)
                 .then((changelist: dbgmits.IWatchUpdateInfo[]) => {

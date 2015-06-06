@@ -28,7 +28,10 @@
     <Content Include="conf\tsd-test.json" />
     <Content Include="conf\tslint.json" />
     <Content Include="src\mi_output_grammar.pegjs" />
+    <TypeScriptCompile Include="src\index.ts" />
+    <TypeScriptCompile Include="src\types.ts" />
     <TypeScriptCompile Include="src\dbgmits.ts" />
+    <TypeScriptCompile Include="src\events.ts" />
     <TypeScriptCompile Include="src\mi_output.ts" />
     <TypeScriptCompile Include="src\mi_output_parser.d.ts" />
     <TypeScriptCompile Include="test\basic.ts">

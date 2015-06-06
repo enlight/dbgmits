@@ -8,7 +8,7 @@ require('source-map-support').install();
 import * as chai from 'chai';
 import chaiAsPromised = require('chai-as-promised');
 import * as bunyan from 'bunyan';
-import * as dbgmits from '../src/dbgmits';
+import * as dbgmits from '../src/index';
 import {
   beforeEachTestWithLogger, logSuite as log, startDebugSession, runToFunc
 } from '../test/test_utils';
@@ -65,7 +65,7 @@ log(describe("Debug Session", () => {
       // libc to the count, but GDB does not. So instead of checking the absolute stack depth
       // we check the relative stack depth (starting from main()).
       var onBreakpointCheckStackDepth = new Promise<void>((resolve, reject) => {
-        debugSession.on(DebugSession.EVENT_BREAKPOINT_HIT,
+        debugSession.on(dbgmits.EVENT_BREAKPOINT_HIT,
           (breakNotify: dbgmits.BreakpointHitNotify) => {
             switch (breakNotify.breakpointId) {
               case 1: // breakpoint in main()

@@ -8,7 +8,7 @@ require('source-map-support').install();
 import * as chai from 'chai';
 import chaiAsPromised = require('chai-as-promised');
 import * as bunyan from 'bunyan';
-import * as dbgmits from '../src/dbgmits';
+import * as dbgmits from '../src/index';
 import {
   beforeEachTestWithLogger, logSuite as log, startDebugSession,
   runToFunc, runToFuncAndStepOut

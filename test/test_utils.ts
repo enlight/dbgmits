@@ -3,7 +3,7 @@
 
 require('source-map-support').install();
 
-import * as dbgmits from '../src/dbgmits';
+import * as dbgmits from '../src/index';
 import * as bunyan from 'bunyan';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -19,22 +19,22 @@ export function startDebugSession(logger?: bunyan.Logger): DebugSession {
     
     // log event data emitted by DebugSession
     let eventsToLog = [
-      DebugSession.EVENT_TARGET_RUNNING,
-      DebugSession.EVENT_TARGET_STOPPED,
-      DebugSession.EVENT_BREAKPOINT_HIT,
-      DebugSession.EVENT_STEP_FINISHED,
-      DebugSession.EVENT_FUNCTION_FINISHED,
-      DebugSession.EVENT_SIGNAL_RECEIVED,
-      DebugSession.EVENT_EXCEPTION_RECEIVED,
-      DebugSession.EVENT_THREAD_GROUP_ADDED,
-      DebugSession.EVENT_THREAD_GROUP_REMOVED,
-      DebugSession.EVENT_THREAD_GROUP_STARTED,
-      DebugSession.EVENT_THREAD_GROUP_EXITED,
-      DebugSession.EVENT_THREAD_CREATED,
-      DebugSession.EVENT_THREAD_EXITED,
-      DebugSession.EVENT_THREAD_SELECTED,
-      DebugSession.EVENT_LIB_LOADED,
-      DebugSession.EVENT_LIB_UNLOADED,
+      dbgmits.EVENT_TARGET_RUNNING,
+      dbgmits.EVENT_TARGET_STOPPED,
+      dbgmits.EVENT_BREAKPOINT_HIT,
+      dbgmits.EVENT_STEP_FINISHED,
+      dbgmits.EVENT_FUNCTION_FINISHED,
+      dbgmits.EVENT_SIGNAL_RECEIVED,
+      dbgmits.EVENT_EXCEPTION_RECEIVED,
+      dbgmits.EVENT_THREAD_GROUP_ADDED,
+      dbgmits.EVENT_THREAD_GROUP_REMOVED,
+      dbgmits.EVENT_THREAD_GROUP_STARTED,
+      dbgmits.EVENT_THREAD_GROUP_EXITED,
+      dbgmits.EVENT_THREAD_CREATED,
+      dbgmits.EVENT_THREAD_EXITED,
+      dbgmits.EVENT_THREAD_SELECTED,
+      dbgmits.EVENT_LIB_LOADED,
+      dbgmits.EVENT_LIB_UNLOADED,
     ];
     eventsToLog.forEach((eventName: string) => {
       debugSession.on(eventName, (data: any) => {
@@ -99,7 +99,7 @@ export function runToFunc(
   debugSession: DebugSession, funcName: string, onBreakHit: () => Promise<any>)
   : Promise<any> {
   var onBreakpointHit = new Promise<void>((resolve, reject) => {
-    debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
+    debugSession.once(dbgmits.EVENT_BREAKPOINT_HIT,
       (breakNotify: dbgmits.BreakpointHitNotify) => {
         onBreakHit()
         .then(resolve)
@@ -132,7 +132,7 @@ export function runToFuncAndStepOut(
   var onStepOutRunTest = () => {
     return new Promise<void>((resolve, reject) => {
       if (debugSession.canEmitFunctionFinishedNotification()) {
-        debugSession.once(DebugSession.EVENT_FUNCTION_FINISHED,
+        debugSession.once(dbgmits.EVENT_FUNCTION_FINISHED,
           (stepNotify: dbgmits.StepOutFinishedNotify) => {
             afterStepOut()
             .then(resolve)
@@ -142,7 +142,7 @@ export function runToFuncAndStepOut(
       } else {
         // FIXME: LLDB-MI currently doesn't emit a distinct notification for step-out so we have
         // to listen to the generic step-finished one.
-        debugSession.once(DebugSession.EVENT_STEP_FINISHED,
+        debugSession.once(dbgmits.EVENT_STEP_FINISHED,
           (stepNotify: dbgmits.StepFinishedNotify) => {
             afterStepOut()
             .then(resolve)
@@ -153,7 +153,7 @@ export function runToFuncAndStepOut(
     });
   }
   var onBreakpointStepOut = new Promise<void>((resolve, reject) => {
-    debugSession.once(DebugSession.EVENT_BREAKPOINT_HIT,
+    debugSession.once(dbgmits.EVENT_BREAKPOINT_HIT,
       (breakNotify: dbgmits.BreakpointHitNotify) => {
         Promise.all([
           onStepOutRunTest(),

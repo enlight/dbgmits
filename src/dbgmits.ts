@@ -13,6 +13,12 @@ import * as parser from './mi_output_parser';
 import { RecordType } from './mi_output';
 import * as pty from 'pty.js';
 import * as bunyan from 'bunyan';
+import * as Events from './events';
+import {
+  IBreakpointInfo, IStackFrameInfo, IStackFrameArgsInfo, IStackFrameVariablesInfo, IVariableInfo,
+  IWatchInfo, IWatchUpdateInfo, IWatchChildInfo, IMemoryBlock, IAsmInstruction, ISourceLineAsm,
+  VariableDetailLevel, WatchFormatSpec, WatchAttribute, RegisterValueFormatSpec
+} from './types';
 
 // aliases
 type ReadLine = readline.ReadLine;
@@ -39,67 +45,6 @@ class DebugCommand {
     this.text = cmd;
     this.done = done;
   }
-}
-
-/** Frame-specific information returned by breakpoint and stepping MI commands. */
-export interface IFrameInfo {
-  /** Name of the function corresponding to the frame. */
-  func?: string;
-  /** Arguments of the function corresponding to the frame. */
-  args?: any;
-  /** Code address of the frame. */
-  address: string;
-  /** Name of the source file corresponding to the frame's code address. */
-  filename?: string;
-  /** Full path of the source file corresponding to the frame's code address. */
-  fullname?: string;
-  /** Source line corresponding to the frame's code address. */
-  line?: number;
-}
-
-/** Frame-specific information returned by stack related MI commands. */
-export interface IStackFrameInfo {
-  /** Level of the stack frame, zero for the innermost frame. */
-  level: number;
-  /** Name of the function corresponding to the frame. */
-  func?: string;
-  /** Code address of the frame. */
-  address: string;
-  /** Name of the source file corresponding to the frame's code address. */
-  filename?: string;
-  /** Full path of the source file corresponding to the frame's code address. */
-  fullname?: string;
-  /** Source line corresponding to the frame's code address. */
-  line?: number;
-  /** Name of the binary file that corresponds to the frame's code address. */
-  from?: string;
-}
-
-/** Breakpoint-specific information returned by various MI commands. */
-export interface IBreakpointInfo {
-  id: string;
-  breakpointType: string;
-  catchpointType?: string;
-  isTemp?: boolean;
-  isEnabled?: boolean;
-  address?: string;
-  func?: string;
-  filename?: string;
-  fullname?: string;
-  line?: number;
-  at?: string;
-  pending?: string;
-  evaluatedBy?: string;
-  threadId?: number;
-  condition?: string;
-  ignoreCount?: number;
-  enableCount?: number;
-  mask?: string;
-  passCount?: number;
-  originalLocation?: string;
-  hitCount?: number;
-  isInstalled?: boolean;
-  what?: string;
 }
 
 /**
@@ -148,317 +93,6 @@ export class MalformedResponseError implements Error {
   }
 }
 
-export interface ThreadGroupAddedNotify {
-  id: string;
-}
-
-export interface ThreadGroupRemovedNotify {
-  id: string;
-}
-
-export interface ThreadGroupStartedNotify {
-  id: string;
-  pid: string;
-}
-
-export interface ThreadGroupExitedNotify {
-  id: string;
-  exitCode: string;
-}
-
-export interface ThreadCreatedNotify {
-  id: string;
-  groupId: string;
-}
-
-export interface ThreadExitedNotify {
-  id: string;
-  groupId: string;
-}
-
-export interface ThreadSelectedNotify {
-  id: string;
-}
-
-/** Notification sent whenever a library is loaded or unloaded by an inferior. */
-interface LibNotify {
-  id: string;
-  /** Name of the library file on the target system. */
-  targetName: string;
-  /** 
-   * Name of the library file on the host system.
-   * When debugging locally this should be the same as `targetName`.
-   */
-  hostName: string;
-  /**
-   * Optional identifier of the thread group within which the library was loaded.
-   */
-  threadGroup: string;
-  /**
-   * Optional load address.
-   * This field is not part of the GDB MI spec. and is only set by LLDB MI driver.
-   */
-  loadAddress: string;
-  /** 
-   * Optional path to a file containing additional debug information.
-   * This field is not part of the GDB MI spec. and is only set by LLDB MI driver.
-   * The LLDB MI driver gets the value for this field from SBModule::GetSymbolFileSpec().
-   */
-  symbolsPath: string;
-}
-
-export interface LibLoadedNotify extends LibNotify { }
-export interface LibUnloadedNotify extends LibNotify { }
-
-export enum TargetStopReason {
-  /** A breakpoint was hit. */
-  BreakpointHit,
-  /** A step instruction finished. */
-  EndSteppingRange,
-  /** A step-out instruction finished. */
-  FunctionFinished,
-  /** The target finished executing and terminated normally. */
-  ExitedNormally,
-  /** The target was signalled. */
-  SignalReceived,
-  /** The target encountered an exception (this is LLDB specific). */
-  ExceptionReceived,
-  /** Catch-all for any of the other numerous reasons. */
-  Unrecognized
-}
-
-export interface TargetStoppedNotify {
-  reason: TargetStopReason;
-  /** Identifier of the thread that caused the target to stop. */
-  threadId: number;
-  /** 
-   * Identifiers of the threads that were stopped, 
-   * if all threads were stopped this array will be empty. 
-   */
-  stoppedThreads: number[];
-  /** Processor core on which the stop event occured. */
-  processorCore?: string;
-}
-
-export interface BreakpointHitNotify extends TargetStoppedNotify {
-  breakpointId: number;
-  frame: IFrameInfo;
-}
-
-export interface StepFinishedNotify extends TargetStoppedNotify {
-  frame: IFrameInfo;
-}
-
-export interface StepOutFinishedNotify extends TargetStoppedNotify {
-  frame: IFrameInfo;
-  resultVar?: string;
-  returnValue?: string;
-}
-
-export interface SignalReceivedNotify extends TargetStoppedNotify {
-  signalCode?: string;
-  signalName?: string;
-  signalMeaning?: string;
-}
-
-export interface ExceptionReceivedNotify extends TargetStoppedNotify {
-  exception: string;
-}
-
-export interface IVariableInfo {
-  /** Variable name. */
-  name: string;
-  /** String representation of the value of the variable. */
-  value?: string;
-  /** Type of the variable. */
-  type?: string;
-}
-
-/** Contains information about the arguments of a stack frame. */
-export interface IStackFrameArgsInfo {
-  /** Index of the frame on the stack, zero for the innermost frame. */
-  level: number;
-  /** List of arguments for the frame. */
-  args: IVariableInfo[];
-}
-
-/** Contains information about the arguments and locals of a stack frame. */
-export interface IStackFrameVariablesInfo {
-  args: IVariableInfo[];
-  locals: IVariableInfo[];
-}
-
-/** Indicates how much information should be retrieved when calling 
- *  [[DebugSession.getLocalVariables]].
- */
-export enum VariableDetailLevel {
-  /** Only variable names will be retrieved, not their types or values. */
-  None = 0, // specifying the value is redundant, but is used here to emphasise its importance
-  /** Only variable names and values will be retrieved, not their types. */
-  All = 1,
-  /** 
-   * The name and type will be retrieved for all variables, however values will only be retrieved
-   * for simple variable types (not arrays, structures or unions). 
-   */
-  Simple = 2
-}
-
-/** Contains information about a newly created watch. */
-export interface IWatchInfo {
-  id: string;
-  childCount: number;
-  value: string;
-  expressionType: string;
-  threadId: number;
-  isDynamic: boolean;
-  displayHint: string;
-  hasMoreChildren: boolean;
-}
-
-export interface IWatchChildInfo extends IWatchInfo {
-  /** The expression the front-end should display to identify this child. */
-  expression: string;
-  /** `true` if the watch state is not implicitely updated. */
-  isFrozen: boolean;
-}
-
-/** Contains information about the changes in the state of a watch. */
-export interface IWatchUpdateInfo {
-  /** Unique identifier of the watch whose state changed. */
-  id: string;
-  /** 
-   * If the number of children changed this is the updated count,
-   * otherwise this field is undefined.
-  */
-  childCount?: number;
-  /** The value of the watch expression after the update. */
-  value?: string;
-  /** 
-   * If the type of the watch expression changed this will be the new type,
-   * otherwise this field is undefined.
-   */
-  expressionType?: string;
-  /** 
-   * If `true` the watch expression is in-scope and has a valid value after the update.
-   * If `false' the watch expression is not in-scope and has no valid value, but if [[isObsolete]]
-   * is likewise `false` then the value may become valid at some point in the future if the watch 
-   * expression comes back into scope.
-   */
-  isInScope: boolean;
-  /** 
-   * `true` if the value of the watch expression is permanently unavailable, possibly because
-   * the target has changed or has been recompiled. Obsolete watches should be removed by the
-   * front-end.
-   */
-  isObsolete: boolean;
-  /** `true` iff the value if the type of the watch expression has changed. */
-  hasTypeChanged?: boolean;
-  /** `true` iff the watch relies on a Python-based visualizer. */
-  isDynamic?: boolean;
-  /** 
-   * If `isDynamic` is `true` this field may contain a hint for the front-end on how the value of
-   * the watch expression should be displayed. Otherwise this field is undefined.
-   */
-  displayHint?: string;
-  /** `true` iff there are more children outside the update range. */
-  hasMoreChildren: boolean;
-  /** 
-   * If `isDynamic` is `true` and new children were added within the update range this will
-   * be a list of those new children. Otherwise this field is undefined.
-   */
-  newChildren?: string;
-}
-
-/** Output format specifiers for watch values. */
-export enum WatchFormatSpec {
-  Binary,
-  Decimal,
-  Hexadecimal,
-  Octal,
-  /** 
-   * This specifier is used to indicate that one of the other ones should be automatically chosen
-   * based on the expression type, for example `Decimal` for integers, `Hexadecimal` for pointers.
-   */
-  Default
-}
-
-/** A watch may have one or more of these attributes associated with it. */
-export enum WatchAttribute {
-  /** Indicates the watch value can be modified. */
-  Editable,
-  /** 
-   * Indicates the watch value can't be modified. This will be the case for any watch with 
-   * children (at least when implemented correctly by the debugger, *cough* not LLDB-MI *cough*).
-   */
-  NonEditable
-}
-
-/** Contains the contents of a block of memory from the target process. */
-export interface IMemoryBlock {
-  /** Start address of the memory block (hex literal). */
-  begin: string;
-  /** End address of the memory block (hex literal). */
-  end: string;
-  /** 
-   * Offset of the memory block (in bytes, as a hex literal) from the start address passed into
-   * [[DebugSession.readMemory]].
-   */
-  offset: string;
-  /** Contents of the memory block in hexadecimal. */
-  contents: string;
-}
-
-/** Contains information about an ASM instruction. */
-export interface IAsmInstruction {
-  /** Address at which this instruction was disassembled. */
-  address: string;
-  /** Name of the function this instruction came from. */
-  func: string;
-  /** Offset of this instruction from the start of `func` (as a decimal). */
-  offset: number;
-  /** Text disassembly of this instruction. */
-  inst: string;
-  /** 
-   * Raw opcode bytes for this instruction.
-   * NOTE: This field is currently not filled in by LLDB-MI.
-   */
-  opcodes?: string;
-  /**
-   * Size of the raw opcode in bytes.
-   * NOTE: This field is an LLDB-MI specific extension.
-   */
-  size?: number;
-}
-
-/** Contains ASM instructions for a single source line. */
-export interface ISourceLineAsm {
-  /** Source filename from the compilation unit, may be absolute or relative. */
-  file: string;
-  /** 
-   * Absolute filename of `file` (with all symbolic links resolved).
-   * If the source file can't be found this field will populated from the debug information.
-   * NOTE: This field is currently not filled in by LLDB-MI.
-   */
-  fullname: string;
-  /** Source line number in `file`. */
-  line: number;
-  /** ASM instructions corresponding to `line` in `file`. */
-  instructions: IAsmInstruction[];
-}
-
-/** Output format specifiers for register values. */
-export enum RegisterValueFormatSpec {
-  Binary,
-  Decimal,
-  Hexadecimal,
-  Octal,
-  Raw,
-  /** 
-   * This specifier is used to indicate that one of the other ones should be automatically chosen.
-   */
-  Default
-}
-
 /**
  * A debug session provides two-way communication with a debugger process via the GDB/LLDB 
  * machine interface.
@@ -471,220 +105,6 @@ export enum RegisterValueFormatSpec {
  * are provided by the EVENT_XXX static constants.
  */
 export class DebugSession extends events.EventEmitter {
-  /**
-   * Emitted when a thread group is added by the debugger, it's possible the thread group
-   * hasn't yet been associated with a running program.
-   * 
-   * Listener function should have the signature:
-   * ~~~
-   * (notification: [[ThreadGroupAddedNotify]]) => void
-   * ~~~
-   * @event
-   */
-  static EVENT_THREAD_GROUP_ADDED: string = 'thdgrpadd';
-  /**
-   * Emitted when a thread group is removed by the debugger.
-   *
-   * Listener function should have the signature:
-   * ~~~
-   * (notification: [[ThreadGroupRemovedNotify]]) => void
-   * ~~~
-   * @event
-   */
-  static EVENT_THREAD_GROUP_REMOVED: string = 'thdgrprem';
-  /**
-   * Emitted when a thread group is associated with a running program, 
-   * either because the program was started or the debugger was attached to it.
-   *
-   * Listener function should have the signature:
-   * ~~~
-   * (notification: [[ThreadGroupStartedNotify]]) => void
-   * ~~~
-   * @event
-   */
-  static EVENT_THREAD_GROUP_STARTED: string = 'thdgrpstart';
-  /**
-   * Emitted when a thread group ceases to be associated with a running program,
-   * either because the program terminated or the debugger was dettached from it.
-   *
-   * Listener function should have the signature: 
-   * ~~~
-   * (notification: [[ThreadGroupExitedNotify]]) => void
-   * ~~~
-   * @event
-   */
-  static EVENT_THREAD_GROUP_EXITED: string = 'thdgrpexit';
-  /**
-   * Emitted when a thread is created.
-   *
-   * Listener function should have the signature:
-   * ~~~
-   * (notification: [[ThreadCreatedNotify]]) => void
-   * ~~~
-   * @event
-   */
-  static EVENT_THREAD_CREATED: string = 'thdcreate';
-  /**
-   * Emitted when a thread exits.
-   *
-   * Listener function should have the signature:
-   * ~~~
-   * (notification: [[ThreadExitedNotify]]) => void
-   * ~~~
-   * @event
-   */
-  static EVENT_THREAD_EXITED: string = 'thdexit';
-  /**
-   * Emitted when the debugger changes the current thread selection.
-   *
-   * Listener function should have the signature:
-   * ~~~
-   * (notification: [[ThreadSelectedNotify]]) => void
-   * ~~~
-   * @event
-   */
-  static EVENT_THREAD_SELECTED: string = 'thdselect';
-  /**
-   * Emitted when a new library is loaded by the program being debugged.
-   *
-   * Listener function should have the signature:
-   * ~~~
-   * (notification: [[LibLoadedNotify]]) => void
-   * ~~~
-   * @event
-   */
-  static EVENT_LIB_LOADED: string = 'libload';
-  /**
-   * Emitted when a library is unloaded by the program being debugged.
-   *
-   * Listener function should have the signature:
-   * ~~~
-   * (notification: [[LibUnloadedNotify]]) => void
-   * ~~~
-   * @event
-   */
-  static EVENT_LIB_UNLOADED: string = 'libunload';
-
-  /**
-   * Emitted when some console output from the debugger becomes available, 
-   * usually in response to a CLI command.
-   *
-   * Listener function should have the signature:
-   * ~~~
-   * (output: string) => void
-   * ~~~
-   * @event
-   */
-  static EVENT_DBG_CONSOLE_OUTPUT: string = 'conout';
-
-  /**
-   * Emitted when some console output from the target becomes available.
-   *
-   * Listener function should have the signature:
-   * ~~~
-   * (output: string) => void
-   * ~~~
-   * @event
-   */
-  static EVENT_TARGET_OUTPUT: string = 'targetout';
-
-  /**
-   * Emitted when log output from the debugger becomes available.
-   *
-   * Listener function should have the signature:
-   * ~~~
-   * (output: string) => void
-   * ~~~
-   * @event
-   */
-  static EVENT_DBG_LOG_OUTPUT: string = 'dbgout';
-
-  /**
-   * Emitted when the target starts running.
-   *
-   * The `threadId` passed to the listener indicates which specific thread is now running,
-   * a value of **"all"** indicates all threads are running. According to the GDB/MI spec.
-   * no interaction with a running thread is possible after this notification is produced until
-   * it is stopped again.
-   *
-   * Listener function should have the signature:
-   * ~~~
-   * (threadId: string) => void
-   * ~~~
-   * @event
-   */
-  static EVENT_TARGET_RUNNING: string = 'targetrun';
-
-  /**
-   * Emitted when the target stops running.
-   *
-   * Listener function should have the signature:
-   * ~~~
-   * (notification: [[TargetStoppedNotify]]) => void
-   * ~~~
-   * @event
-   */
-  static EVENT_TARGET_STOPPED: string = 'targetstop';
-
-  /**
-   * Emitted when the target stops running because a breakpoint was hit.
-   *
-   * Listener function should have the signature:
-   * ~~~
-   * (notification: [[BreakpointHitNotify]]) => void
-   * ~~~
-   * @event
-   */
-  static EVENT_BREAKPOINT_HIT: string = 'brkpthit';
-
-  /**
-   * Emitted when the target stops due to a stepping operation finishing.
-   *
-   * Listener function should have the signature:
-   * ~~~
-   * (notification: [[StepFinishedNotify]]) => void
-   * ~~~
-   * @event
-   */
-  static EVENT_STEP_FINISHED: string = 'endstep';
-
-  /**
-   * Emitted when the target stops due to a step-out operation finishing.
-   *
-   * NOTE: Currently this event will not be emitted by LLDB-MI, it will only be emitted by GDB-MI,
-   * so for the time being use [[EVENT_STEP_FINISHED]] with LLDB-MI.
-   *
-   * Listener function should have the signature:
-   * ~~~
-   * (notification: [[StepOutFinishedNotify]]) => void
-   * ~~~
-   * @event
-   */
-  static EVENT_FUNCTION_FINISHED: string = 'endfunc';
-
-  /**
-   * Emitted when the target stops running because it received a signal.
-   *
-   * Listener function should have the signature:
-   * ~~~
-   * (notification: [[SignalReceivedNotify]]) => void
-   * ~~~
-   * @event
-   */
-  static EVENT_SIGNAL_RECEIVED: string = 'signal';
-
-  /**
-   * Emitted when the target stops running due to an exception.
-   *
-   * Listener function should have the signature:
-   * ~~~
-   * (notification: [[ExceptionReceivedNotify]]) => void
-   * ~~~
-   * @event
-   */
-  static EVENT_EXCEPTION_RECEIVED: string = 'exception';
-
-
   // the stream to which debugger commands will be written
   private outStream: stream.Writable;
   // reads input from the debugger's stdout one line at a time
@@ -760,157 +180,21 @@ export class DebugSession extends events.EventEmitter {
   }
 
   private emitExecNotification(name: string, data: any) {
-    switch (name) {
-      case 'running':
-        this.emit(DebugSession.EVENT_TARGET_RUNNING, data['thread-id']);
-        break;
-
-      case 'stopped':
-        //if (this.logger) {
-        //  this.logger.debug(data);
-        //}
-        var standardNotify: TargetStoppedNotify = {
-          reason: parseTargetStopReason(data.reason),
-          threadId: parseInt(data['thread-id'], 10),
-          stoppedThreads: parseStoppedThreadsList(data['stopped-threads']),
-          processCore: data.core
-        };
-        this.emit(DebugSession.EVENT_TARGET_STOPPED, standardNotify);
-
-        // emit a more specialized event for notifications that contain additional info
-        switch (standardNotify.reason) {
-          case TargetStopReason.BreakpointHit:
-            var breakpointNotify: BreakpointHitNotify = {
-              reason: standardNotify.reason,
-              threadId: standardNotify.threadId,
-              stoppedThreads: standardNotify.stoppedThreads,
-              processorCore: standardNotify.processorCore,
-              breakpointId: parseInt(data.bkptno, 10),
-              frame: extractFrameInfo(data.frame)
-            };
-            this.emit(DebugSession.EVENT_BREAKPOINT_HIT, breakpointNotify);
-            break;
-
-          case TargetStopReason.EndSteppingRange:
-            var stepNotify: StepFinishedNotify = {
-              reason: standardNotify.reason,
-              threadId: standardNotify.threadId,
-              stoppedThreads: standardNotify.stoppedThreads,
-              processorCore: standardNotify.processorCore,
-              frame: extractFrameInfo(data.frame)
-            };
-            this.emit(DebugSession.EVENT_STEP_FINISHED, stepNotify);
-            break;
-
-          case TargetStopReason.FunctionFinished:
-            var stepOutNotify: StepOutFinishedNotify = {
-              reason: standardNotify.reason,
-              threadId: standardNotify.threadId,
-              stoppedThreads: standardNotify.stoppedThreads,
-              processorCore: standardNotify.processorCore,
-              frame: extractFrameInfo(data.frame),
-              resultVar: data['gdb-result-var'],
-              returnValue: data['return-value']
-            };
-            this.emit(DebugSession.EVENT_FUNCTION_FINISHED, stepOutNotify);
-            break;
-
-          case TargetStopReason.SignalReceived:
-            var signalNotify: SignalReceivedNotify = {
-              reason: standardNotify.reason,
-              threadId: standardNotify.threadId,
-              stoppedThreads: standardNotify.stoppedThreads,
-              processorCore: standardNotify.processorCore,
-              signalCode: data.signal,
-              signalName: data['signal-name'],
-              signalMeaning: data['signal-meaning']
-            };
-            this.emit(DebugSession.EVENT_SIGNAL_RECEIVED, signalNotify);
-            break;
-
-          case TargetStopReason.ExceptionReceived:
-            var exceptionNotify: ExceptionReceivedNotify = {
-              reason: standardNotify.reason,
-              threadId: standardNotify.threadId,
-              stoppedThreads: standardNotify.stoppedThreads,
-              processorCore: standardNotify.processorCore,
-              exception: data.exception
-            };
-            this.emit(DebugSession.EVENT_EXCEPTION_RECEIVED, exceptionNotify);
-            break;
-        }
-        break;
-
-      default:
-        // TODO: log and keep on going
-        break;
-    }
+    let events = Events.createEventsForExecNotification(name, data);
+    events.forEach((event: Events.IDebugSessionEvent) => {
+      this.emit(event.name, event.data);
+    });
   }
 
   private emitAsyncNotification(name: string, data: any) {
-    var shlibInfo: any;
-
-    switch (name) {
-      case 'thread-group-added':
-        this.emit(DebugSession.EVENT_THREAD_GROUP_ADDED, data);
-        break;
-
-      case 'thread-group-removed':
-        this.emit(DebugSession.EVENT_THREAD_GROUP_REMOVED, data);
-        break;
-
-      case 'thread-group-started':
-        this.emit(DebugSession.EVENT_THREAD_GROUP_STARTED, data);
-        break;
-
-      case 'thread-group-exited':
-        this.emit(DebugSession.EVENT_THREAD_GROUP_EXITED,
-          { id: data.id, exitCode: data['exit-code'] }
-        );
-        break;
-
-      case 'thread-created':
-        this.emit(DebugSession.EVENT_THREAD_CREATED,
-          { id: data.id, groupId: data['group-id'] }
-        );
-        break;
-
-      case 'thread-exited':
-        this.emit(DebugSession.EVENT_THREAD_EXITED,
-          { id: data.id, groupId: data['group-id'] }
-        );
-        break;
-
-      case 'thread-selected':
-        this.emit(DebugSession.EVENT_THREAD_SELECTED, data);
-        break;
-
-      case 'library-loaded':
-        this.emit(DebugSession.EVENT_LIB_LOADED, {
-          id: data.id,
-          targetName: data['target-name'],
-          hostName: data['host-name'],
-          threadGroup: data['thread-group'],
-          symbolsPath: data['symbols-path'],
-          loadAddress: data.loaded_addr
-        });
-        break;
-
-      case 'library-unloaded':
-        this.emit(DebugSession.EVENT_LIB_UNLOADED, {
-          id: data.id,
-          targetName: data['target-name'],
-          hostName: data['host-name'],
-          threadGroup: data['thread-group'],
-          symbolsPath: data['symbols-path'],
-          loadAddress: data.loaded_addr
-        });
-        break;
-
-      default:
-        // TODO: log and keep on going
-        break;
-    };
+    let event = Events.createEventForAsyncNotification(name, data);
+    if (event) {
+      this.emit(event.name, event.data);
+    } else {
+      if (this.logger) {
+        this.logger.warn({ name: name, data: data }, 'Unhandled notification.');
+      }
+    }
   }
 
   /**
@@ -965,15 +249,15 @@ export class DebugSession extends events.EventEmitter {
         break;
 
       case RecordType.DebuggerConsoleOutput:
-        this.emit(DebugSession.EVENT_DBG_CONSOLE_OUTPUT, result.data);
+        this.emit(Events.EVENT_DBG_CONSOLE_OUTPUT, result.data);
         break;
 
       case RecordType.TargetOutput:
-        this.emit(DebugSession.EVENT_TARGET_OUTPUT, result.data);
+        this.emit(Events.EVENT_TARGET_OUTPUT, result.data);
         break;
 
       case RecordType.DebuggerLogOutput:
-        this.emit(DebugSession.EVENT_DBG_LOG_OUTPUT, result.data);
+        this.emit(Events.EVENT_DBG_LOG_OUTPUT, result.data);
         break;
     }
 
@@ -2224,21 +1508,6 @@ function extractBreakpointInfo(data: any): IBreakpointInfo {
 }
 
 /** 
- * Creates an object that conforms to the IFrameInfo interface from the output of the
- * MI Output parser.
- */
-function extractFrameInfo(data: any): IFrameInfo {
-  return {
-    func: data.func,
-    args: data.args,
-    address: data.addr,
-    filename: data.file,
-    fullname: data.fullname,
-    line: data.line ? parseInt(data.line, 10) : undefined,
-  };
-}
-
-/** 
  * Creates an object that conforms to the IStackFrameInfo interface from the output of the
  * MI Output parser.
  */
@@ -2408,7 +1677,7 @@ class GDBDebugSession extends DebugSession {
         }
         this.terminal = pty.open();
         this.terminal.on('data', (data: string) => {
-          this.emit(DebugSession.EVENT_TARGET_OUTPUT, data);
+          this.emit(Events.EVENT_TARGET_OUTPUT, data);
         });
         resolve();
       })
@@ -2465,40 +1734,6 @@ export function startDebugSession(debuggerName: string): DebugSession {
   }
   return debugSession;
 };
-
-// There are more reasons listed in the GDB/MI spec., the ones here are just the subset that's 
-// actually used by LLDB MI at this time (11-Apr-2015).
-var targetStopReasonMap = new Map<string, TargetStopReason>()
-  .set('breakpoint-hit', TargetStopReason.BreakpointHit)
-  .set('end-stepping-range', TargetStopReason.EndSteppingRange)
-  .set('function-finished', TargetStopReason.FunctionFinished)
-  .set('exited-normally', TargetStopReason.ExitedNormally)
-  .set('signal-received', TargetStopReason.SignalReceived)
-  .set('exception-received', TargetStopReason.ExceptionReceived);
-
-function parseTargetStopReason(reasonString: string): TargetStopReason {
-  var reasonCode = targetStopReasonMap.get(reasonString);
-  if (reasonCode !== undefined) {
-    return reasonCode;
-  }
-  // TODO: log and keep on running
-  return TargetStopReason.Unrecognized;
-}
-
-/** 
- * Parses a list of stopped threads from a GDB/MI 'stopped' async notification.
- * @return An array of thread identifiers, an empty array is used to indicate that all threads
- *         were stopped.
- */
-function parseStoppedThreadsList(stoppedThreads: string): number[] {
-  if (stoppedThreads === 'all') {
-    return [];
-  } else {
-    // FIXME: GDB/MI spec. fails to specify what the format of the list is, need to experiment
-    //        to figure out what is actually produced by the debugger.
-    return [parseInt(stoppedThreads, 10)];
-  }
-}
 
 // maps WatchFormatSpec enum members to the corresponding MI string
 var watchFormatSpecToStringMap = new Map<WatchFormatSpec, string>()
