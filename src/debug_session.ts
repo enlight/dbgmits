@@ -429,10 +429,24 @@ export default class DebugSession extends events.EventEmitter {
   }
 
   /**
+   * Enables multiple breakpoints.
+   */
+  enableBreakpoints(breakIds: number[]): Promise<void> {
+    return this.executeCommand('break-enable ' + breakIds.join(' '));
+  }
+
+  /**
    * Disables a breakpoint.
    */
   disableBreakpoint(breakId: number): Promise<void> {
     return this.executeCommand('break-disable ' + breakId);
+  }
+
+  /**
+   * Disables multiple breakpoints.
+   */
+  disableBreakpoints(breakIds: number[]): Promise<void> {
+    return this.executeCommand('break-disable ' + breakIds.join(' '));
   }
 
   /**
