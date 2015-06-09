@@ -54,28 +54,100 @@ export interface IStackFrameInfo {
 
 /** Breakpoint-specific information returned by various MI commands. */
 export interface IBreakpointInfo {
+  /**
+   * Breakpoint identifier.
+   * If the breakpoint represents a single location this will be an integer.
+   * If the breakpoint represents multiple locations this will be a pair of integers separated 
+   * by a dot, e.g. `1.2`
+   */
   id: string;
+  /** 
+   * The type of the breakpoint.
+   * For regular breakpoints this will be `breakpoint`, other possible values are `catchpoint`,
+   * `watchpoint`, and possibly other as yet unspecified values.
+   */
   breakpointType: string;
+  /** If [[breakpointType]] is `catchpoint` this field will contain the exact type of the catchpoint. */
   catchpointType?: string;
+  /** If `true` the breakpoint will be deleted at the next stop. */
   isTemp?: boolean;
   isEnabled?: boolean;
+  /** 
+   * Address of the breakpoint.
+   * The value may be:
+   * - an actual address defined by a hexadecimal
+   * - the string `<PENDING>` if the breakpoint is pending
+   * - the string `<MULTIPLE>` if the breakpoint represents multiple locations
+   */
   address?: string;
+  /**
+   * The name of the function in which the breakpoint appears.
+   * If function name is not known then this field will be undefined.
+   */
   func?: string;
+  /**
+   * The name of the source in which this breakpoint appears.
+   * If the source file name is not known this field will be undefined.
+   */
   filename?: string;
+  /**
+   * The full name of the source file in which this breakpoint appears.
+   * If the source file name is not known this field will be undefined.
+   */
   fullname?: string;
+  /**
+   * The source line number at which this breakpoint appears.
+   * If the source line number is not known this field will be undefined.
+   */
   line?: number;
+  /**
+   * If the source file name is not known this field may hold the address of the breakpoint,
+   * possibly followed by a symbol name.
+   */
   at?: string;
+  /** If the breakpoint is pending this field contains the text used by the user to set the breakpoint. */
   pending?: string;
+  /** 
+   * Indicates where the breakpoint's [[condition]] is evaluated.
+   * The value of this field can be either `"host"`, `"target"`, or `undefined`.
+   */
   evaluatedBy?: string;
+  /** For a thread-specific breakpoint this will be the identifier of the thread for which it is set. */
   threadId?: number;
+  /** 
+   * For a conditional breakpoint this is the expression that must evaluate to `true` in order
+   * for the debugger to stop the inferior when the breakpoint is hit. Note that the condition
+   * is only checked when [[ignoreCount]] is not greater than zero.
+   */
   condition?: string;
+  /**
+   * Number of times the debugger should let the inferior run when the breakpoint is hit.
+   *
+   * Each time the breakpoint is hit the debugger will check if the ignore count is zero, if that's
+   * the case it will stop the inferior (after checking the condition if one is set), otherwise it
+   * will simply decrement the ignore count by one and the inferior will continue running.
+   */
   ignoreCount?: number;
+  /**
+   * Number of times the debugger should stop the inferior when the breakpoint is hit.
+   *
+   * Each time the breakpoint is hit the debugger will decrement the enable count, after the count
+   * reaches zero the breakpoint is automatically disabled. 
+   *
+   * Note that [[ignoreCount]] must be zero before the debugger will start decrementing [[enableCount]].
+   */
   enableCount?: number;
+  /** Watchpoint-specific. */
   mask?: string;
+  /** Tracepoint-specific. */
   passCount?: number;
+  /** The breakpoint location originaly specified by the user. */
   originalLocation?: string;
+  /** Number of times the breakpoint has been hit. */
   hitCount?: number;
+  /** Tracepoint-specific, indicates whether the tracepoint is installed or not. */
   isInstalled?: boolean;
+  /** Extra type-dependent data. */
   what?: string;
 }
 
