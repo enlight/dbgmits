@@ -287,8 +287,11 @@ export interface ITargetStoppedEvent {
     * if all threads were stopped this array will be empty. 
     */
   stoppedThreads: number[];
-  /** Processor core on which the stop event occured. */
-  processorCore?: string;
+  /**
+   * Processor core on which the stop event occured.
+   * The debugger may not always provide a value for this field, in which case it will be `undefined`.
+   */
+  processorCore: string;
 }
 
 export interface IBreakpointHitEvent extends ITargetStoppedEvent {
@@ -331,7 +334,7 @@ export function createEventsForExecNotification(notification: string, data: any)
         reason: parseTargetStopReason(data.reason),
         threadId: parseInt(data['thread-id'], 10),
         stoppedThreads: parseStoppedThreadsList(data['stopped-threads']),
-        processCore: data.core
+        processorCore: data.core
       };
       let events = [{ name: EVENT_TARGET_STOPPED, data: stopEvent }];
 
