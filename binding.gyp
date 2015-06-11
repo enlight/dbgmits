@@ -29,6 +29,16 @@
       'target_name': 'exec_tests_target',
       'type': 'executable',
       'sources': ['test/exec_tests_target.cpp']
+    },
+    {
+      'target_name': 'thread_tests_target',
+      'type': 'executable',
+      'sources': ['test/thread_tests_target.cpp'],
+      'conditions': [
+        ["OS=='linux'", {
+          'cflags_cc': ['-std=c++11']
+        }]
+      ]
     }
   ]
 }

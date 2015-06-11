@@ -18,12 +18,9 @@ export enum TargetStopReason {
   Unrecognized
 }
 
-/** Frame-specific information returned by breakpoint and stepping MI commands. */
-export interface IFrameInfo {
+export interface IFrameInfoBase {
   /** Name of the function corresponding to the frame. */
   func?: string;
-  /** Arguments of the function corresponding to the frame. */
-  args?: any;
   /** Code address of the frame. */
   address: string;
   /** Name of the source file corresponding to the frame's code address. */
@@ -34,22 +31,26 @@ export interface IFrameInfo {
   line?: number;
 }
 
+/** Frame-specific information returned by breakpoint and stepping MI commands. */
+export interface IFrameInfo extends IFrameInfoBase {
+  /** Arguments of the function corresponding to the frame. */
+  args?: any;
+}
+
 /** Frame-specific information returned by stack related MI commands. */
-export interface IStackFrameInfo {
+export interface IStackFrameInfo extends IFrameInfoBase {
   /** Level of the stack frame, zero for the innermost frame. */
   level: number;
-  /** Name of the function corresponding to the frame. */
-  func?: string;
-  /** Code address of the frame. */
-  address: string;
-  /** Name of the source file corresponding to the frame's code address. */
-  filename?: string;
-  /** Full path of the source file corresponding to the frame's code address. */
-  fullname?: string;
-  /** Source line corresponding to the frame's code address. */
-  line?: number;
   /** Name of the binary file that corresponds to the frame's code address. */
   from?: string;
+}
+
+/** Frame-specific information returned by -thread-info MI command. */
+export interface IThreadFrameInfo extends IFrameInfoBase {
+  /** Level of the stack frame, zero for the innermost frame. */
+  level: number;
+  /** Arguments of the function corresponding to the frame. */
+  args?: any;
 }
 
 /** Breakpoint-specific information returned by various MI commands. */
@@ -343,4 +344,37 @@ export enum RegisterValueFormatSpec {
     * This specifier is used to indicate that one of the other ones should be automatically chosen.
     */
   Default
+}
+
+/** Contains information about a thread. */
+export interface IThreadInfo {
+  /** Identifier used by the debugger to identify the thread. */
+  id: number;
+  /** Identifier used by the target to identify the thread. */
+  targetId: string;
+  /** 
+   * Thread name.
+   * The name may originate from the target, the debugger, or may be unknown (in which case this
+   * field will be `undefined`).
+   */
+  name: string;
+  /** Stack frame currently being executed in the thread. */
+  frame: IThreadFrameInfo;
+  /** `true` if the thread is currently stopped, `false` if it is currently running. */
+  isStopped: boolean;
+  /**
+   * Processor core on which the thread is running.
+   * The debugger may not always provide a value for this field, in which case it will be `undefined`.
+   */
+  processorCore: string;
+  /** Extra free-form information about the thread, may be `undefined`. */
+  details: string;
+}
+
+/** Contains information about all the threads in the target. */
+export interface IMultiThreadInfo {
+  /** List of all the threads in the target. */
+  all: IThreadInfo[];
+  /** Thread currently selected in the debugger. */
+  current: IThreadInfo;
 }

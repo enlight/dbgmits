@@ -13,6 +13,7 @@ import * as Events from './events';
 import {
   IBreakpointInfo, IStackFrameInfo, IStackFrameArgsInfo, IStackFrameVariablesInfo, IVariableInfo,
   IWatchInfo, IWatchUpdateInfo, IWatchChildInfo, IMemoryBlock, IAsmInstruction, ISourceLineAsm,
+  IThreadFrameInfo, IThreadInfo, IMultiThreadInfo,
   VariableDetailLevel, WatchFormatSpec, WatchAttribute, RegisterValueFormatSpec
 } from './types';
 import { CommandFailedError, MalformedResponseError } from './errors';
@@ -1419,6 +1420,45 @@ export default class DebugSession extends events.EventEmitter {
       throw new MalformedResponseError('Expected to find "asm_insns".', output, fullCmd);
     });
   }
+
+  /**
+   * Gets information about a thread in an inferior.
+   * @returns A promise that will be resolved with information about a thread. 
+   */
+  getThread(threadId: number): Promise<IThreadInfo> {
+    let fullCmd = 'thread-info ' + threadId;
+    return this.getCommandOutput(fullCmd, null, (output: any) => {
+      if (output.threads && (output.threads.length === 1)) {
+        return extractThreadInfo(output.threads[0])
+      }
+      throw new MalformedResponseError(
+        'Expected to find "threads" list with a single element.', output, fullCmd
+      );
+    });
+  }
+
+  /**
+   * Gets information about all threads in all inferiors.
+   * @returns A promise that will be resolved with information about all threads.
+   */
+  getThreads(): Promise<IMultiThreadInfo> {
+    let fullCmd = 'thread-info';
+    return this.getCommandOutput(fullCmd, null, (output: any) => {
+      let currentThreadId: number = parseInt(output['current-thread-id'], 10);
+      if (Array.isArray(output.threads)) {
+        let currentThread: IThreadInfo;
+        let threads: IThreadInfo[] = output.threads.map((data: any) => {
+          let thread: IThreadInfo = extractThreadInfo(data);
+          if (thread.id === currentThreadId) {
+            currentThread = thread;
+          }
+          return thread;
+        });
+        return { all: threads, current: currentThread };
+      }
+      throw new MalformedResponseError('Expected to find "threads" list.', output, fullCmd);
+    });
+  }
 }
 
 /** 
@@ -1478,7 +1518,7 @@ function extractBreakpointInfo(data: any): IBreakpointInfo {
  */
 function extractStackFrameInfo(data: any): IStackFrameInfo {
   return {
-    level: parseInt(data.level),
+    level: parseInt(data.level, 10),
     func: data.func,
     address: data.addr,
     filename: data.file,
@@ -1564,6 +1604,38 @@ function extractAsmBySourceLine(data: any | any[]): ISourceLineAsm[] {
     // data is in the form: { src_and_asm_line: { line: "45", ... } }
     return [extractSrcAsmLine(data.src_and_asm_line)];
   }
+}
+
+/**
+ * Creates an object that conforms to the IThreadFrameInfo interface from the output of the
+ * MI Output parser.
+ */
+function extractThreadFrameInfo(data: any): IThreadFrameInfo {
+  return {
+    level: parseInt(data.level, 10),
+    func: data.func,
+    args: data.args,
+    address: data.addr,
+    filename: data.file,
+    fullname: data.fullname,
+    line: data.line ? parseInt(data.line, 10) : undefined
+  };
+}
+
+/**
+ * Creates an object that conforms to the IThreadInfo interface from the output of the
+ * MI Output parser.
+ */
+function extractThreadInfo(data: any): IThreadInfo {
+  return {
+    id: parseInt(data.id, 10),
+    targetId: data['target-id'],
+    name: data.name,
+    frame: extractThreadFrameInfo(data.frame),
+    isStopped: (data.state === 'stopped') ? true : ((data.state === 'running') ? false : undefined),
+    processorCore: data.core,
+    details: data.details
+  };
 }
 
 // maps WatchFormatSpec enum members to the corresponding MI string

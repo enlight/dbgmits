@@ -69,7 +69,9 @@ export function startDebugSession(logger?: bunyan.Logger): DebugSession {
       'disassembleAddressRange',
       'disassembleAddressRangeByLine',
       'disassembleFile',
-      'disassembleFileByLine'
+      'disassembleFileByLine',
+      'getThread',
+      'getThreads'
     ];
     functionsToLog.forEach((funcName: string) => {
       let func: Function = debugSession[funcName];

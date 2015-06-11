@@ -63,6 +63,10 @@
       <SubType>Code</SubType>
       <TestFramework>ExportRunner</TestFramework>
     </TypeScriptCompile>
+    <TypeScriptCompile Include="test\thread_tests.ts">
+      <SubType>Code</SubType>
+      <TestFramework>ExportRunner</TestFramework>
+    </TypeScriptCompile>
     <TypeScriptCompile Include="test\watch_tests.ts">
       <SubType>Code</SubType>
       <TestFramework>ExportRunner</TestFramework>
