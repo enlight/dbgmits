@@ -482,10 +482,10 @@ export default class DebugSession extends events.EventEmitter {
   //
 
   /**
-   * Sets the commandline arguments to be passed to the target process next time it is started
-   * using [[startTarget]].
+   * Sets the commandline arguments to be passed to the inferior next time it is started
+   * using [[startInferior]].
    */
-  setTargetArguments(args: string): Promise<void> {
+  setInferiorArguments(args: string): Promise<void> {
     return this.executeCommand('exec-arguments ' + args);
   }
 

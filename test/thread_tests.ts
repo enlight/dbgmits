@@ -48,7 +48,7 @@ log(describe("Debug Session", () => {
 
     // FIXME: re-enable for LLDB when LLDB-MI stops crashing when processin -thread-info 2
     it("gets information about thread 2 @skipOnLLDB", () => {
-      return debugSession.setTargetArguments('--threads 2')
+      return debugSession.setInferiorArguments('--threads 2')
       .then(() => {
         return runToFunc(debugSession, 'funcA', () => {
           return debugSession.getThread(2)
@@ -78,7 +78,7 @@ log(describe("Debug Session", () => {
 
     // FIXME: same issue when using LLDB-MI as above
     it("gets thread list from a multi-threaded inferior @skipOnLLDB", () => {
-      return debugSession.setTargetArguments('--threads 2')
+      return debugSession.setInferiorArguments('--threads 2')
       .then(() => {
         return runToFunc(debugSession, 'funcA', () => {
           return debugSession.getThreads()
