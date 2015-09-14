@@ -4,9 +4,6 @@ test/*.js
 test/*.js.map
 .ntvs_analysis.dat
 docs/
-src/*.js.map
 obj/
-src/*.js
-lib/**
 build/**
 lldb-mi-log.txt
