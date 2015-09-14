@@ -1,18 +1,16 @@
 ﻿// Copyright (c) 2015 Vadim Macagon
 // MIT License, see LICENSE file for full terms.
 
-/// <reference path="../typings/test-tsd.d.ts" />
-
 require('source-map-support').install();
 
 import * as chai from 'chai';
 import chaiAsPromised = require('chai-as-promised');
 import * as bunyan from 'bunyan';
-import * as dbgmits from '../src/index';
+import * as dbgmits from '../lib/index';
 import {
   beforeEachTestWithLogger, logSuite as log, startDebugSession,
   runToFunc, runToFuncAndStepOut
-} from '../test/test_utils';
+} from './test_utils';
 
 chai.use(chaiAsPromised);
 
@@ -244,7 +242,7 @@ log(describe("Debug Session", () => {
 
     it("#setWatchValueFormat", () => {
       return runToFuncAndStepOut(debugSession, 'funcWithMoreVariablesToWatch', () => {
-        var watchId;
+        let watchId: string;
         // watch an integer variable
         return debugSession.addWatch('e')
         .then((watch: IWatchInfo) => {

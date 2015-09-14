@@ -1,13 +1,11 @@
 ﻿// Copyright (c) 2015 Vadim Macagon
 // MIT License, see LICENSE file for full terms.
 
-/// <reference path="../typings/test-tsd.d.ts" />
-
 require('source-map-support').install();
 
 import * as chai from 'chai';
-import * as parser from '../src/mi_output_parser';
-import { RecordType } from '../src/mi_output';
+import * as parser from '../lib/mi_output_parser';
+import { RecordType } from '../lib/mi_output';
 
 // aliases
 var expect = chai.expect;

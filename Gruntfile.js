@@ -1,3 +1,5 @@
+var path = require('path');
+
 module.exports = function(grunt) {
   grunt.initConfig({
     'pkg': grunt.file.readJSON('package.json'),
@@ -92,40 +94,35 @@ module.exports = function(grunt) {
         src: 'src/**/*.ts'
       }
     },
-    'typescript': {
-       lib: {
-         src: ['src/**/*.ts'],
-         dest: 'lib',
-         options: {
-           module: 'commonjs',
-           noImplicitAny: true,
-           sourceMap: true,
-           target: 'es5'
-         }
-       },
-       test: {
-         src: ['test/**/*.ts'],
-         options: {
-           module: 'commonjs',
-           sourceMap: true,
-           target: 'es5'
-         }
-       }
+    'tsc': {
+      options: {
+        tscPath: path.resolve('node_modules', 'typescript', 'bin', 'tsc')
+      },
+      'lib': {
+        options: {
+          project: './src'
+        }
+      },
+      'test': {
+        options: {
+          project: './test'
+        }
+      }
     },
     'watch': {
       lib: {
         files: 'src/**/*.ts',
-        tasks: ['tslint', 'typescript']
+        tasks: ['tslint', 'tsc:lib']
       },
       test: {
         files: 'test/**/*.ts',
-        tasks: ['test']
+        tasks: ['tsc:test', 'test']
       }
     },
     'peg': {
       mi_output_parser: {
         src: "src/mi_output_grammar.pegjs",
-        dest: "src/mi_output_parser.js"
+        dest: "lib/mi_output_parser.js"
       }
     },
     'gyp': {
@@ -156,25 +153,24 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-jshint');
   grunt.loadNpmTasks('grunt-contrib-watch');
   grunt.loadNpmTasks('grunt-mocha-test');
+  grunt.loadNpmTasks('grunt-tsc');
   grunt.loadNpmTasks('grunt-tsd');
   grunt.loadNpmTasks('grunt-tslint');
   grunt.loadNpmTasks('grunt-typedoc');
-  grunt.loadNpmTasks('grunt-typescript');
   grunt.loadNpmTasks('grunt-peg');
   grunt.loadNpmTasks('grunt-node-gyp');
   grunt.loadNpmTasks('grunt-env');
   grunt.loadNpmTasks('grunt-release');
   
-  grunt.registerTask('copy-peg-output', 'Copy generated MI Output parser to ./lib', function () {
-    grunt.config.requires('peg.mi_output_parser.dest')
-    grunt.file.copy(grunt.config('peg.mi_output_parser.dest'), './lib/mi_output_parser.js');
+  grunt.registerTask('copy-mi-output-parser-dts', 'Copy MI Output parser typings to ./lib', function () {
+    grunt.file.copy('./src/mi_output_parser.d.ts', './lib/mi_output_parser.d.ts');
   });
 
   grunt.registerTask('docs', ['typedoc']);
 
   grunt.registerTask('lint', ['jshint', 'tslint']);
   
-  grunt.registerTask('build', ['peg', 'copy-peg-output', 'typescript']);
+  grunt.registerTask('build', ['peg', 'copy-mi-output-parser-dts', 'tsc']);
   
   grunt.registerTask('configure-tests', ['gyp:rebuild']);
 

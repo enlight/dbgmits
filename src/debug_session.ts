@@ -1,8 +1,6 @@
 ﻿// Copyright (c) 2015 Vadim Macagon
 // MIT License, see LICENSE file for full terms.
 
-/// <reference path="../typings/lib-tsd.d.ts" />
-
 import * as readline from 'readline';
 import * as events from 'events';
 import * as stream from 'stream';

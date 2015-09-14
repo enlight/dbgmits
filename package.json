@@ -1,11 +1,12 @@
 {
   "name": "dbgmits",
   "version": "0.1.0",
-  "engines": [
-    "node >=0.12.0"
-  ],
+  "engines": {
+    "node": ">=0.12.0"
+  },
   "description": "Provides the ability to control GDB and LLDB programmatically via GDB/MI.",
   "main": "lib/index.js",
+  "typings": "lib/index.d.ts",
   "scripts": {
     "preinstall": "",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -34,6 +35,7 @@
     "grunt-node-gyp": "^1.0.0",
     "grunt-peg": "^1.5.0",
     "grunt-release": "^0.12.0",
+    "grunt-tsc": "git://github.com/enlight/grunt-tsc",
     "grunt-tsd": "^0.2.0-beta.1",
     "grunt-tslint": "^2.2.0-beta",
     "grunt-typedoc": "^0.2.2",
@@ -42,7 +44,7 @@
     "source-map-support": "^0.2.10",
     "tslint": "^2.2.0-beta",
     "typedoc": "^0.3.4",
-    "typescript": "^1.5.0-beta"
+    "typescript": "^1.6.0-beta"
   },
   "optionalDependencies": {
     "pty.js": "^0.2.7-1"

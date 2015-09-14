@@ -1,0 +1,24 @@
+{
+    "compilerOptions": {
+        "module": "commonjs",
+        "target": "es5",
+        "noImplicitAny": true,
+        "sourceMap": true,
+        "declaration": false,
+        "noLib": true
+    },
+    "files": [
+        "../typings/lib.es6.d.ts",
+        "../typings/test-tsd.d.ts",
+        "basic.ts",
+        "break_tests.ts",
+        "custom_reporter.ts",
+        "data_tests.ts",
+        "exec_tests.ts",
+        "mi_output_parser_tests.ts",
+        "stack_tests.ts",
+        "test_utils.ts",
+        "thread_tests.ts",
+        "watch_tests.ts"
+    ]
+}

@@ -1,0 +1,24 @@
+{
+    "compilerOptions": {
+        "module": "commonjs",
+        "target": "es5",
+        "noImplicitAny": true,
+        "outDir": "../lib",
+        "sourceMap": true,
+        "declaration": true,
+        "noLib": true
+    },
+    "files": [
+        "../typings/lib.es6.d.ts",
+        "../typings/lib-tsd.d.ts",
+        "dbgmits.ts",
+        "debug_session.ts",
+        "errors.ts",
+        "events.ts",
+        "gdb_debug_session.ts",
+        "index.ts",
+        "mi_output.ts",
+        "mi_output_parser.d.ts",
+        "types.ts"
+    ]
+}

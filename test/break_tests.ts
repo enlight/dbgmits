@@ -1,15 +1,13 @@
 ﻿// Copyright (c) 2015 Vadim Macagon
 // MIT License, see LICENSE file for full terms.
 
-/// <reference path="../typings/test-tsd.d.ts" />
-
 require('source-map-support').install();
 
 import * as chai from 'chai';
 import chaiAsPromised = require('chai-as-promised');
 import * as bunyan from 'bunyan';
-import * as dbgmits from '../src/index';
-import { beforeEachTestWithLogger, logSuite as log, startDebugSession } from '../test/test_utils';
+import * as dbgmits from '../lib/index';
+import { beforeEachTestWithLogger, logSuite as log, startDebugSession } from './test_utils';
 
 chai.use(chaiAsPromised);
 
@@ -70,7 +68,7 @@ log(describe("Debug Session", () => {
     });
 
     it("#removeBreakpoints()", () => {
-      let breakIds = [];
+      let breakIds: number[] = [];
       return debugSession.addBreakpoint('main')
       .then((data: dbgmits.IBreakpointInfo) => { breakIds.push(parseInt(data.id, 10)); })
       .then(() => { return debugSession.addBreakpoint('funcA'); })
@@ -87,7 +85,7 @@ log(describe("Debug Session", () => {
     });
 
     it("#enableBreakpoints()", () => {
-      let breakIds = [];
+      let breakIds: number[] = [];
       return debugSession.addBreakpoint('main', { isDisabled: true })
       .then((data: dbgmits.IBreakpointInfo) => { breakIds.push(parseInt(data.id, 10)); })
       .then(() => { return debugSession.addBreakpoint('funcA', { isDisabled: true }); })
@@ -104,7 +102,7 @@ log(describe("Debug Session", () => {
     });
 
     it("#disableBreakpoints()", () => {
-      let breakIds = [];
+      let breakIds: number[] = [];
       return debugSession.addBreakpoint('main', { isDisabled: false })
       .then((data: dbgmits.IBreakpointInfo) => { breakIds.push(parseInt(data.id, 10)); })
       .then(() => { return debugSession.addBreakpoint('funcA', { isDisabled: false }); })

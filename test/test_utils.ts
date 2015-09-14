@@ -3,7 +3,7 @@
 
 require('source-map-support').install();
 
-import * as dbgmits from '../src/index';
+import * as dbgmits from '../lib/index';
 import * as bunyan from 'bunyan';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -74,8 +74,8 @@ export function startDebugSession(logger?: bunyan.Logger): DebugSession {
       'getThreads'
     ];
     functionsToLog.forEach((funcName: string) => {
-      let func: Function = debugSession[funcName];
-      debugSession[funcName] = function () {
+      let func: Function = (<any> debugSession)[funcName];
+      (<any> debugSession)[funcName] = function () {
         return func.apply(this, arguments)
         .then((result: any) => {
           if (debugSession.logger) {

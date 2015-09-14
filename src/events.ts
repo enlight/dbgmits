@@ -249,7 +249,7 @@ export interface IThreadSelectedEvent {
 }
 
 /** Notification sent whenever a library is loaded or unloaded by an inferior. */
-interface ILibEvent {
+export interface ILibEvent {
   id: string;
   /** Name of the library file on the target system. */
   targetName: string;
