@@ -1,8 +1,6 @@
 ﻿// Copyright (c) 2015 Vadim Macagon
 // MIT License, see LICENSE file for full terms.
 
-/// <reference path="../typings/lib-tsd.d.ts" />
-
 import DebugSession from './debug_session';
 import GDBDebugSession from './gdb_debug_session';
 import { spawn, ChildProcess } from 'child_process';
