@@ -9,6 +9,7 @@
     },
     "files": [
         "../typings/lib.es6.d.ts",
+        "../typings/lib-tsd.d.ts",
         "../typings/test-tsd.d.ts",
         "basic.ts",
         "break_tests.ts",
