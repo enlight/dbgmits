@@ -3,8 +3,6 @@
 // Definitions by: Alex Mikhalev <https://github.com/amikhalev>
 // Definitions: https://github.com/borisyankov/DefinitelyTyped
 
-/// <reference path="../node/node.d.ts" />
-
 declare module "bunyan" {
     import events = require('events');
     import EventEmitter = events.EventEmitter;

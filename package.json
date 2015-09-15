@@ -7,6 +7,11 @@
   "description": "Provides the ability to control GDB and LLDB programmatically via GDB/MI.",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
+  "typescript": {
+    "definitions": [
+      "typings/bunyan/bunyan.d.ts"
+    ]
+  },
   "scripts": {
     "preinstall": "",
     "test": "echo \"Error: no test specified\" && exit 1"
