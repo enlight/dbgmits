@@ -36,41 +36,49 @@ function setProcessEnvironment(): void {
   }
 }
 
+export enum DebuggerType {
+  LLDB,
+  GDB
+}
+
 /**
  * Starts a new debugging session and spawns the debbuger process.
  *
  * Once the debug session has outlived its usefulness call [[DebugSession.end]] to ensure proper
  * cleanup.
  *
+ * @param debuggerFilename Full path to debugger executable, defaults to either `lldb-mi` or `gdb`
+ *                         (based on [[debuggerType]]).
  * @returns A new debug session, or null if a new session couldn't be started.
  */
-export function startDebugSession(debuggerName: string): DebugSession {
-  var debuggerFilename: string;
-  var debuggerArgs: string[];
+export function startDebugSession(debuggerType: DebuggerType, debuggerFilename?: string): DebugSession {
+  let debuggerArgs: string[];
 
-  switch (debuggerName) {
-    case 'lldb':
-    case 'lldb-mi':
+  switch (debuggerType) {
+    case DebuggerType.LLDB:
       setProcessEnvironment();
-      // lldb-mi.exe should be on the PATH
-      debuggerFilename = 'lldb-mi';
+      if (!debuggerFilename) {
+        // lldb-mi.exe should be on the PATH
+        debuggerFilename = 'lldb-mi';
+      }
       debuggerArgs = ['--interpreter'];
       break;
 
-    case 'gdb':
-      debuggerFilename = 'gdb';
+    case DebuggerType.GDB:
+      if (!debuggerFilename) {
+        debuggerFilename = 'gdb';
+      }
       debuggerArgs = ['--interpreter', 'mi'];
       break;
 
     default:
-      throw new Error('Unknown debugger: ' + debuggerName);
-      break;
+      throw new Error('Unknown debugger type!');
   }
   
-  var debuggerProcess: ChildProcess = spawn(debuggerFilename, debuggerArgs);
-  var debugSession: DebugSession = null;
+  const debuggerProcess: ChildProcess = spawn(debuggerFilename, debuggerArgs);
+  let debugSession: DebugSession = null;
   if (debuggerProcess) {
-    if (debuggerName === 'gdb') {
+    if (debuggerType === DebuggerType.GDB) {
       debugSession = new GDBDebugSession(debuggerProcess.stdout, debuggerProcess.stdin);
     } else {
       debugSession = new DebugSession(debuggerProcess.stdout, debuggerProcess.stdin);
