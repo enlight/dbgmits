@@ -40,12 +40,12 @@ log(describe("Debug Session", () => {
       return debugSession.startInferior();
     });
 
-    // FIXME: This tests is skipped on GDB because this MI command is not supported even though
+    // FIXME: This test is skipped on GDB because this MI command is not supported even though
     // it was documented in the GDB/MI spec.
     it("aborts the target process @skipOnGDB", () => {
       var verifyTargetExited = () => {
         // Promises get executed when they're created, wrapping the promise creation in
-        // a function makes it possible to delay execution u
+        // a function makes it possible to delay execution
         return new Promise<void>((resolve, reject) => {
           debugSession.once(dbgmits.EVENT_TARGET_STOPPED,
             (stopNotify: dbgmits.ITargetStoppedEvent) => {
