@@ -1,7 +1,7 @@
 import DebugSession from './debug_session';
 export declare enum DebuggerType {
-    LLDB = 0,
-    GDB = 1,
+    GDB = 0,
+    LLDB = 1,
 }
 /**
  * Starts a new debugging session and spawns the debbuger process.

@@ -37,8 +37,8 @@ function setProcessEnvironment(): void {
 }
 
 export enum DebuggerType {
-  LLDB,
-  GDB
+  GDB,
+  LLDB
 }
 
 /**
