@@ -336,7 +336,7 @@ export function createEventsForExecNotification(notification: string, data: any)
         stoppedThreads: parseStoppedThreadsList(data['stopped-threads']),
         processorCore: data.core
       };
-      let events = [{ name: EVENT_TARGET_STOPPED, data: stopEvent }];
+      let events: IDebugSessionEvent[] = [{ name: EVENT_TARGET_STOPPED, data: stopEvent }];
 
       // emit a more specialized event for notifications that contain additional info
       switch (stopEvent.reason) {
@@ -493,6 +493,8 @@ var targetStopReasonMap = new Map<string, TargetStopReason>()
   .set('end-stepping-range', TargetStopReason.EndSteppingRange)
   .set('function-finished', TargetStopReason.FunctionFinished)
   .set('exited-normally', TargetStopReason.ExitedNormally)
+  .set('exited-signalled', TargetStopReason.ExitedSignalled)
+  .set('exited', TargetStopReason.Exited)
   .set('signal-received', TargetStopReason.SignalReceived)
   .set('exception-received', TargetStopReason.ExceptionReceived);
 

@@ -13,6 +13,10 @@ export declare enum TargetStopReason {
     ExceptionReceived = 5,
     /** Catch-all for any of the other numerous reasons. */
     Unrecognized = 6,
+    /** An inferior terminated because it received a signal. */
+    ExitedSignalled = 7,
+    /** An inferior terminated (for some reason, check exitCode for clues). */
+    Exited = 8,
 }
 export interface IFrameInfoBase {
     /** Name of the function corresponding to the frame. */

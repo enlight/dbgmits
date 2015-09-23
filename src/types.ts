@@ -15,7 +15,11 @@ export enum TargetStopReason {
   /** The target encountered an exception (this is LLDB specific). */
   ExceptionReceived,
   /** Catch-all for any of the other numerous reasons. */
-  Unrecognized
+  Unrecognized,
+  /** An inferior terminated because it received a signal. */
+  ExitedSignalled,
+  /** An inferior terminated (for some reason, check exitCode for clues). */
+  Exited
 }
 
 export interface IFrameInfoBase {
