@@ -3,9 +3,10 @@
         "module": "commonjs",
         "target": "es5",
         "noImplicitAny": true,
-        "sourceMap": true,
+        "inlineSourceMap": true,
         "declaration": false,
-        "noLib": true
+        "noLib": true,
+        "outDir": "../test-js"
     },
     "files": [
         "../typings/lib.es6.d.ts",

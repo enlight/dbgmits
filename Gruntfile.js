@@ -26,25 +26,25 @@ module.exports = function(grunt) {
     'mochaTest': {
       testGDB: {
         options: {
-          reporter: '../../../test/custom_reporter',
+          reporter: '../../../test-js/custom_reporter',
           quiet: false,
           clearRequireCache: true,
           // skip any tests tagged with @skipOnGDB
           grep: '@skipOnGDB',
           invert: true
         },
-        src: ['test/**/*.js']
+        src: ['test-js/**/*.js']
       },
       testLLDB: {
         options: {
-          reporter: '../../../test/custom_reporter',
+          reporter: '../../../test-js/custom_reporter',
           quiet: false,
           clearRequireCache: true,
           // skip any tests tagged with @skipOnLLDB
           grep: '@skipOnLLDB',
           invert: true
         },
-        src: ['test/**/*.js']
+        src: ['test-js/**/*.js']
       }
     },
     'tsd': {
