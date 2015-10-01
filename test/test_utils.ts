@@ -13,7 +13,8 @@ import PrettyStream = require('bunyan-prettystream');
 import DebugSession = dbgmits.DebugSession;
 
 export function startDebugSession(logger?: bunyan.Logger): DebugSession {
-  let debugSession: DebugSession = dbgmits.startDebugSession(process.env['DBGMITS_DEBUGGER']);
+  const debuggerType = ('lldb' === process.env['DBGMITS_DEBUGGER']) ? dbgmits.DebuggerType.LLDB : dbgmits.DebuggerType.GDB;
+  let debugSession: DebugSession = dbgmits.startDebugSession(debuggerType);
   if (logger) {
     debugSession.logger = logger;
     
