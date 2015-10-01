@@ -125,7 +125,7 @@ describe("Debug Session", () => {
     });
 
     it("emits EVENT_THREAD_CREATED", (done: MochaDone) => {
-      var id: string = '1';
+      const id = 1;
       var groupId: string = 'i1';
       emitEventForDebuggerOutput(
         `=thread-created,id="${id}",group-id="${groupId}"\n`,
@@ -139,7 +139,7 @@ describe("Debug Session", () => {
     });
 
     it("emits EVENT_THREAD_EXITED", (done: MochaDone) => {
-      var id: string = '1';
+      const id = 1;
       var groupId: string = 'i1';
       emitEventForDebuggerOutput(
         `=thread-exited,id="${id}",group-id="${groupId}"\n`,
@@ -153,7 +153,7 @@ describe("Debug Session", () => {
     });
 
     it("emits EVENT_THREAD_SELECTED", (done: MochaDone) => {
-      var id: string = '1';
+      const id = 1;
       emitEventForDebuggerOutput(
         `=thread-selected,id="${id}"\n`,
         dbgmits.EVENT_THREAD_SELECTED,

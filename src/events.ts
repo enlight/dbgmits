@@ -235,17 +235,17 @@ export interface IThreadGroupExitedEvent {
 }
 
 export interface IThreadCreatedEvent {
-  id: string;
+  id: number;
   groupId: string;
 }
 
 export interface IThreadExitedEvent {
-  id: string;
+  id: number;
   groupId: string;
 }
 
 export interface IThreadSelectedEvent {
-  id: string;
+  id: number;
 }
 
 /** Notification sent whenever a library is loaded or unloaded by an inferior. */
@@ -427,21 +427,24 @@ export function createEventForAsyncNotification(notification: string, data: any)
       return { name: EVENT_THREAD_GROUP_EXITED, data: groupExitedEvent };
 
     case 'thread-created':
-      let threadCreatedEvent: IThreadCreatedEvent = {
-        id: data.id,
+      const threadCreatedEvent: IThreadCreatedEvent = {
+        id: data.id ? parseInt(data.id, 10) : undefined,
         groupId: data['group-id']
       };
       return { name: EVENT_THREAD_CREATED, data: threadCreatedEvent };
 
     case 'thread-exited':
-      let threadExitedEvent: IThreadExitedEvent = {
-        id: data.id,
+      const threadExitedEvent: IThreadExitedEvent = {
+        id: data.id ? parseInt(data.id, 10) : undefined,
         groupId: data['group-id']
       };
       return { name: EVENT_THREAD_EXITED, data: threadExitedEvent };
 
     case 'thread-selected':
-      return { name: EVENT_THREAD_SELECTED, data: data };
+      const threadSelectedEvent: IThreadSelectedEvent = {
+        id: data.id ? parseInt(data.id, 10) : undefined
+      };
+      return { name: EVENT_THREAD_SELECTED, data: threadSelectedEvent };
 
     case 'library-loaded':
       let libLoadedEvent: ILibLoadedEvent = {

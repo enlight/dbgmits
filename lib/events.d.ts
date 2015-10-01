@@ -216,15 +216,15 @@ export interface IThreadGroupExitedEvent {
     exitCode: string;
 }
 export interface IThreadCreatedEvent {
-    id: string;
+    id: number;
     groupId: string;
 }
 export interface IThreadExitedEvent {
-    id: string;
+    id: number;
     groupId: string;
 }
 export interface IThreadSelectedEvent {
-    id: string;
+    id: number;
 }
 /** Notification sent whenever a library is loaded or unloaded by an inferior. */
 export interface ILibEvent {
