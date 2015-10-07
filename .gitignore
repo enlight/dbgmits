@@ -7,3 +7,4 @@ docs/
 obj/
 build/**
 lldb-mi-log.txt
+test-js/

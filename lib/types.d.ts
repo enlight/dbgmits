@@ -49,15 +49,47 @@ export interface IThreadFrameInfo extends IFrameInfoBase {
     /** Arguments of the function corresponding to the frame. */
     args?: any;
 }
-/** Breakpoint-specific information returned by various MI commands. */
-export interface IBreakpointInfo {
+export interface IBreakpointLocationInfo {
     /**
-     * Breakpoint identifier.
-     * If the breakpoint represents a single location this will be an integer.
-     * If the breakpoint represents multiple locations this will be a pair of integers separated
-     * by a dot, e.g. `1.2`
+     * Breakpoint location identifier.
+     * This will be in the format `%d` if the breakpoint has a single location,
+     * or `%d.%d` if the breakpoint has multiple locations.
      */
     id: string;
+    isEnabled?: boolean;
+    /** Address of the breakpoint location as a hexadecimal literal. */
+    address?: string;
+    /**
+     * The name of the function within which the breakpoint location is set.
+     * If function name is not known then this field will be undefined.
+     */
+    func?: string;
+    /**
+     * The name of the source file of the breakpoint location.
+     * This filename is usually relative to the inferior executable.
+     * If the source file name is not known this field will be undefined.
+     */
+    filename?: string;
+    /**
+     * Absolute path of the source file in which this breakpoint location is set.
+     * If the source file name is not known this field will be undefined.
+     */
+    fullname?: string;
+    /**
+     * The source line number of the breakpoint location.
+     * If the source line number is not known this field will be undefined.
+     */
+    line?: number;
+    /**
+     * If the source file name is not known this field may hold the address of the breakpoint
+     * location, possibly followed by a symbol name.
+     */
+    at?: string;
+}
+/** Breakpoint-specific information returned by various MI commands. */
+export interface IBreakpointInfo {
+    /** Breakpoint identifier. */
+    id: number;
     /**
      * The type of the breakpoint.
      * For regular breakpoints this will be `breakpoint`, other possible values are `catchpoint`,
@@ -69,39 +101,8 @@ export interface IBreakpointInfo {
     /** If `true` the breakpoint will be deleted at the next stop. */
     isTemp?: boolean;
     isEnabled?: boolean;
-    /**
-     * Address of the breakpoint.
-     * The value may be:
-     * - an actual address defined by a hexadecimal
-     * - the string `<PENDING>` if the breakpoint is pending
-     * - the string `<MULTIPLE>` if the breakpoint represents multiple locations
-     */
-    address?: string;
-    /**
-     * The name of the function in which the breakpoint appears.
-     * If function name is not known then this field will be undefined.
-     */
-    func?: string;
-    /**
-     * The name of the source in which this breakpoint appears.
-     * If the source file name is not known this field will be undefined.
-     */
-    filename?: string;
-    /**
-     * The full name of the source file in which this breakpoint appears.
-     * If the source file name is not known this field will be undefined.
-     */
-    fullname?: string;
-    /**
-     * The source line number at which this breakpoint appears.
-     * If the source line number is not known this field will be undefined.
-     */
-    line?: number;
-    /**
-     * If the source file name is not known this field may hold the address of the breakpoint,
-     * possibly followed by a symbol name.
-     */
-    at?: string;
+    /** Locations of the breakpoint, empty if the breakpoint is still pending. */
+    locations: IBreakpointLocationInfo[];
     /** If the breakpoint is pending this field contains the text used by the user to set the breakpoint. */
     pending?: string;
     /**

@@ -34,14 +34,57 @@ log(describe("Debug Session", () => {
     });
 
     describe("#addBreakpoint()", () => {
-      it("adds a breakpoint by function name", () => {
+      it("adds a single-location breakpoint by function name", () => {
         return debugSession.addBreakpoint('main')
         .then((info: dbgmits.IBreakpointInfo) => {
           expect(info).to.have.property('id');
           expect(info).to.have.property('breakpointType', 'breakpoint');
           expect(info).to.have.property('isEnabled', true);
-          expect(info).to.have.property('func');
-          expect(info.func).match(/^main/);
+          expect(info).to.have.property('locations').of.length(1);
+          expect(info.locations[0]).to.have.property('func');
+          expect(info.locations[0].func).match(/^main/);
+        });
+      });
+
+      it("adds a multi-location breakpoint by function name", () => {
+        return debugSession.addBreakpoint('funcC')
+        .then((breakpoint: dbgmits.IBreakpointInfo) => {
+          expect(breakpoint).to.have.property('id');
+          expect(breakpoint).to.have.property('breakpointType', 'breakpoint');
+          expect(breakpoint).to.have.property('isEnabled', true);
+          expect(breakpoint).to.have.property('originalLocation');
+          expect(breakpoint.originalLocation).match(/^funcC/);
+          expect(breakpoint).to.have.property('locations').of.length(3);
+
+          const firstLocation = breakpoint.locations[0];
+          expect(firstLocation).to.have.property('id', `${breakpoint.id}.1`);
+          expect(firstLocation).to.have.property('address');
+          expect(firstLocation).to.have.property('isEnabled', true);
+          expect(firstLocation).to.have.property('func');
+          expect(firstLocation.func).match(/^funcC/);
+          expect(firstLocation).to.have.property('filename');
+          expect(firstLocation).to.have.property('fullname');
+          expect(firstLocation).to.have.property('line', 15);
+
+          const secondLocation = breakpoint.locations[1];
+          expect(secondLocation).to.have.property('id', `${breakpoint.id}.2`);
+          expect(secondLocation).to.have.property('address');
+          expect(secondLocation).to.have.property('isEnabled', true);
+          expect(secondLocation).to.have.property('func');
+          expect(secondLocation.func).match(/^funcC/);
+          expect(secondLocation).to.have.property('filename');
+          expect(secondLocation).to.have.property('fullname');
+          expect(secondLocation).to.have.property('line', 20);
+
+          const thirdLocation = breakpoint.locations[2];
+          expect(thirdLocation).to.have.property('id', `${breakpoint.id}.3`);
+          expect(thirdLocation).to.have.property('address');
+          expect(thirdLocation).to.have.property('isEnabled', true);
+          expect(thirdLocation).to.have.property('func');
+          expect(thirdLocation.func).match(/^funcC/);
+          expect(thirdLocation).to.have.property('filename');
+          expect(thirdLocation).to.have.property('fullname');
+          expect(thirdLocation).to.have.property('line', 25);
         });
       });
 
@@ -53,63 +96,80 @@ log(describe("Debug Session", () => {
           expect(info).to.have.property('id');
           expect(info).to.have.property('breakpointType', 'breakpoint');
           expect(info).to.have.property('isEnabled', true);
-          expect(info).to.have.property('filename');
+          expect(info).to.have.property('locations').of.length(1);
+          expect(info.locations[0]).to.have.property('filename');
+          const locFilename = info.locations[0].filename;
           // FIXME: convoluted way to do endsWith(), replace after switching to ES6
-          expect(info.filename.lastIndexOf(filename)).to.equal(info.filename.length - filename.length);
-          expect(info).to.have.property('line', line);
+          expect(locFilename.lastIndexOf(filename)).to.equal(locFilename.length - filename.length);
+          expect(info.locations[0]).to.have.property('line', line);
         });
       });
     }); // describe #addBreakpoint()
 
     it("#removeBreakpoint()", () => {
       return debugSession.addBreakpoint('main')
-      .then((info: dbgmits.IBreakpointInfo) => { return parseInt(info.id, 10); })
-      .then((breakpointId: number) => { return debugSession.removeBreakpoint(breakpointId); });
+      .then((info: dbgmits.IBreakpointInfo) => debugSession.removeBreakpoint(info.id));
     });
 
     it("#removeBreakpoints()", () => {
       let breakIds: number[] = [];
       return debugSession.addBreakpoint('main')
-      .then((data: dbgmits.IBreakpointInfo) => { breakIds.push(parseInt(data.id, 10)); })
-      .then(() => { return debugSession.addBreakpoint('funcA'); })
-      .then((data: dbgmits.IBreakpointInfo) => { breakIds.push(parseInt(data.id, 10)); })
-      .then(() => { return debugSession.addBreakpoint('funcB'); })
-      .then((data: dbgmits.IBreakpointInfo) => { breakIds.push(parseInt(data.id, 10)); })
-      .then(() => { debugSession.removeBreakpoints(breakIds); });
+      .then((data: dbgmits.IBreakpointInfo) => {
+        breakIds.push(data.id);
+        return debugSession.addBreakpoint('funcA');
+      })
+      .then((data: dbgmits.IBreakpointInfo) => {
+        breakIds.push(data.id);
+        return debugSession.addBreakpoint('funcB');
+      })
+      .then((data: dbgmits.IBreakpointInfo) => {
+        breakIds.push(data.id);
+        return debugSession.removeBreakpoints(breakIds);
+      });
     });
 
     it("#enableBreakpoint()", () => {
       return debugSession.addBreakpoint('main', { isDisabled: true })
-      .then((info: dbgmits.IBreakpointInfo) => { return parseInt(info.id, 10); })
-      .then((breakpointId: number) => { return debugSession.enableBreakpoint(breakpointId); });
+      .then((info: dbgmits.IBreakpointInfo) => debugSession.enableBreakpoint(info.id));
     });
 
     it("#enableBreakpoints()", () => {
       let breakIds: number[] = [];
       return debugSession.addBreakpoint('main', { isDisabled: true })
-      .then((data: dbgmits.IBreakpointInfo) => { breakIds.push(parseInt(data.id, 10)); })
-      .then(() => { return debugSession.addBreakpoint('funcA', { isDisabled: true }); })
-      .then((data: dbgmits.IBreakpointInfo) => { breakIds.push(parseInt(data.id, 10)); })
-      .then(() => { return debugSession.addBreakpoint('funcB', { isDisabled: true }); })
-      .then((data: dbgmits.IBreakpointInfo) => { breakIds.push(parseInt(data.id, 10)); })
-      .then(() => { return debugSession.enableBreakpoints(breakIds); });
+      .then((data: dbgmits.IBreakpointInfo) => {
+        breakIds.push(data.id);
+        return debugSession.addBreakpoint('funcA', { isDisabled: true });
+      })
+      .then((data: dbgmits.IBreakpointInfo) => {
+        breakIds.push(data.id);
+        return debugSession.addBreakpoint('funcB', { isDisabled: true });
+      })
+      .then((data: dbgmits.IBreakpointInfo) => {
+        breakIds.push(data.id);
+        return debugSession.enableBreakpoints(breakIds);
+      });
     });
 
     it("#disableBreakpoint()", () => {
       return debugSession.addBreakpoint('main', { isDisabled: false })
-      .then((data: dbgmits.IBreakpointInfo) => { return parseInt(data.id, 10); })
-      .then((breakpointId: number) => { debugSession.disableBreakpoint(breakpointId); });
+      .then((data: dbgmits.IBreakpointInfo) => debugSession.disableBreakpoint(data.id));
     });
 
     it("#disableBreakpoints()", () => {
       let breakIds: number[] = [];
       return debugSession.addBreakpoint('main', { isDisabled: false })
-      .then((data: dbgmits.IBreakpointInfo) => { breakIds.push(parseInt(data.id, 10)); })
-      .then(() => { return debugSession.addBreakpoint('funcA', { isDisabled: false }); })
-      .then((data: dbgmits.IBreakpointInfo) => { breakIds.push(parseInt(data.id, 10)); })
-      .then(() => { return debugSession.addBreakpoint('funcB', { isDisabled: false }); })
-      .then((data: dbgmits.IBreakpointInfo) => { breakIds.push(parseInt(data.id, 10)); })
-      .then(() => { debugSession.disableBreakpoints(breakIds); });
+      .then((data: dbgmits.IBreakpointInfo) => {
+        breakIds.push(data.id);
+        return debugSession.addBreakpoint('funcA', { isDisabled: false });
+      })
+      .then((data: dbgmits.IBreakpointInfo) => {
+        breakIds.push(data.id);
+        return debugSession.addBreakpoint('funcB', { isDisabled: false });
+      })
+      .then((data: dbgmits.IBreakpointInfo) => {
+        breakIds.push(data.id);
+        return debugSession.disableBreakpoints(breakIds);
+      });
     });
   });
 }));

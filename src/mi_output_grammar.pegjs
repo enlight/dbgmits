@@ -53,8 +53,17 @@ result_list
       return mioutput.createObjFromResultList(results);
     }
 
+// According to the published grammar this rule should be:
+// result = n:variable '=' v:value
+// However, the result of the -insert-break command doesn't conform to this rule when the
+// breakpoint has multiple locations, so the rule had to be tweaked to handle that case. 
 result
-  = n:variable '=' v:value { return { name: n, value: v }; }
+  = n:variable '=' v:value rest:comma_prefixed_values? {
+      return {
+        name: n,
+        value: rest ? [v].concat(rest) : v
+      };
+    }
 
 comma_prefixed_values
   = (',' v:value { return v; })+

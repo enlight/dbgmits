@@ -47,6 +47,45 @@ describe("MI Output Parser", () => {
       expect(bkpt).to.have.property('original-location', func);
     });
 
+    it("parses 'done' from 'insert-break' command for a multi-location breakpoint", () => {
+      const breakpointId = '1';
+      const addr = '<MULTIPLE>';
+      const locationIds = ['1.1', '1.2', '1.3'];
+      const filename = '../test/break_tests_target.cpp';
+      const fullname = '/media/sf_dbgmits/test/break_tests_target.cpp';
+      const locationLines = ['15', '20', '25'];
+      const threadGroupId = 'i1';
+      const result = parser.parse(
+        `^done,bkpt={number="${breakpointId}",type="breakpoint",disp="keep",enabled="y",` +
+        `addr="${addr}",times="0",original-location="funcC"},` +
+        `{number="${locationIds[0]}",enabled="y",addr="0x0000000000400868",func="funcC()",` +
+        `file="${filename}",fullname="${fullname}",line="${locationLines[0]}",` +
+        `thread-groups=["${threadGroupId}"]},` +
+        `{number="${locationIds[1]}",enabled="y",addr="0x0000000000400872",func="funcC(int)",` +
+        `file="${filename}",fullname="${fullname}",line="${locationLines[1]}",` +
+        `thread-groups=["${threadGroupId}"]},` +
+        `{number="${locationIds[2]}",enabled="y",addr="0x0000000000400881",func="funcC(int, bool)",` +
+        `file="${filename}",fullname="${fullname}",line="${locationLines[2]}",` +
+        `thread-groups=["${threadGroupId}"]}`
+      );
+
+      expect(result.recordType).to.equal(RecordType.Done);
+      expect(result.data).to.have.property('bkpt').of.length(4);
+
+      const bkpt: any = result.data.bkpt;
+      expect(bkpt[0]).to.have.property('number', breakpointId);
+      expect(bkpt[0]).to.have.property('addr', addr);
+
+      for (let i = 1; i < bkpt.length; ++i) {
+        expect(bkpt[i]).to.have.property('number', locationIds[i - 1]);
+        expect(bkpt[i]).to.have.property('file', filename);
+        expect(bkpt[i]).to.have.property('fullname', fullname);
+        expect(bkpt[i]).to.have.property('line', locationLines[i - 1]);
+        expect(bkpt[i]).to.have.property('thread-groups').of.length(1);
+        expect(bkpt[i]['thread-groups']).to.contain(threadGroupId);
+      }
+    });
+
     it("parses 'done' from 'get stack depth' command", () => {
       var frameLevel: string = '0';
       var frameAddr: string = '0x000000000040080a';

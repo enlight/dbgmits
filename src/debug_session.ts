@@ -9,7 +9,8 @@ import { RecordType } from './mi_output';
 import * as bunyan from 'bunyan';
 import * as Events from './events';
 import {
-  IBreakpointInfo, IStackFrameInfo, IStackFrameArgsInfo, IStackFrameVariablesInfo, IVariableInfo,
+  IBreakpointInfo, IBreakpointLocationInfo,
+  IStackFrameInfo, IStackFrameArgsInfo, IStackFrameVariablesInfo, IVariableInfo,
   IWatchInfo, IWatchUpdateInfo, IWatchChildInfo, IMemoryBlock, IAsmInstruction, ISourceLineAsm,
   IThreadFrameInfo, IThreadInfo, IMultiThreadInfo,
   VariableDetailLevel, WatchFormatSpec, WatchAttribute, RegisterValueFormatSpec
@@ -1478,35 +1479,57 @@ function appendExecCmdOptions(
   return cmd;
 }
 
+function extractBreakpointLocationInfo(data: any): IBreakpointLocationInfo {
+  return {
+    id: data['number'],
+    isEnabled: (data.enabled !== undefined) ? (data.enabled === 'y') : undefined,
+    address: data.addr,
+    func: data.func,
+    filename: data.file || data.filename, // LLDB MI uses non standard 'file'
+    fullname: data.fullname,
+    line: parseInt(data.line, 10),
+    at: data.at
+  };
+}
+
 /**
  * Converts the output produced by the MI Output parser from the response to the
  * -break-insert and -break-after MI commands into a more useful form.
  */
 function extractBreakpointInfo(data: any): IBreakpointInfo {
-  return {
-    id: data.bkpt['number'],
-    breakpointType: data.bkpt['type'],
-    catchpointType: data.bkpt['catch-type'],
-    isTemp: (data.bkpt.disp !== undefined) ? (data.bkpt.disp === 'del') : undefined,
-    isEnabled: (data.bkpt.enabled !== undefined) ? (data.bkpt.enabled === 'y') : undefined,
-    address: data.bkpt.addr,
-    func: data.bkpt.func,
-    filename: data.bkpt.file || data.bkpt.filename, // LLDB MI uses non standard 'file'
-    fullname: data.bkpt.fullname,
-    line: parseInt(data.bkpt.line, 10),
-    at: data.bkpt.at,
-    pending: data.bkpt.pending,
-    evaluatedBy: data.bkpt['evaluated-by'],
-    threadId: data.bkpt.thread,
-    condition: data.bkpt.cond,
-    ignoreCount: data.bkpt.ignore,
-    enableCount: data.bkpt.enable,
-    mask: data.bkpt.mask,
-    passCount: data.bkpt.pass,
-    originalLocation: data.bkpt['original-location'],
-    hitCount: data.bkpt.times,
-    isInstalled: (data.bkpt.installed !== undefined) ? (data.bkpt.installed === 'y') : undefined,
-    what: data.bkpt.what
+  let breakpoint: any;
+  let locations: IBreakpointLocationInfo[];
+
+  if (Array.isArray(data.bkpt)) {
+    breakpoint = data.bkpt[0];
+    locations = [];
+    for (let i = 1; i < data.bkpt.length; ++i) {
+      locations.push(extractBreakpointLocationInfo(data.bkpt[i]));
+    }
+  } else {
+    breakpoint = data.bkpt;
+    locations = (breakpoint.addr === '<PENDING>') ? [] : [extractBreakpointLocationInfo(data.bkpt)];
+  }
+
+  return <IBreakpointInfo> {
+    id: parseInt(breakpoint['number'], 10),
+    breakpointType: breakpoint['type'],
+    catchpointType: breakpoint['catch-type'],
+    isTemp: (breakpoint.disp !== undefined) ? (breakpoint.disp === 'del') : undefined,
+    isEnabled: (breakpoint.enabled !== undefined) ? (breakpoint.enabled === 'y') : undefined,
+    locations,
+    pending: breakpoint.pending,
+    evaluatedBy: breakpoint['evaluated-by'],
+    threadId: breakpoint.thread,
+    condition: breakpoint.cond,
+    ignoreCount: breakpoint.ignore,
+    enableCount: breakpoint.enable,
+    mask: breakpoint.mask,
+    passCount: breakpoint.pass,
+    originalLocation: breakpoint['original-location'],
+    hitCount: breakpoint.times,
+    isInstalled: (breakpoint.installed !== undefined) ? (breakpoint.installed === 'y') : undefined,
+    what: breakpoint.what
   };
 }
 
