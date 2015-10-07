@@ -107,7 +107,7 @@ describe("MI Output Parser", () => {
       expect(result.data).to.have.property('stack');
       expect(result.data.stack).to.have.property('frame');
       expect(result.data.stack.frame.length).to.equal(3);
-      
+
       var frame: any = result.data.stack.frame[0];
       expect(frame).to.have.property('level', frameLevel);
       expect(frame).to.have.property('addr', frameAddr);

@@ -158,7 +158,7 @@ export default class DebugSession extends events.EventEmitter {
     if (line.match(/^\(gdb\)\s*/) || (line === '')) {
       return;
     }
-    
+
     var cmdQueuePopped: boolean = false;
     try {
       var result = parser.parse(line);
@@ -399,7 +399,7 @@ export default class DebugSession extends events.EventEmitter {
         cmd = cmd + ' -p ' + options.threadId;
       }
     }
-    
+
     return this.getCommandOutput<IBreakpointInfo>(cmd + ' ' + location, null, (output: any) => {
       return extractBreakpointInfo(output);
     });
@@ -575,7 +575,7 @@ export default class DebugSession extends events.EventEmitter {
     if (reverse) {
       fullCmd = fullCmd + ' --reverse';
     }
-    
+
     return this.executeCommand(fullCmd, null);
   }
 
@@ -591,7 +591,7 @@ export default class DebugSession extends events.EventEmitter {
     if (threadGroup) {
       fullCmd = fullCmd + ' --thread-group ' + threadGroup;
     }
-    
+
     return this.executeCommand(fullCmd, null);
   }
 
@@ -719,9 +719,9 @@ export default class DebugSession extends events.EventEmitter {
         fullCmd = fullCmd + ' ' + options.maxDepth;
       }
     }
-    
+
     return this.getCommandOutput(fullCmd, null, (output: any) => {
-      return parseInt(output.depth);
+      return parseInt(output.depth, 10);
     });
   }
 
@@ -817,7 +817,7 @@ export default class DebugSession extends events.EventEmitter {
     }
 
     fullCmd = fullCmd + ' ' + detail;
-    
+
     if (options) {
       if ((options.lowFrame !== undefined) && (options.highFrame !== undefined)) {
         fullCmd = fullCmd + ` ${options.lowFrame} ${options.highFrame}`;
@@ -964,8 +964,7 @@ export default class DebugSession extends events.EventEmitter {
       }
       if (options.isFloating === true) {
         addr = '@';
-      }
-      else if (options.frameAddress) {
+      } else if (options.frameAddress) {
         addr = options.frameAddress;
       }
     }
@@ -975,10 +974,10 @@ export default class DebugSession extends events.EventEmitter {
     return this.getCommandOutput(fullCmd, null, (output: any) => {
       return {
         id: output.name,
-        childCount: parseInt(output.numchild),
+        childCount: parseInt(output.numchild, 10),
         value: output.value,
         expressionType: output['type'],
-        threadId: parseInt(output['thread-id']),
+        threadId: parseInt(output['thread-id'], 10),
         hasMoreChildren: output.has_more !== '0',
         isDynamic: output.dynamic === '1',
         displayHint: output.displayhint
@@ -1011,7 +1010,7 @@ export default class DebugSession extends events.EventEmitter {
       return output.changelist.map((data: any) => {
         return {
           id: data.name,
-          childCount: (data.new_num_children ? parseInt(data.new_num_children) : undefined),
+          childCount: (data.new_num_children ? parseInt(data.new_num_children, 10) : undefined),
           value: data.value,
           expressionType: data.new_type,
           isInScope: data.in_scope === 'true',
@@ -1021,7 +1020,7 @@ export default class DebugSession extends events.EventEmitter {
           displayHint: data.displayhint,
           hasMoreChildren: data.has_more === '1',
           newChildren: data.new_children
-        }
+        };
       });
     });
   }
@@ -1047,7 +1046,7 @@ export default class DebugSession extends events.EventEmitter {
    *                   effect.
    */
   getWatchChildren(
-    id: string, 
+    id: string,
     options?: {
       detail?: VariableDetailLevel;
       from?: number;
@@ -1154,7 +1153,7 @@ export default class DebugSession extends events.EventEmitter {
    */
   getWatchExpression(id: string): Promise<string> {
     var cmd = 'var-info-path-expression ' + id;
-    
+
     return this.getCommandOutput(cmd, null, (output: any) => {
       if (output.path_expr) {
         return output.path_expr;
@@ -1298,7 +1297,7 @@ export default class DebugSession extends events.EventEmitter {
       var registerMap = new Map<number, string>();
       if (registers) {
         registers.forEach((register) => {
-          registerMap.set(parseInt(register.number), register.value); 
+          registerMap.set(parseInt(register.number, 10), register.value);
         });
         return registerMap;
       }
@@ -1323,7 +1322,7 @@ export default class DebugSession extends events.EventEmitter {
   disassembleAddressRange(start: string, end: string, showOpcodes?: boolean)
     : Promise<IAsmInstruction[]> {
     var fullCmd = `data-disassemble -s ${start} -e ${end} -- ` + (showOpcodes ? '2' : '0');
-    
+
     return this.getCommandOutput(fullCmd, null, (output: any) => {
       if (output.asm_insns) {
         return extractAsmInstructions(output.asm_insns);
@@ -1348,7 +1347,7 @@ export default class DebugSession extends events.EventEmitter {
   disassembleAddressRangeByLine(start: string, end: string, showOpcodes?: boolean)
     : Promise<ISourceLineAsm[]> {
     var fullCmd = `data-disassemble -s ${start} -e ${end} -- ` + (showOpcodes ? '3' : '1');
-    
+
     return this.getCommandOutput(fullCmd, null, (output: any) => {
       if (output.asm_insns) {
         return extractAsmBySourceLine(output.asm_insns);
@@ -1380,7 +1379,7 @@ export default class DebugSession extends events.EventEmitter {
       fullCmd = fullCmd + ' -n ' + options.maxInstructions;
     }
     fullCmd = fullCmd + ' -- ' + ((options && options.showOpcodes) ? '2' : '0');
-    
+
     return this.getCommandOutput(fullCmd, null, (output: any) => {
       if (output.asm_insns) {
         return extractAsmInstructions(output.asm_insns);
@@ -1411,7 +1410,7 @@ export default class DebugSession extends events.EventEmitter {
       fullCmd = fullCmd + ' -n ' + options.maxInstructions;
     }
     fullCmd = fullCmd + ' -- ' + ((options && options.showOpcodes) ? '3' : '1');
-    
+
     return this.getCommandOutput(fullCmd, null, (output: any) => {
       if (output.asm_insns) {
         return extractAsmBySourceLine(output.asm_insns);
@@ -1428,7 +1427,7 @@ export default class DebugSession extends events.EventEmitter {
     let fullCmd = 'thread-info ' + threadId;
     return this.getCommandOutput(fullCmd, null, (output: any) => {
       if (output.threads && (output.threads.length === 1)) {
-        return extractThreadInfo(output.threads[0])
+        return extractThreadInfo(output.threads[0]);
       }
       throw new MalformedResponseError(
         'Expected to find "threads" list with a single element.', output, fullCmd
@@ -1558,17 +1557,17 @@ function extractWatchChildren(data: any | any[]): IWatchChildInfo[] {
   var extractWatchChild = (data: any): IWatchChildInfo => {
     return {
       id: data.name,
-      childCount: parseInt(data.numchild),
+      childCount: parseInt(data.numchild, 10),
       value: data.value,
       expressionType: data['type'],
-      threadId: parseInt(data['thread-id']),
+      threadId: parseInt(data['thread-id'], 10),
       hasMoreChildren: data.has_more !== '0',
       isDynamic: data.dynamic === '1',
       displayHint: data.displayhint,
       expression: data.exp,
       isFrozen: data.frozen === '1'
     };
-  }
+  };
 
   if ((data === undefined) || Array.isArray(data)) {
     // data will only be an array if the array is empty
@@ -1592,7 +1591,7 @@ function extractAsmInstructions(data: any[]): IAsmInstruction[] {
     return {
       address: asmInstruction.address,
       func: asmInstruction['func-name'],
-      offset: parseInt(asmInstruction.offset),
+      offset: parseInt(asmInstruction.offset, 10),
       inst: asmInstruction.inst,
       opcodes: asmInstruction.opcodes,
       size: parseInt(asmInstruction.size, 10)

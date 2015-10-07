@@ -35,7 +35,7 @@ log(describe("Debug Session", () => {
     afterEach(() => {
       return debugSession.end();
     });
-    
+
     describe("#addWatch", () => {
       it("adds a new floating watch for a local variable in an outer frame", () => {
         return runToFunc(debugSession, 'funcWithMoreVariablesToWatch_Inner', () => {
@@ -119,7 +119,7 @@ log(describe("Debug Session", () => {
               }
             );
           });
-        }
+        };
 
         return runToFuncAndStepOut(debugSession, 'funcWithMoreVariablesToWatch_Inner', () => {
           // create a watch on a variable and step over the line that alters the value of the variable
@@ -266,7 +266,7 @@ log(describe("Debug Session", () => {
         .then(() => {
           return debugSession.setWatchValueFormat(watchId, dbgmits.WatchFormatSpec.Default);
         })
-        .then((value: string) => { expect(value).to.equal('5'); })
+        .then((value: string) => { expect(value).to.equal('5'); });
       });
     });
 
@@ -278,7 +278,7 @@ log(describe("Debug Session", () => {
         })
         .then((value: string) => {
           expect(value).to.equal('5');
-        })
+        });
       });
     });
 
@@ -291,7 +291,7 @@ log(describe("Debug Session", () => {
         })
         .then((value: string) => {
           expect(value).to.equal(newValue);
-        })
+        });
       });
     });
 
@@ -305,10 +305,10 @@ log(describe("Debug Session", () => {
           .then((attrs: dbgmits.WatchAttribute[]) => {
             expect(attrs.length).to.equal(1);
             expect(attrs[0]).to.equal(dbgmits.WatchAttribute.Editable);
-          })
+          });
         });
       });
-  
+
       // FIXME: re-enable this test for LLDB when LLDB-MI starts returning 'noneditable' attributes
       // like it should
       it("gets the attributes for a watch on a variable of an aggregate type @skipOnLLDB", () => {
@@ -320,7 +320,7 @@ log(describe("Debug Session", () => {
           .then((attrs: dbgmits.WatchAttribute[]) => {
             expect(attrs.length).to.equal(1);
             expect(attrs[0]).to.equal(dbgmits.WatchAttribute.NonEditable);
-          })
+          });
         });
       });
     });
@@ -333,7 +333,7 @@ log(describe("Debug Session", () => {
         })
         .then((expr: string) => {
           expect(expr).to.equal('f');
-        })
+        });
       });
     });
   });

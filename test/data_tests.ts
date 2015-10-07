@@ -53,8 +53,8 @@ log(describe("Debug Session", () => {
         .then((value: string) => { expect(value).to.equal('true'); })
         .then(() => { return debugSession.evaluateExpression('get10() == getInt(10)'); })
         .then((value: string) => { expect(value).to.equal('true'); })
-        .then(() => { 
-          return debugSession.evaluateExpression('a == 1', { threadId: 1, frameLevel: 0 }); 
+        .then(() => {
+          return debugSession.evaluateExpression('a == 1', { threadId: 1, frameLevel: 0 });
         })
         .then((value: string) => { expect(value).to.equal('true'); });
       });
@@ -74,7 +74,7 @@ log(describe("Debug Session", () => {
               expect(blocks[0]).to.have.property('offset');
               expect(blocks[0]).to.have.property('contents', '01020304');
             });
-          })
+          });
         });
       });
 
@@ -177,7 +177,7 @@ log(describe("Debug Session", () => {
         return debugSession.disassembleFile('data_tests_target.cpp', mainFuncLineNum, -1)
         .then((instructions: dbgmits.IAsmInstruction[]) => {
           expect(instructions.length).to.be.greaterThan(0);
-        }); 
+        });
       });
     });
 

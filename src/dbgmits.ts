@@ -74,7 +74,7 @@ export function startDebugSession(debuggerType: DebuggerType, debuggerFilename?:
     default:
       throw new Error('Unknown debugger type!');
   }
-  
+
   const debuggerProcess: ChildProcess = spawn(debuggerFilename, debuggerArgs);
   let debugSession: DebugSession = null;
   if (debuggerProcess) {

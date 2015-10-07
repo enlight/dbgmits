@@ -41,7 +41,7 @@ log(describe("Debug Session", () => {
           .then((info: dbgmits.IStackFrameInfo) => {
             expect(info).to.have.property('func');
             expect(info.func).match(/^funcAtFrameLevel0/);
-          })
+          });
         });
       });
 
@@ -52,14 +52,14 @@ log(describe("Debug Session", () => {
           .then((info: dbgmits.IStackFrameInfo) => {
             expect(info).to.have.property('func');
             expect(info.func).match(/^funcAtFrameLevel1/);
-          })
+          });
         });
       });
     }); // #getStackFrame
-    
+
     it("#getStackDepth", () => {
       var initialStackDepth = -1;
-      // GDB and LLDB report stack depth a bit differently, LLDB adds a couple of frames from 
+      // GDB and LLDB report stack depth a bit differently, LLDB adds a couple of frames from
       // libc to the count, but GDB does not. So instead of checking the absolute stack depth
       // we check the relative stack depth (starting from main()).
       var onBreakpointCheckStackDepth = new Promise<void>((resolve, reject) => {
@@ -77,7 +77,7 @@ log(describe("Debug Session", () => {
               case 2: // breakpoint in funcAtFrameLevel0()
                 debugSession.getStackDepth()
                 .then((stackDepth: number) => {
-                  // the stack should be 2 levels deep counting from main(): 
+                  // the stack should be 2 levels deep counting from main():
                   // funcAtFrameLevel1()->funcAtFrameLevel0()
                   expect(stackDepth - initialStackDepth).to.equal(2);
                 })
@@ -93,7 +93,7 @@ log(describe("Debug Session", () => {
         return Promise.all([
           onBreakpointCheckStackDepth,
           debugSession.startInferior()
-        ])
+        ]);
       });
     }); // #getStackDepth
 
@@ -141,7 +141,7 @@ log(describe("Debug Session", () => {
         });
       });
     }); // #getStackFrames
-    
+
     describe("#getStackFrameArgs", () => {
       it("gets frame arguments for a number of frames", () => {
         return runToFunc(debugSession, 'funcWithNoArgs', () => {
@@ -151,7 +151,7 @@ log(describe("Debug Session", () => {
           return debugSession.getStackFrameArgs(dbgmits.VariableDetailLevel.All, { lowFrame: 0, highFrame: 3 })
           .then((frames: dbgmits.IStackFrameArgsInfo[]) => {
             expect(frames).to.have.property('length', 4);
-                
+
             expect(frames[0]).to.have.property('level', 0);
             expect(frames[0]).to.have.property('args').that.has.property('length', 0);
 
@@ -261,7 +261,7 @@ log(describe("Debug Session", () => {
             expect(locals[0]).to.have.property('name', 'c');
             expect(locals[0]).to.have.property('value', 'true');
             expect(locals[0]).to.have.property('type', 'bool');
-              
+
             expect(locals[1]).to.have.property('name', 'd');
             expect(locals[1]).to.have.property('value').that.is.undefined;
             expect(locals[1]).to.have.property('type', 'const char *[3]');
@@ -282,7 +282,7 @@ log(describe("Debug Session", () => {
             expect(locals[0]).to.have.property('name', 'c');
             expect(locals[0]).to.have.property('value', 'true');
             expect(locals[0]).to.have.property('type').that.is.undefined;
-              
+
             expect(locals[1]).to.have.property('name', 'd');
             expect(locals[1]).to.have.property('value');
             expect(locals[1]).to.have.property('type').that.is.undefined;
@@ -304,7 +304,7 @@ log(describe("Debug Session", () => {
             expect(locals[0]).to.have.property('name', 'e');
             expect(locals[0]).to.have.property('value');
             expect(locals[0]).to.have.property('type', 'Point');
-              
+
             expect(locals[1]).to.have.property('name', 'f');
             expect(locals[1]).to.have.property('value', '9.5');
             expect(locals[1]).to.have.property('type', 'float');
@@ -329,7 +329,7 @@ log(describe("Debug Session", () => {
             expect(locals[0]).to.have.property('name', 'e');
             expect(locals[0]).to.have.property('value');
             expect(locals[0]).to.have.property('type').that.is.undefined;
-              
+
             expect(locals[1]).to.have.property('name', 'f');
             expect(locals[1]).to.have.property('value', '9.5');
             expect(locals[1]).to.have.property('type').that.is.undefined;
@@ -385,7 +385,7 @@ log(describe("Debug Session", () => {
           .then((variables: dbgmits.IStackFrameVariablesInfo) => {
             const args = variables.args;
             expect(args.length).to.equal(2);
-              
+
             expect(args[0]).to.have.property('name', 'b');
             expect(args[0]).to.have.property('value', '7');
             expect(args[0]).to.have.property('type', 'float');
@@ -404,7 +404,7 @@ log(describe("Debug Session", () => {
           .then((variables: dbgmits.IStackFrameVariablesInfo) => {
             const args = variables.args;
             expect(args.length).to.equal(3);
-              
+
             expect(args[0]).to.have.property('name', 'd');
             expect(args[0]).to.have.property('value', '300');
             expect(args[0]).to.have.property('type', 'long');

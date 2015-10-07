@@ -17,7 +17,7 @@ export function startDebugSession(logger?: bunyan.Logger): DebugSession {
   let debugSession: DebugSession = dbgmits.startDebugSession(debuggerType);
   if (logger) {
     debugSession.logger = logger;
-    
+
     // log event data emitted by DebugSession
     let eventsToLog = [
       dbgmits.EVENT_TARGET_RUNNING,
@@ -44,7 +44,7 @@ export function startDebugSession(logger?: bunyan.Logger): DebugSession {
         }
       });
     });
-    
+
     // monkey-patch DebugSession methods that return non-void promises and log the values
     // the promises are resolved with
     let functionsToLog: string[] = [
@@ -116,7 +116,7 @@ export function runToFunc(
     return Promise.all([
       onBreakpointHit,
       debugSession.startInferior()
-    ])
+    ]);
   });
 }
 
@@ -154,7 +154,7 @@ export function runToFuncAndStepOut(
         );
       }
     });
-  }
+  };
   var onBreakpointStepOut = new Promise<void>((resolve, reject) => {
     debugSession.once(dbgmits.EVENT_BREAKPOINT_HIT,
       (breakNotify: dbgmits.IBreakpointHitEvent) => {
@@ -173,7 +173,7 @@ export function runToFuncAndStepOut(
     return Promise.all([
       onBreakpointStepOut,
       debugSession.startInferior()
-    ])
+    ]);
   });
 }
 
@@ -192,7 +192,7 @@ interface IHookCallback {
  * function `fn`.
  *
  * The logger instance passed to the `fn` function is created by a custom mocha reporter,
- * but only for tests that are in suites wrapped with [[logSuite]], or for tests wrapped with 
+ * but only for tests that are in suites wrapped with [[logSuite]], or for tests wrapped with
  * [[logTest]].
  *
  * @param fn A function to execute before each test in the current suite.
@@ -207,11 +207,11 @@ export function beforeEachTestWithLogger(fn: (logger: bunyan.Logger) => any): vo
   };
   cb.setLogger = (logger: bunyan.Logger): void => {
     cb.logger = logger;
-  }
+  };
   beforeEach(cb);
 }
 
-/** 
+/**
  * Creates a new logger for a test.
  *
  * The logger will create a log file in the `logs/tests` directory.
@@ -224,7 +224,7 @@ function createLogger(testIndex: number, title: string): bunyan.Logger {
   try {
     fs.mkdirSync('logs/tests');
   } catch (err) {
-    if (err.code != 'EEXIST') {
+    if (err.code !== 'EEXIST') {
       throw err;
     }
   }

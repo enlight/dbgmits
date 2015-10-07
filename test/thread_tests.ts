@@ -85,7 +85,7 @@ log(describe("Debug Session", () => {
             expect(info).to.have.property('current').which.equals(info.all[0]);
             expect(info.all[0]).to.have.property('isStopped', true);
             expect(info.all[1]).to.have.property('isStopped', true);
-          })
+          });
         });
       });
     });

@@ -456,7 +456,7 @@ export function createEventForAsyncNotification(notification: string, data: any)
         loadAddress: data.loaded_addr
       };
       return { name: EVENT_LIB_LOADED, data: libLoadedEvent };
-        
+
     case 'library-unloaded':
       let libUnloadedEvent: ILibUnloadedEvent = {
         id: data.id,
