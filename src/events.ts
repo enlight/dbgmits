@@ -6,10 +6,10 @@ import { TargetStopReason, IFrameInfo } from './types';
 /**
   * Emitted when a thread group is added by the debugger, it's possible the thread group
   * hasn't yet been associated with a running program.
-  * 
+  *
   * Listener function should have the signature:
   * ~~~
-  * (notification: [[ThreadGroupAddedNotify]]) => void
+  * (e: [[IThreadGroupAddedEvent]]) => void
   * ~~~
   * @event
   */
@@ -19,18 +19,18 @@ export const EVENT_THREAD_GROUP_ADDED: string = 'thdgrpadd';
   *
   * Listener function should have the signature:
   * ~~~
-  * (notification: [[ThreadGroupRemovedNotify]]) => void
+  * (e: [[IThreadGroupRemovedEvent]]) => void
   * ~~~
   * @event
   */
 export const EVENT_THREAD_GROUP_REMOVED: string = 'thdgrprem';
 /**
-  * Emitted when a thread group is associated with a running program, 
+  * Emitted when a thread group is associated with a running program,
   * either because the program was started or the debugger was attached to it.
   *
   * Listener function should have the signature:
   * ~~~
-  * (notification: [[ThreadGroupStartedNotify]]) => void
+  * (e: [[IThreadGroupStartedEvent]]) => void
   * ~~~
   * @event
   */
@@ -39,9 +39,9 @@ export const EVENT_THREAD_GROUP_STARTED: string = 'thdgrpstart';
   * Emitted when a thread group ceases to be associated with a running program,
   * either because the program terminated or the debugger was dettached from it.
   *
-  * Listener function should have the signature: 
+  * Listener function should have the signature:
   * ~~~
-  * (notification: [[ThreadGroupExitedNotify]]) => void
+  * (e: [[IThreadGroupExitedEvent]]) => void
   * ~~~
   * @event
   */
@@ -51,7 +51,7 @@ export const EVENT_THREAD_GROUP_EXITED: string = 'thdgrpexit';
   *
   * Listener function should have the signature:
   * ~~~
-  * (notification: [[ThreadCreatedNotify]]) => void
+  * (e: [[IThreadCreatedEvent]]) => void
   * ~~~
   * @event
   */
@@ -61,7 +61,7 @@ export const EVENT_THREAD_CREATED: string = 'thdcreate';
   *
   * Listener function should have the signature:
   * ~~~
-  * (notification: [[ThreadExitedNotify]]) => void
+  * (e: [[IThreadExitedEvent]]) => void
   * ~~~
   * @event
   */
@@ -71,7 +71,7 @@ export const EVENT_THREAD_EXITED: string = 'thdexit';
   *
   * Listener function should have the signature:
   * ~~~
-  * (notification: [[ThreadSelectedNotify]]) => void
+  * (e: [[IThreadSelectedEvent]]) => void
   * ~~~
   * @event
   */
@@ -81,7 +81,7 @@ export const EVENT_THREAD_SELECTED: string = 'thdselect';
   *
   * Listener function should have the signature:
   * ~~~
-  * (notification: [[LibLoadedNotify]]) => void
+  * (e: [[ILibLoadedEvent]]) => void
   * ~~~
   * @event
   */
@@ -91,14 +91,14 @@ export const EVENT_LIB_LOADED: string = 'libload';
   *
   * Listener function should have the signature:
   * ~~~
-  * (notification: [[LibUnloadedNotify]]) => void
+  * (e: [[ILibUnloadedEvent]]) => void
   * ~~~
   * @event
   */
 export const EVENT_LIB_UNLOADED: string = 'libunload';
 
 /**
-  * Emitted when some console output from the debugger becomes available, 
+  * Emitted when some console output from the debugger becomes available,
   * usually in response to a CLI command.
   *
   * Listener function should have the signature:
@@ -152,7 +152,7 @@ export const EVENT_TARGET_RUNNING: string = 'targetrun';
   *
   * Listener function should have the signature:
   * ~~~
-  * (notification: [[TargetStoppedNotify]]) => void
+  * (e: [[ITargetStoppedEvent]]) => void
   * ~~~
   * @event
   */
@@ -163,7 +163,7 @@ export const EVENT_TARGET_STOPPED: string = 'targetstop';
   *
   * Listener function should have the signature:
   * ~~~
-  * (notification: [[BreakpointHitNotify]]) => void
+  * (e: [[IBreakpointHitEvent]]) => void
   * ~~~
   * @event
   */
@@ -174,7 +174,7 @@ export const EVENT_BREAKPOINT_HIT: string = 'brkpthit';
   *
   * Listener function should have the signature:
   * ~~~
-  * (notification: [[StepFinishedNotify]]) => void
+  * (e: [[IStepFinishedEvent]]) => void
   * ~~~
   * @event
   */
@@ -188,7 +188,7 @@ export const EVENT_STEP_FINISHED: string = 'endstep';
   *
   * Listener function should have the signature:
   * ~~~
-  * (notification: [[StepOutFinishedNotify]]) => void
+  * (e: [[IStepOutFinishedEvent]]) => void
   * ~~~
   * @event
   */
@@ -199,7 +199,7 @@ export const EVENT_FUNCTION_FINISHED: string = 'endfunc';
   *
   * Listener function should have the signature:
   * ~~~
-  * (notification: [[SignalReceivedNotify]]) => void
+  * (e: [[ISignalReceivedEvent]]) => void
   * ~~~
   * @event
   */
@@ -210,7 +210,7 @@ export const EVENT_SIGNAL_RECEIVED: string = 'signal';
   *
   * Listener function should have the signature:
   * ~~~
-  * (notification: [[ExceptionReceivedNotify]]) => void
+  * (e: [[IExceptionReceivedEvent]]) => void
   * ~~~
   * @event
   */
@@ -253,7 +253,7 @@ export interface ILibEvent {
   id: string;
   /** Name of the library file on the target system. */
   targetName: string;
-  /** 
+  /**
     * Name of the library file on the host system.
     * When debugging locally this should be the same as `targetName`.
     */
@@ -267,7 +267,7 @@ export interface ILibEvent {
     * This field is not part of the GDB MI spec. and is only set by LLDB MI driver.
     */
   loadAddress: string;
-  /** 
+  /**
     * Optional path to a file containing additional debug information.
     * This field is not part of the GDB MI spec. and is only set by LLDB MI driver.
     * The LLDB MI driver gets the value for this field from SBModule::GetSymbolFileSpec().
@@ -282,9 +282,9 @@ export interface ITargetStoppedEvent {
   reason: TargetStopReason;
   /** Identifier of the thread that caused the target to stop. */
   threadId: number;
-  /** 
-    * Identifiers of the threads that were stopped, 
-    * if all threads were stopped this array will be empty. 
+  /**
+    * Identifiers of the threads that were stopped,
+    * if all threads were stopped this array will be empty.
     */
   stoppedThreads: number[];
   /**
@@ -474,7 +474,7 @@ export function createEventForAsyncNotification(notification: string, data: any)
   };
 }
 
-/** 
+/**
   * Creates an object that conforms to the IFrameInfo interface from the output of the
   * MI Output parser.
   */
@@ -489,7 +489,7 @@ function extractFrameInfo(data: any): IFrameInfo {
   };
 }
 
-// There are more reasons listed in the GDB/MI spec., the ones here are just the subset that's 
+// There are more reasons listed in the GDB/MI spec., the ones here are just the subset that's
 // actually used by LLDB MI at this time (11-Apr-2015).
 var targetStopReasonMap = new Map<string, TargetStopReason>()
   .set('breakpoint-hit', TargetStopReason.BreakpointHit)
@@ -510,7 +510,7 @@ function parseTargetStopReason(reasonString: string): TargetStopReason {
   return TargetStopReason.Unrecognized;
 }
 
-/** 
+/**
   * Parses a list of stopped threads from a GDB/MI 'stopped' async notification.
   * @return An array of thread identifiers, an empty array is used to indicate that all threads
   *         were stopped.
