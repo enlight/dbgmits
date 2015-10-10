@@ -15,6 +15,7 @@
         "debug_session.ts",
         "errors.ts",
         "events.ts",
+        "extractors.ts",
         "gdb_debug_session.ts",
         "index.ts",
         "mi_output.ts",
