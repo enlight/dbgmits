@@ -7,7 +7,9 @@ import * as chai from 'chai';
 import chaiAsPromised = require('chai-as-promised');
 import * as bunyan from 'bunyan';
 import * as dbgmits from '../lib/index';
-import { beforeEachTestWithLogger, logSuite as log, startDebugSession } from './test_utils';
+import {
+  beforeEachTestWithLogger, logSuite as log, startDebugSession, runToFunc
+} from './test_utils';
 
 chai.use(chaiAsPromised);
 
@@ -171,5 +173,27 @@ log(describe("Debug Session", () => {
         return debugSession.disableBreakpoints(breakIds);
       });
     });
+
+    describe("Events", () => {
+      it("Emits EVENT_BREAKPOINT_MODIFIED when breakpoint hit count changes", () => {
+        const checkBreakpointHitCount = new Promise<void>((resolve, reject) => {
+          debugSession.once(dbgmits.EVENT_BREAKPOINT_MODIFIED,
+            (e: dbgmits.IBreakpointModifiedEvent) => {
+              try {
+                expect(e.breakpoint).has.property('hitCount', 1);
+                resolve();
+              } catch (err) {
+                reject(err);
+              }
+            }
+          );
+        });
+        return debugSession.addBreakpoint('main')
+        .then(() => Promise.all([
+          checkBreakpointHitCount,
+          debugSession.startInferior()
+        ]));
+      });
+    }); // describe Events
   });
 }));

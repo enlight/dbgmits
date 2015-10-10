@@ -308,6 +308,71 @@ describe("Debug Session", () => {
         }
       );
     });
+
+    it("emits EVENT_BREAKPOINT_MODIFIED", (done: MochaDone) => {
+      const id = 999;
+      const breakpointType = 'breakpoint';
+      const address = '0x0000000000400927';
+      const func = 'main(int, char const**)';
+      const filename = '../test/break_tests_target.cpp';
+      const fullname = '/media/sf_dbgmits/test/break_tests_target.cpp';
+      const line = 47;
+      const threadGroup = 'i1';
+      const hitCount = 1;
+      const ignoreCount = 2;
+      const enableCount = 3;
+      const passCount = 4;
+      const originaLocation = 'main';
+      const threadId = 10;
+      const condition = 'something == true';
+      const what = 'nothing';
+      const at = `${address} ${func}`;
+      const evaluatedBy = 'target';
+      const mask = "xxxx";
+
+      emitEventForDebuggerOutput(
+        `=breakpoint-modified,bkpt={number="${id}",type="${breakpointType}",disp="keep",` +
+        `enabled="y",addr="${address}",func="${func}",file="${filename}",` +
+        `fullname="${fullname}",line="${line}",thread-groups=["${threadGroup}"],` +
+        `times="${hitCount}",enable="${enableCount}",ignore="${ignoreCount}",` +
+        `original-location="${originaLocation}",pending="${originaLocation}",` +
+        `thread="${threadId}",cond="${condition}",what="${what}",at="${at}",` +
+        `pass="${passCount}",evaluated-by="${evaluatedBy}",mask="${mask}",` +
+        `installed="y"}`,
+        dbgmits.EVENT_BREAKPOINT_MODIFIED,
+        (e: dbgmits.IBreakpointModifiedEvent) => {
+          const bp = e.breakpoint;
+          expect(bp).to.have.property('id', id);
+          expect(bp).to.have.property('breakpointType', breakpointType);
+          expect(bp).to.have.property('isTemp', false);
+          expect(bp).to.have.property('isEnabled', true);
+          expect(bp).to.have.property('locations').of.length(1);
+          expect(bp).to.have.property('pending', originaLocation);
+          expect(bp).to.have.property('threadId', threadId);
+          expect(bp).to.have.property('condition', condition);
+          expect(bp).to.have.property('ignoreCount', ignoreCount);
+          expect(bp).to.have.property('enableCount', enableCount);
+          expect(bp).to.have.property('originalLocation', originaLocation);
+          expect(bp).to.have.property('hitCount', hitCount);
+          expect(bp).to.have.property('what', what);
+          expect(bp).to.have.property('passCount', passCount);
+          expect(bp).to.have.property('evaluatedBy', evaluatedBy);
+          expect(bp).to.have.property('mask', mask);
+          expect(bp).to.have.property('isInstalled', true);
+
+          const bploc = bp.locations[0];
+          expect(bploc).to.have.property('id', id.toString());
+          expect(bploc).to.have.property('address', address);
+          expect(bploc).to.have.property('func', func);
+          expect(bploc).to.have.property('filename', filename);
+          expect(bploc).to.have.property('fullname', fullname);
+          expect(bploc).to.have.property('line', line);
+          expect(bploc).to.have.property('at', at);
+
+          done();
+        }
+      );
+    });
   });
 /*
   describe("Remote Debugging Setup", () => {

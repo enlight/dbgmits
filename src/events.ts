@@ -1,7 +1,8 @@
 ﻿// Copyright (c) 2015 Vadim Macagon
 // MIT License, see LICENSE file for full terms.
 
-import { TargetStopReason, IFrameInfo } from './types';
+import { TargetStopReason, IFrameInfo, IBreakpointInfo } from './types';
+import { extractBreakpointInfo } from './extractors';
 
 /**
   * Emitted when a thread group is added by the debugger, it's possible the thread group
@@ -216,6 +217,17 @@ export const EVENT_SIGNAL_RECEIVED: string = 'signal';
   */
 export const EVENT_EXCEPTION_RECEIVED: string = 'exception';
 
+/**
+  * Emitted when a breakpoint is modified by the debugger.
+  *
+  * Listener function should have the signature:
+  * ~~~
+  * (e: [[IBreakpointModifiedEvent]]) => void
+  * ~~~
+  * @event
+  */
+export const EVENT_BREAKPOINT_MODIFIED = 'breakpoint-modified';
+
 export interface IThreadGroupAddedEvent {
   id: string;
 }
@@ -317,6 +329,10 @@ export interface ISignalReceivedEvent extends ITargetStoppedEvent {
 
 export interface IExceptionReceivedEvent extends ITargetStoppedEvent {
   exception: string;
+}
+
+export interface IBreakpointModifiedEvent {
+  breakpoint: IBreakpointInfo;
 }
 
 export interface IDebugSessionEvent {
@@ -467,6 +483,14 @@ export function createEventForAsyncNotification(notification: string, data: any)
         loadAddress: data.loaded_addr
       };
       return { name: EVENT_LIB_UNLOADED, data: libUnloadedEvent };
+
+    case 'breakpoint-modified':
+      return {
+        name: EVENT_BREAKPOINT_MODIFIED,
+        data: <IBreakpointModifiedEvent> {
+          breakpoint: extractBreakpointInfo(data)
+        }
+      };
 
     default:
       // TODO: log and keep on going
