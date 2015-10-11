@@ -26,8 +26,8 @@ type ReadLine = readline.ReadLine;
 type ErrDataCallback = (err: Error, data: any) => void;
 
 class DebugCommand {
-  /** 
-   * Optional token that can be used to match up the command with a response, 
+  /**
+   * Optional token that can be used to match up the command with a response,
    * if provided it must only contain digits.
    */
   token: string;
@@ -49,10 +49,10 @@ class DebugCommand {
 }
 
 /**
- * A debug session provides two-way communication with a debugger process via the GDB/LLDB 
+ * A debug session provides two-way communication with a debugger process via the GDB/LLDB
  * machine interface.
  *
- * Currently commands are queued and executed one at a time in the order they are issued, 
+ * Currently commands are queued and executed one at a time in the order they are issued,
  * a command will not be executed until all the previous commands have been acknowledged by the
  * debugger.
  *
@@ -104,7 +104,7 @@ export default class DebugSession extends events.EventEmitter {
   /**
    * Ends the debugging session.
    *
-   * @param notifyDebugger If **false** the session is cleaned up immediately without waiting for 
+   * @param notifyDebugger If **false** the session is cleaned up immediately without waiting for
    *                       the debugger to respond (useful in cases where the debugger terminates
    *                       unexpectedly). If **true** the debugger is asked to exit, and once the
    *                       request is acknowldeged the session is cleaned up.
@@ -127,7 +127,7 @@ export default class DebugSession extends events.EventEmitter {
   /**
    * Returns `true` if [[EVENT_FUNCTION_FINISHED]] can be emitted during this debugging session.
    *
-   * LLDB-MI currently doesn't emit [[EVENT_FUNCTION_FINISHED]] after stepping out of a function, 
+   * LLDB-MI currently doesn't emit [[EVENT_FUNCTION_FINISHED]] after stepping out of a function,
    * instead it emits [[EVENT_STEP_FINISHED]] just like it does for any other stepping operation.
    */
   canEmitFunctionFinishedNotification(): boolean {
@@ -156,8 +156,8 @@ export default class DebugSession extends events.EventEmitter {
    * Parse a single line containing a response to a MI command or some sort of async notification.
    */
   private parseDebbugerOutput(line: string): void {
-    // '(gdb)' (or '(gdb) ' in some cases) is used to indicate the end of a set of output lines 
-    // from the debugger, but since we process each line individually as it comes in this 
+    // '(gdb)' (or '(gdb) ' in some cases) is used to indicate the end of a set of output lines
+    // from the debugger, but since we process each line individually as it comes in this
     // particular marker is of no use
     if (line.match(/^\(gdb\)\s*/) || (line === '')) {
       return;
@@ -179,7 +179,7 @@ export default class DebugSession extends events.EventEmitter {
       case RecordType.Connected:
       case RecordType.Exit:
       case RecordType.Error:
-        // this record is a response for the last command that was sent to the debugger, 
+        // this record is a response for the last command that was sent to the debugger,
         // which is the command at the front of the queue
         var cmd = this.cmdQueue.shift();
         cmdQueuePopped = true;
@@ -270,7 +270,7 @@ export default class DebugSession extends events.EventEmitter {
 
   /**
    * Sends an MI command to the debugger and returns the response.
-   * 
+   *
    * @param command Full MI command string, excluding the optional token and dash prefix.
    * @param token Token to be prefixed to the command string (must consist only of digits).
    * @param transformOutput This function will be invoked with the output of the MI Output parser
@@ -299,10 +299,10 @@ export default class DebugSession extends events.EventEmitter {
   /**
    * Sets the executable file to be debugged, the symbol table will also be read from this file.
    *
-   * This must be called prior to [[connectToRemoteTarget]] when setting up a remote debugging 
+   * This must be called prior to [[connectToRemoteTarget]] when setting up a remote debugging
    * session.
    *
-   * @param file This would normally be a full path to the host's copy of the executable to be 
+   * @param file This would normally be a full path to the host's copy of the executable to be
    *             debugged.
    */
   setExecutableFile(file: string): Promise<void> {
@@ -347,10 +347,10 @@ export default class DebugSession extends events.EventEmitter {
    *                 - address
    * @param options.isTemp Set to **true** to create a temporary breakpoint which will be
    *                       automatically removed after being hit.
-   * @param options.isHardware Set to **true** to create a hardware breakpoint 
+   * @param options.isHardware Set to **true** to create a hardware breakpoint
    *                           (presently not supported by LLDB MI).
    * @param options.isPending Set to **true** if the breakpoint should still be created even if
-   *                          the location cannot be parsed (e.g. it refers to uknown files or 
+   *                          the location cannot be parsed (e.g. it refers to uknown files or
    *                          functions).
    * @param options.isDisabled Set to **true** to create a breakpoint that is initially disabled,
    *                           otherwise the breakpoint will be enabled by default.
@@ -358,8 +358,8 @@ export default class DebugSession extends events.EventEmitter {
    *                             (presently not supported by LLDB MI).
    * @param options.condition The debugger will only stop the program execution when this
    *                          breakpoint is hit if the condition evaluates to **true**.
-   * @param options.ignoreCount The number of times the breakpoint should be hit before it takes 
-   *                            effect, zero (the default) means the breakpoint will stop the 
+   * @param options.ignoreCount The number of times the breakpoint should be hit before it takes
+   *                            effect, zero (the default) means the breakpoint will stop the
    *                            program every time it's hit.
    * @param options.threadId Restricts the new breakpoint to the given thread.
    */
@@ -469,8 +469,8 @@ export default class DebugSession extends events.EventEmitter {
    * Sets the condition under which a breakpoint should take effect when hit.
    *
    * @param breakId Identifier of the breakpoint for which the condition should be set.
-   * @param condition Expression to evaluate when the breakpoint is hit, if it evaluates to 
-   *                  **true** the breakpoint will stop the program, otherwise the breakpoint 
+   * @param condition Expression to evaluate when the breakpoint is hit, if it evaluates to
+   *                  **true** the breakpoint will stop the program, otherwise the breakpoint
    *                  will have no effect.
    */
   setBreakpointCondition(
@@ -493,13 +493,13 @@ export default class DebugSession extends events.EventEmitter {
   /**
    * Executes an inferior from the beginning until it exits.
    *
-   * Execution may stop before the inferior finishes running due to a number of reasons, 
+   * Execution may stop before the inferior finishes running due to a number of reasons,
    * for example a breakpoint being hit.
    * [[EVENT_TARGET_STOPPED]] will be emitted when execution stops.
    *
    * @param options.threadGroup *(GDB specific)* The identifier of the thread group to start,
    *                            if omitted the currently selected inferior will be started.
-   * @param options.stopAtStart *(GDB specific)* If `true` then execution will stop at the start 
+   * @param options.stopAtStart *(GDB specific)* If `true` then execution will stop at the start
    *                            of the main function.
    */
   startInferior(
@@ -520,11 +520,11 @@ export default class DebugSession extends events.EventEmitter {
   /**
    * Executes all inferiors from the beginning until they exit.
    *
-   * Execution may stop before an inferior finishes running due to a number of reasons, 
+   * Execution may stop before an inferior finishes running due to a number of reasons,
    * for example a breakpoint being hit.
    * [[EVENT_TARGET_STOPPED]] will be emitted when execution stops.
    *
-   * @param stopAtStart *(GDB specific)* If `true` then execution will stop at the start 
+   * @param stopAtStart *(GDB specific)* If `true` then execution will stop at the start
    *                    of the main function.
    */
   startAllInferiors(stopAtStart?: boolean): Promise<void> {
@@ -608,11 +608,11 @@ export default class DebugSession extends events.EventEmitter {
 
   /**
    * Resumes execution of the target until the beginning of the next source line is reached.
-   * If a function is called while the target is running then execution stops on the first 
-   * source line of the called function. 
+   * If a function is called while the target is running then execution stops on the first
+   * source line of the called function.
    * [[EVENT_TARGET_STOPPED]] will be emitted when execution stops.
    *
-   * @param options.threadId Identifier of the thread to execute the command on. 
+   * @param options.threadId Identifier of the thread to execute the command on.
    * @param options.reverse *(GDB specific)* If **true** the target is executed in reverse.
    */
   stepIntoLine(options?: { threadId?: number; reverse?: boolean }): Promise<void> {
@@ -623,8 +623,8 @@ export default class DebugSession extends events.EventEmitter {
    * Resumes execution of the target until the beginning of the next source line is reached.
    * [[EVENT_TARGET_STOPPED]] will be emitted when execution stops.
    *
-   * @param options.threadId Identifier of the thread to execute the command on. 
-   * @param options.reverse *(GDB specific)* If **true** the target is executed in reverse until 
+   * @param options.threadId Identifier of the thread to execute the command on.
+   * @param options.reverse *(GDB specific)* If **true** the target is executed in reverse until
    *                        the beginning of the previous source line is reached.
    */
   stepOverLine(options?: { threadId?: number; reverse?: boolean }): Promise<void> {
@@ -637,7 +637,7 @@ export default class DebugSession extends events.EventEmitter {
    * [[EVENT_TARGET_STOPPED]] will be emitted when execution stops.
    *
    * @param options.threadId Identifier of the thread to execute the command on.
-   * @param options.reverse *(GDB specific)* If **true** the target is executed in reverse until 
+   * @param options.reverse *(GDB specific)* If **true** the target is executed in reverse until
    *                        the previous instruction is reached.
    */
   stepIntoInstruction(
@@ -646,12 +646,12 @@ export default class DebugSession extends events.EventEmitter {
   }
 
   /**
-   * Executes one instruction, if the instruction is a function call then execution continues 
+   * Executes one instruction, if the instruction is a function call then execution continues
    * until the function returns.
    * [[EVENT_TARGET_STOPPED]] will be emitted when execution stops.
    *
-   * @param options.threadId Identifier of the thread to execute the command on. 
-   * @param options.reverse *(GDB specific)* If **true** the target is executed in reverse until 
+   * @param options.threadId Identifier of the thread to execute the command on.
+   * @param options.reverse *(GDB specific)* If **true** the target is executed in reverse until
    *                        the previous instruction is reached.
    */
   stepOverInstruction(
@@ -679,7 +679,7 @@ export default class DebugSession extends events.EventEmitter {
    *
    * @param options.threadId The thread for which the stack depth should be retrieved,
    *                         defaults to the currently selected thread if not specified.
-   * @param options.frameLevel Stack index of the frame for which to retrieve locals, 
+   * @param options.frameLevel Stack index of the frame for which to retrieve locals,
    *                           zero for the innermost frame, one for the frame from which the call
    *                           to the innermost frame originated, etc. Defaults to the currently
    *                           selected frame if not specified. If a value is provided for this
@@ -707,7 +707,7 @@ export default class DebugSession extends events.EventEmitter {
    *
    * @param options.threadId The thread for which the stack depth should be retrieved,
    *                         defaults to the currently selected thread if not specified.
-   * @param options.maxDepth *(GDB specific)* If specified the returned stack depth will not exceed 
+   * @param options.maxDepth *(GDB specific)* If specified the returned stack depth will not exceed
    *                         this number.
    */
   getStackDepth(
@@ -737,7 +737,7 @@ export default class DebugSession extends events.EventEmitter {
    *
    * @param options.threadId The thread for which the stack frames should be retrieved,
    *                         defaults to the currently selected thread if not specified.
-   * @param options.noFrameFilters *(GDB specific)* If `true` the Python frame filters will not be 
+   * @param options.noFrameFilters *(GDB specific)* If `true` the Python frame filters will not be
    *                               executed.
    * @param options.lowFrame Must not be larger than the actual number of frames on the stack.
    * @param options.highFrame May be larger than the actual number of frames on the stack, in which
@@ -856,13 +856,13 @@ export default class DebugSession extends events.EventEmitter {
    * @param detail Specifies what information to retrieve for each argument or local variable.
    * @param options.threadId The thread for which variables should be retrieved,
    *                         defaults to the currently selected thread if not specified.
-   * @param options.frameLevel Stack index of the frame for which to retrieve locals, 
+   * @param options.frameLevel Stack index of the frame for which to retrieve locals,
    *                           zero for the innermost frame, one for the frame from which the call
    *                           to the innermost frame originated, etc. Defaults to the currently
    *                           selected frame if not specified.
    * @param options.noFrameFilters *(GDB specific)* If `true` then Python frame filters will not be
    *                               executed.
-   * @param options.skipUnavailable If `true` information about variables that are not available 
+   * @param options.skipUnavailable If `true` information about variables that are not available
    *                                will not be retrieved.
    */
   getStackFrameVariables(
@@ -919,12 +919,12 @@ export default class DebugSession extends events.EventEmitter {
    *                   - a CPU register name, e.g. `$sp`
    * @param options.id Unique identifier for the new watch, if omitted one is auto-generated.
    *                   Auto-generated identifiers begin with the letters `var` and are followed by
-   *                   one or more digits, when providing your own identifiers it's best to use a 
+   *                   one or more digits, when providing your own identifiers it's best to use a
    *                   different naming scheme that doesn't clash with auto-generated identifiers.
    * @param options.threadId The thread within which the watch expression will be evaluated.
    *                         *Default*: the currently selected thread.
    * @param options.threadGroup
-   * @param options.frameLevel The index of the stack frame within which the watch expression will 
+   * @param options.frameLevel The index of the stack frame within which the watch expression will
    *                           be evaluated initially, zero for the innermost stack frame. Note that
    *                           if `frameLevel` is specified then `threadId` must also be specified.
    *                           *Default*: the currently selected frame.
@@ -1176,7 +1176,7 @@ export default class DebugSession extends events.EventEmitter {
    * @param expression The expression to evaluate.
    * @param options.threadId The thread within which the expression should be evaluated.
    *                         *Default*: the currently selected thread.
-   * @param options.frameLevel The index of the stack frame within which the expression should 
+   * @param options.frameLevel The index of the stack frame within which the expression should
    *                           be evaluated, zero for the innermost stack frame. Note that
    *                           if `frameLevel` is specified then `threadId` must also be specified.
    *                           *Default*: the currently selected frame.
@@ -1206,7 +1206,7 @@ export default class DebugSession extends events.EventEmitter {
   /**
    * Attempts to read all accessible memory regions in the given range.
    *
-   * @param address Start of the range from which memory should be read, this can be a literal 
+   * @param address Start of the range from which memory should be read, this can be a literal
    *                address (e.g. `0x00007fffffffed30`) or an expression (e.g. `&someBuffer`) that
    *                evaluates to the desired address.
    * @param numBytesToRead Number of bytes that should be read.
@@ -1343,7 +1343,7 @@ export default class DebugSession extends events.EventEmitter {
    *              accepts number literals (e.g. 0x4009cc).
    * @param end End of the address range to disassemble, same caveats apply as for `start`.
    * @param showOpcodes If `true` the raw opcode bytes will be retrieved for each instruction.
-   * @returns A promise that will be resolved with a list lines, each of which will contain one 
+   * @returns A promise that will be resolved with a list lines, each of which will contain one
    *          or more assembly instructions (and associated meta-data).
    */
   disassembleAddressRangeByLine(start: string, end: string, showOpcodes?: boolean)
@@ -1401,7 +1401,7 @@ export default class DebugSession extends events.EventEmitter {
    *                                If this option is ommitted the entire function at the specified
    *                                source line will be disassembled.
    * @param options.showOpcodes If `true` the raw opcode bytes will be retrieved for each instruction.
-   * @returns A promise that will be resolved with a list lines, each of which will contain one 
+   * @returns A promise that will be resolved with a list lines, each of which will contain one
    *          or more assembly instructions (and associated meta-data).
    */
   disassembleFileByLine(
@@ -1423,7 +1423,7 @@ export default class DebugSession extends events.EventEmitter {
 
   /**
    * Gets information about a thread in an inferior.
-   * @returns A promise that will be resolved with information about a thread. 
+   * @returns A promise that will be resolved with information about a thread.
    */
   getThread(threadId: number): Promise<IThreadInfo> {
     let fullCmd = 'thread-info ' + threadId;
@@ -1461,7 +1461,7 @@ export default class DebugSession extends events.EventEmitter {
   }
 }
 
-/** 
+/**
  * Appends some common options used by -exec-* MI commands to the given string.
  *
  * @returns The result of appending the options to the input string.
