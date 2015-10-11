@@ -404,9 +404,7 @@ export default class DebugSession extends events.EventEmitter {
       }
     }
 
-    return this.getCommandOutput<IBreakpointInfo>(cmd + ' ' + location, null, (output: any) => {
-      return extractBreakpointInfo(output);
-    });
+    return this.getCommandOutput<IBreakpointInfo>(cmd + ' ' + location, null, extractBreakpointInfo);
   }
 
   /**
@@ -462,8 +460,8 @@ export default class DebugSession extends events.EventEmitter {
    */
   ignoreBreakpoint(
     breakId: number, ignoreCount: number): Promise<IBreakpointInfo> {
-    return this.getCommandOutput<IBreakpointInfo>(`break-after ${breakId} ${ignoreCount}`, null,
-      (output: any) => { return extractBreakpointInfo(output); }
+    return this.getCommandOutput<IBreakpointInfo>(
+      `break-after ${breakId} ${ignoreCount}`, null, extractBreakpointInfo
     );
   }
 
