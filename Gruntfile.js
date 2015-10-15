@@ -178,7 +178,7 @@ module.exports = function(grunt) {
   
   grunt.registerTask('run-lldb-tests', ['env:testWithLLDB', 'mochaTest:testLLDB']);
 
-  grunt.registerTask('test', ['tslint', 'build', 'run-tests']);
+  grunt.registerTask('test', ['tslint', 'build']);
 
-  grunt.registerTask('default', ['lint', 'build', 'run-tests']);
+  grunt.registerTask('default', ['lint', 'build']);
 };
