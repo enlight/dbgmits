@@ -18,6 +18,7 @@
         "data_tests.ts",
         "exec_tests.ts",
         "mi_output_parser_tests.ts",
+        "source_line_resolver_tests.ts",
         "stack_tests.ts",
         "test_utils.ts",
         "thread_tests.ts",

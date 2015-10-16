@@ -294,3 +294,63 @@ export function logSuite(suite: ISuite): ISuite {
   suite.createLogger = createLogger;
   return suite;
 }
+
+/**
+ * Escapes a string so that it can be safely embedded in a regular expression.
+ * 
+ * @param original The string to escape.
+ * @return The escaped string.
+ */
+function escapeStringForRegExp(original: string): string {
+  return original.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+}
+
+/**
+ * Helper class for obtaining the line numbers of relevant source lines in the C++ source files
+ * of the target executables used in tests.
+ */
+export class SourceLineResolver {
+  private _sourceLines: string[] = [];
+  
+  static loadSourceFileSync(filename: string): SourceLineResolver {
+    const sourceLineResolver = new SourceLineResolver();
+    sourceLineResolver.loadFileSync(filename);
+    return sourceLineResolver;
+  }
+  
+  private loadFileSync(filename: string): void {
+    this._sourceLines = fs.readFileSync(filename, 'utf8').split('\n');
+  }
+  
+  /**
+   * Finds the line number of the first source line that matches the given regular expression.
+   * 
+   * @param sourceLineRegExp The regular expressions to match source lines against, note that
+   *                         the expression is matched line by line so it shouldn't be created
+   *                         with the multi-line flag.
+   * @return The line number of the first matching line in the source file,
+   *         or -1 if no matching lines were found.
+   */
+  getMatchingLineNumber(sourceLineRegExp: RegExp): number {
+    for (let i = 0; i < this._sourceLines.length; ++i) {
+      if (sourceLineRegExp.test(this._sourceLines[i])) {
+        return i + 1;
+      }
+    }
+    return -1;
+  }
+  
+  /**
+   * Finds the line number at which a given single-line comment is located.
+   * 
+   * @param singleLineComment The test of the single-line (prefixed by `//`) comment.
+   * @return The line number of a single line comment in the source file,
+   *         or -1 if no such comment was found in the source file.
+   */
+  getCommentLineNumber(singleLineComment: string): number {
+    const escapedComment = escapeStringForRegExp(singleLineComment);
+    const commentRegExp = new RegExp(`^[\\s\\S]*//\\s*${escapedComment}`);
+    
+    return this.getMatchingLineNumber(commentRegExp);
+  }
+}

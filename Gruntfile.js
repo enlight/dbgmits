@@ -45,6 +45,14 @@ module.exports = function(grunt) {
           invert: true
         },
         src: ['test-js/**/*.js']
+      },
+      testUtils: {
+        options: {
+          reporter: '../../../test-js/custom_reporter',
+          quiet: false,
+          clearRequireCache: true
+        },
+        src: ['test-js/source_line_resolver_tests.js']
       }
     },
     'tsd': {
@@ -177,6 +185,8 @@ module.exports = function(grunt) {
   grunt.registerTask('run-gdb-tests', ['env:testWithGDB', 'mochaTest:testGDB']);
   
   grunt.registerTask('run-lldb-tests', ['env:testWithLLDB', 'mochaTest:testLLDB']);
+  
+  grunt.registerTask('run-utils-tests', ['mochaTest:testUtils']);
 
   grunt.registerTask('test', ['tslint', 'build']);
 
