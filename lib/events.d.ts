@@ -1,11 +1,11 @@
-import { TargetStopReason, IFrameInfo } from './types';
+import { TargetStopReason, IFrameInfo, IBreakpointInfo } from './types';
 /**
   * Emitted when a thread group is added by the debugger, it's possible the thread group
   * hasn't yet been associated with a running program.
   *
   * Listener function should have the signature:
   * ~~~
-  * (notification: [[ThreadGroupAddedNotify]]) => void
+  * (e: [[IThreadGroupAddedEvent]]) => void
   * ~~~
   * @event
   */
@@ -15,7 +15,7 @@ export declare const EVENT_THREAD_GROUP_ADDED: string;
   *
   * Listener function should have the signature:
   * ~~~
-  * (notification: [[ThreadGroupRemovedNotify]]) => void
+  * (e: [[IThreadGroupRemovedEvent]]) => void
   * ~~~
   * @event
   */
@@ -26,7 +26,7 @@ export declare const EVENT_THREAD_GROUP_REMOVED: string;
   *
   * Listener function should have the signature:
   * ~~~
-  * (notification: [[ThreadGroupStartedNotify]]) => void
+  * (e: [[IThreadGroupStartedEvent]]) => void
   * ~~~
   * @event
   */
@@ -37,7 +37,7 @@ export declare const EVENT_THREAD_GROUP_STARTED: string;
   *
   * Listener function should have the signature:
   * ~~~
-  * (notification: [[ThreadGroupExitedNotify]]) => void
+  * (e: [[IThreadGroupExitedEvent]]) => void
   * ~~~
   * @event
   */
@@ -47,7 +47,7 @@ export declare const EVENT_THREAD_GROUP_EXITED: string;
   *
   * Listener function should have the signature:
   * ~~~
-  * (notification: [[ThreadCreatedNotify]]) => void
+  * (e: [[IThreadCreatedEvent]]) => void
   * ~~~
   * @event
   */
@@ -57,7 +57,7 @@ export declare const EVENT_THREAD_CREATED: string;
   *
   * Listener function should have the signature:
   * ~~~
-  * (notification: [[ThreadExitedNotify]]) => void
+  * (e: [[IThreadExitedEvent]]) => void
   * ~~~
   * @event
   */
@@ -67,7 +67,7 @@ export declare const EVENT_THREAD_EXITED: string;
   *
   * Listener function should have the signature:
   * ~~~
-  * (notification: [[ThreadSelectedNotify]]) => void
+  * (e: [[IThreadSelectedEvent]]) => void
   * ~~~
   * @event
   */
@@ -77,7 +77,7 @@ export declare const EVENT_THREAD_SELECTED: string;
   *
   * Listener function should have the signature:
   * ~~~
-  * (notification: [[LibLoadedNotify]]) => void
+  * (e: [[ILibLoadedEvent]]) => void
   * ~~~
   * @event
   */
@@ -87,7 +87,7 @@ export declare const EVENT_LIB_LOADED: string;
   *
   * Listener function should have the signature:
   * ~~~
-  * (notification: [[LibUnloadedNotify]]) => void
+  * (e: [[ILibUnloadedEvent]]) => void
   * ~~~
   * @event
   */
@@ -143,7 +143,7 @@ export declare const EVENT_TARGET_RUNNING: string;
   *
   * Listener function should have the signature:
   * ~~~
-  * (notification: [[TargetStoppedNotify]]) => void
+  * (e: [[ITargetStoppedEvent]]) => void
   * ~~~
   * @event
   */
@@ -153,7 +153,7 @@ export declare const EVENT_TARGET_STOPPED: string;
   *
   * Listener function should have the signature:
   * ~~~
-  * (notification: [[BreakpointHitNotify]]) => void
+  * (e: [[IBreakpointHitEvent]]) => void
   * ~~~
   * @event
   */
@@ -163,7 +163,7 @@ export declare const EVENT_BREAKPOINT_HIT: string;
   *
   * Listener function should have the signature:
   * ~~~
-  * (notification: [[StepFinishedNotify]]) => void
+  * (e: [[IStepFinishedEvent]]) => void
   * ~~~
   * @event
   */
@@ -176,7 +176,7 @@ export declare const EVENT_STEP_FINISHED: string;
   *
   * Listener function should have the signature:
   * ~~~
-  * (notification: [[StepOutFinishedNotify]]) => void
+  * (e: [[IStepOutFinishedEvent]]) => void
   * ~~~
   * @event
   */
@@ -186,7 +186,7 @@ export declare const EVENT_FUNCTION_FINISHED: string;
   *
   * Listener function should have the signature:
   * ~~~
-  * (notification: [[SignalReceivedNotify]]) => void
+  * (e: [[ISignalReceivedEvent]]) => void
   * ~~~
   * @event
   */
@@ -196,11 +196,21 @@ export declare const EVENT_SIGNAL_RECEIVED: string;
   *
   * Listener function should have the signature:
   * ~~~
-  * (notification: [[ExceptionReceivedNotify]]) => void
+  * (e: [[IExceptionReceivedEvent]]) => void
   * ~~~
   * @event
   */
 export declare const EVENT_EXCEPTION_RECEIVED: string;
+/**
+  * Emitted when a breakpoint is modified by the debugger.
+  *
+  * Listener function should have the signature:
+  * ~~~
+  * (e: [[IBreakpointModifiedEvent]]) => void
+  * ~~~
+  * @event
+  */
+export declare const EVENT_BREAKPOINT_MODIFIED: string;
 export interface IThreadGroupAddedEvent {
     id: string;
 }
@@ -290,6 +300,9 @@ export interface ISignalReceivedEvent extends ITargetStoppedEvent {
 }
 export interface IExceptionReceivedEvent extends ITargetStoppedEvent {
     exception: string;
+}
+export interface IBreakpointModifiedEvent {
+    breakpoint: IBreakpointInfo;
 }
 export interface IDebugSessionEvent {
     name: string;
