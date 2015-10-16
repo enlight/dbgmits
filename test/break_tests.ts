@@ -8,8 +8,10 @@ import chaiAsPromised = require('chai-as-promised');
 import * as bunyan from 'bunyan';
 import * as dbgmits from '../lib/index';
 import {
-  beforeEachTestWithLogger, logSuite as log, startDebugSession, runToFunc
+  beforeEachTestWithLogger, logSuite as log, startDebugSession, runToFunc,
+  SourceLineResolver
 } from './test_utils';
+import * as path from 'path';
 
 chai.use(chaiAsPromised);
 
@@ -23,6 +25,12 @@ var localTargetExe: string = './build/Debug/break_tests_target';
 var localTargetSrcFilename = 'break_tests_target.cpp';
 
 log(describe("Debug Session", () => {
+  let lineResolver: SourceLineResolver;
+
+  before(() => {
+    lineResolver = SourceLineResolver.loadSourceFileSync(path.join('./test', localTargetSrcFilename));
+  });
+
   describe("Breakpoints", () => {
     var debugSession: DebugSession;
 
@@ -92,7 +100,7 @@ log(describe("Debug Session", () => {
 
       it("adds a breakpoint by filename and line number", () => {
         let filename: string = localTargetSrcFilename;
-        let line = 5;
+        let line = lineResolver.getCommentLineNumber('bp: funcA()');
         return debugSession.addBreakpoint(`${filename}:${line}`)
         .then((info: dbgmits.IBreakpointInfo) => {
           expect(info).to.have.property('id');

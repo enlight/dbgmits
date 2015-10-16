@@ -2,7 +2,7 @@
 
 void funcA()
 {
-    return;
+    return; // bp: funcA()
 }
 
 void funcB()

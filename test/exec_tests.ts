@@ -8,7 +8,8 @@ import chaiAsPromised = require('chai-as-promised');
 import * as bunyan from 'bunyan';
 import * as dbgmits from '../lib/index';
 import {
-  beforeEachTestWithLogger, logSuite as log, startDebugSession, runToFuncAndStepOut
+  beforeEachTestWithLogger, logSuite as log, startDebugSession, runToFuncAndStepOut,
+  SourceLineResolver
 } from './test_utils';
 
 chai.use(chaiAsPromised);
@@ -20,12 +21,17 @@ import DebugSession = dbgmits.DebugSession;
 // the directory in which Gruntfile.js resides is also Mocha's working directory,
 // so any relative paths will be relative to that directory
 var localTargetExe: string = './build/Debug/exec_tests_target';
-// this should be kept up to date with any modifications to exec_tests_target.cpp
-var locationOfCallToPrintNextInt: string = 'exec_tests_target.cpp:19';
 
 log(describe("Debug Session", () => {
   describe("Program Execution", () => {
     var debugSession: DebugSession;
+    let locationOfCallToPrintNextInt: string;
+
+    before(() => {
+      const lineResolver = SourceLineResolver.loadSourceFileSync('./test/exec_tests_target.cpp');
+      const line = lineResolver.getCommentLineNumber('bp: main::printNextInt()');
+      locationOfCallToPrintNextInt = `exec_tests_target.cpp:${line}`;
+    });
 
     beforeEachTestWithLogger((logger: bunyan.Logger) => {
       debugSession = startDebugSession(logger);

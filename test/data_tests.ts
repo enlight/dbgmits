@@ -9,7 +9,7 @@ import * as bunyan from 'bunyan';
 import * as dbgmits from '../lib/index';
 import {
   beforeEachTestWithLogger, logSuite as log, startDebugSession,
-  runToFunc, runToFuncAndStepOut
+  runToFunc, runToFuncAndStepOut, SourceLineResolver
 } from './test_utils';
 
 chai.use(chaiAsPromised);
@@ -21,12 +21,16 @@ import DebugSession = dbgmits.DebugSession;
 // the directory in which Gruntfile.js resides is also Mocha's working directory,
 // so any relative paths will be relative to that directory
 var localTargetExe: string = './build/Debug/data_tests_target';
-// source line number of main() (must be updated if data_tests_target.cpp is modified!)
-var mainFuncLineNum = 44;
 
 log(describe("Debug Session", () => {
   describe("Data Inspection and Manipulation", () => {
     var debugSession: DebugSession;
+    let mainFuncLineNum: number;
+
+    before(() => {
+      const lineResolver = SourceLineResolver.loadSourceFileSync('./test/data_tests_target.cpp');
+      mainFuncLineNum = lineResolver.getMatchingLineNumber(/^int main\(/);
+    });
 
     beforeEachTestWithLogger((logger: bunyan.Logger) => {
       debugSession = startDebugSession(logger);
