@@ -9,8 +9,8 @@ source instead of using a released version.
 
 Prerequisites
 =============
-- [Node.js](https://nodejs.org/) **v0.12+**
-- [TypeScript](http://www.typescriptlang.org/) **1.5+** (only for development)
+- [Node.js](https://nodejs.org/) **v0.12.x** (**4.x.x** is currently untested)
+- [TypeScript](http://www.typescriptlang.org/) **1.6.2+** (only for development)
 
 Install
 =======
