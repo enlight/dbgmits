@@ -51,11 +51,9 @@
     "typedoc": "^0.3.4",
     "typescript": "^1.6.2"
   },
-  "optionalDependencies": {
-    "pty.js": "^0.3.0"
-  },
   "dependencies": {
-    "bunyan": "^1.3.5"
+    "bunyan": "^1.3.5",
+    "unix-pty": "git://github.com/enlight/node-unix-pty"
   },
   "bugs": "https://github.com/enlight/dbgmits/issues"
 }
