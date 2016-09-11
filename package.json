@@ -14,7 +14,7 @@
   },
   "scripts": {
     "preinstall": "",
-    "install": "",
+    "install": "echo \"Ignoring binding.gyp\"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
