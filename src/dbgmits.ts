@@ -77,17 +77,20 @@ export function startDebugSession(debuggerType: DebuggerType, debuggerFilename?:
 
   const debuggerProcess: ChildProcess = spawn(debuggerFilename, debuggerArgs);
   let debugSession: DebugSession = null;
-  if (debuggerProcess) {
-    if (debuggerType === DebuggerType.GDB) {
-      debugSession = new GDBDebugSession(debuggerProcess.stdout, debuggerProcess.stdin);
-    } else {
-      debugSession = new DebugSession(debuggerProcess.stdout, debuggerProcess.stdin);
-    }
-    if (debugSession) {
-      debuggerProcess.once('exit',
-        (code: number, signal: string) => { debugSession.end(false); }
-      );
-    }
+
+  if (debuggerType === DebuggerType.GDB) {
+    debugSession = new GDBDebugSession(debuggerProcess.stdout, debuggerProcess.stdin);
+  } else {
+    debugSession = new DebugSession(debuggerProcess.stdout, debuggerProcess.stdin);
   }
+
+  debuggerProcess.on('error', (error: Error) => {
+    throw error;
+  });
+
+  debuggerProcess.once('exit',
+    (code: number, signal: string) => debugSession.end(false)
+  );
+
   return debugSession;
 };
