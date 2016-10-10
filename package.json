@@ -2,20 +2,25 @@
   "name": "dbgmits",
   "version": "0.1.0",
   "engines": {
-    "node": ">=0.12.0"
+    "node": ">=6.1.0"
   },
   "description": "Provides the ability to control GDB and LLDB programmatically via GDB/MI.",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
-  "typescript": {
-    "definitions": [
-      "typings/bunyan/bunyan.d.ts"
-    ]
-  },
   "scripts": {
     "preinstall": "",
-    "install": "echo \"Ignoring binding.gyp\"",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "install": "echo \"Ignoring 'binding.gyp', it's only used to build the test targets.\"",
+    "test": "echo \"Use 'npm run gdb-tests' or 'npm run lldb-tests' instead.\"",
+    "build": "npm run peg && node scripts/copy-parser-dts.js && npm run compile",
+    "compile": "tsc -p src/tsconfig.json",
+    "build:tests": "tsc -p test/tsconfig.json",
+    "build:docs": "typedoc --mode modules --out docs/ --module commonjs --target ES6 src/",
+    "peg": "pegjs -o lib/mi_output_parser.js src/mi_output_grammar.pegjs",
+    "tslint": "tslint --force -c conf/tslint.json src/**/*.ts test/**/*.ts",
+    "configure-tests": "node-gyp rebuild --debug",
+    "gdb-tests": "cross-env DBGMITS_DEBUGGER=gdb mocha --reporter ../../../test-js/custom_reporter --grep @skipOnGDB --invert test-js/**/*.js",
+    "lldb-tests": "cross-env DBGMITS_DEBUGGER=lldb mocha --reporter ../../../test-js/custom_reporter --grep @skipOnLLDB --invert test-js/**/*.js",
+    "utils-tests": "mocha --reporter ../../../test-js/custom_reporter test-js/source_line_resolver_tests.js"
   },
   "repository": {
     "type": "git",
@@ -30,30 +35,26 @@
   "author": "Vadim Macagon",
   "license": "MIT",
   "devDependencies": {
+    "@types/bunyan-prettystream": "^0.1.30",
+    "@types/chai": "^3.4.34",
+    "@types/chai-as-promised": "0.0.29",
+    "@types/mocha": "^2.2.32",
     "bunyan-prettystream": "^0.1.3",
-    "chai": "^2.1.2",
+    "chai": "^2.3.0",
     "chai-as-promised": "^4.3.0",
-    "grunt": "^0.4.5",
-    "grunt-contrib-jshint": "^0.11.0",
-    "grunt-contrib-watch": "^0.6.1",
-    "grunt-env": "^0.4.4",
-    "grunt-mocha-test": "^0.12.7",
-    "grunt-node-gyp": "^1.0.0",
-    "grunt-peg": "^1.5.0",
-    "grunt-release": "^0.12.0",
-    "grunt-tsc": "git://github.com/enlight/grunt-tsc",
-    "grunt-tsd": "^0.2.0-beta.1",
-    "grunt-tslint": "^2.5.0",
-    "grunt-typedoc": "^0.2.2",
-    "mocha": "^2.2.1",
+    "cross-env": "^3.1.1",
+    "mocha": "^2.5.3",
+    "pegjs": "^0.10.0",
+    "shelljs": "^0.7.4",
     "source-map-support": "^0.2.10",
-    "tslint": "^2.5.1",
-    "typedoc": "^0.3.4",
-    "typescript": "^1.6.2"
+    "tslint": "^3.15.0-dev.0",
+    "typescript": "^2.1.0-dev.20161002"
   },
   "dependencies": {
+    "@types/bunyan": "0.0.30",
+    "@types/node": "^6.0.41",
     "bunyan": "^1.3.5",
-    "unix-pty": "git://github.com/enlight/node-unix-pty"
+    "unix-pty": "github:enlight/node-unix-pty"
   },
   "bugs": "https://github.com/enlight/dbgmits/issues"
 }

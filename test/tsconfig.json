@@ -1,17 +1,14 @@
 {
     "compilerOptions": {
         "module": "commonjs",
-        "target": "es5",
+        "target": "es6",
         "noImplicitAny": true,
         "inlineSourceMap": true,
         "declaration": false,
-        "noLib": true,
+        "lib": ["es6"],
         "outDir": "../test-js"
     },
     "files": [
-        "../typings/lib.es6.d.ts",
-        "../typings/lib-tsd.d.ts",
-        "../typings/test-tsd.d.ts",
         "basic.ts",
         "break_tests.ts",
         "custom_reporter.ts",

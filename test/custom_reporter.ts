@@ -38,7 +38,7 @@ class CustomReporter extends mocha.reporters.Spec {
 
     // 'test' gets emitted before the beforeEach 'hook', so the logger for each test needs to be
     // created at this point and then passed through to the hook callback
-    runner.on('test', (test: ITest) => {
+    (<NodeJS.EventEmitter>runner).on('test', (test: ITest) => {
       // pad the test number with zeroes (e.g. 1 -> 001, 10 -> 010, 100 -> 100)
       let pad = '000';
       let testSuffix = (pad + this.stats.tests).slice(-pad.length);
@@ -59,7 +59,7 @@ class CustomReporter extends mocha.reporters.Spec {
       }
     });
 
-    runner.on('hook', (hook: IHook) => {
+    (<NodeJS.EventEmitter>runner).on('hook', (hook: IHook) => {
       // only the beforeEach hook should have a setLogger function
       if (hook.fn && hook.fn.setLogger) {
         hook.fn.setLogger(this.logger);
