@@ -1,0 +1,33 @@
+{
+	"version": "0.1.0",
+	// List of configurations. Add new configurations or edit existing ones.
+	// ONLY "node" and "mono" are supported, change "type" to switch.
+	"configurations": [
+		{
+            "request": "launch",
+			// Name of configuration; appears in the launch configuration drop down menu.
+			"name": "Debug lldb-tests",
+			// Type of configuration. Possible values: "node", "mono".
+			"type": "node",
+			// Absolute path to the program.
+			"program": "${workspaceRoot}/node_modules/mocha/bin/_mocha",
+			// Automatically stop program after launch.
+			"stopOnEntry": false,
+			// Command line arguments passed to the program.
+			"args": [
+                "--reporter", "../../../test-js/custom_reporter",
+                "--grep", "@skipOnLLDB",
+                "--invert",
+                "test-js/**/*.js"],
+			// Absolute path to the working directory of the program being debugged.
+			"cwd": "${workspaceRoot}",
+			// Workspace relative or absolute path to the runtime executable to be used. Default is the runtime executable on the PATH.
+			"runtimeExecutable": null,
+			// Environment variables passed to the program.
+			"env": {
+                "NODE_ENV": "testing",
+                "DBGMITS_DEBUGGER": "lldb"
+            }
+		}
+	]
+}
