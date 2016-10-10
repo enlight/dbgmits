@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2015 Vadim Macagon
+﻿// Copyright (c) 2015-2016 Vadim Macagon
 // MIT License, see LICENSE file for full terms.
 
 require('source-map-support').install();
@@ -11,6 +11,21 @@ import PrettyStream = require('bunyan-prettystream');
 
 // aliases
 import DebugSession = dbgmits.DebugSession;
+
+/**
+ * Computes the absolute path to a target executable used by tests that run on the local machine.
+ *
+ * NOTE: The target executables are built using the `npm run configure-tests` command.
+ *
+ * @param targetName The name of the target executable (without directory or extension).
+ * @return Absolute path to the target executable.
+ */
+export function getLocalTargetExe(targetName: string): string {
+  return path.normalize(path.join(
+    __dirname, '../build/Debug',
+    targetName + (process.platform === 'win32' ? '.exe' : '')
+  ));
+}
 
 export function startDebugSession(logger?: bunyan.Logger): DebugSession {
   const debuggerType = ('lldb' === process.env['DBGMITS_DEBUGGER']) ? dbgmits.DebuggerType.LLDB : dbgmits.DebuggerType.GDB;

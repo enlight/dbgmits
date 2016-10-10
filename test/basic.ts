@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2015 Vadim Macagon
+﻿// Copyright (c) 2015-2016 Vadim Macagon
 // MIT License, see LICENSE file for full terms.
 
 require('source-map-support').install();
@@ -8,7 +8,7 @@ import chaiAsPromised = require('chai-as-promised');
 import * as stream from 'stream';
 import * as bunyan from 'bunyan';
 import * as dbgmits from '../lib/index';
-import { startDebugSession } from './test_utils';
+import { startDebugSession, getLocalTargetExe } from './test_utils';
 
 chai.use(chaiAsPromised);
 
@@ -16,9 +16,7 @@ chai.use(chaiAsPromised);
 var expect = chai.expect;
 import DebugSession = dbgmits.DebugSession;
 
-// the directory in which Gruntfile.js resides is also Mocha's working directory,
-// so any relative paths will be relative to that directory
-var localTargetExe: string = './build/Debug/test_target';
+const localTargetExe = getLocalTargetExe('test_target');
 var hostExecutable: string = 'C:/Projects/hello-world/hello-world';
 var remoteHost: string = '192.168.56.101';
 var remotePort: number = 8099;
