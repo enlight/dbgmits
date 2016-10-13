@@ -50,7 +50,7 @@ export default class GDBDebugSession extends DebugSession {
           this.terminal.destroy();
           this.terminal = null;
         }
-        const ptyModule: typeof pty = require('pty.js');
+        const ptyModule: typeof pty = require('unix-pty');
         this.terminal = ptyModule.open();
         this.terminal.on('data', (data: string) => {
           this.emit(Events.EVENT_TARGET_OUTPUT, data);
